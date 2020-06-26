@@ -98,12 +98,9 @@ start.onclick = async function() {
     document.getElementById("counter").hidden = false
     document.getElementById("counter").innerHTML = `${handle} has got ${unsolvedTasks.length} unsolved problems! 😱`
     for (let i in unsolvedTasks) {
-        let linkToTask = `https://codeforces.com/contest/${unsolvedTasks[i].problem.contestId}/problem/${unsolvedTasks[i].problem.index}`,
+        let linkToTask = (+unsolvedTasks[i].problem.contestId >= 100000) ? `https://codeforces.com/problemset/gymProblem/${unsolvedTasks[i].problem.contestId}/${unsolvedTasks[i].problem.index}` : `https://codeforces.com/contest/${unsolvedTasks[i].problem.contestId}/problem/${unsolvedTasks[i].problem.index}`,
             slash = `${unsolvedTasks[i].problem.contestId}|${unsolvedTasks[i].problem.index}`,
             linkToLastSubmit = `https://codeforces.com/contest/${unsolvedTasks[i].problem.contestId}/submission/${unsolvedTasks[i].id}`
-        if (+unsolvedTasks[i].problem.contestId > 10e5) {
-            linkToTask = `https://codeforces.com/problemset/gymProblem/${unsolvedTasks[i].problem.contestId}/${unsolvedTasks[i].problem.index}`
-        }
         document.getElementById('table-list').innerHTML += `
                 <tr style = "border-bottom: solid 1px white;">
                     <td><a href="${linkToTask}" target="_blank">${slash}</a></td>
