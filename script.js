@@ -43,7 +43,7 @@ start.onclick = async function() {
         return -1
     }
     document.getElementById("table-list").innerHTML = "Loading..."
-    document.getElementById("start").disable = true
+    document.getElementById("start").disabled = true
     console.log(`Ok, handle is ${handle}`)
     const res = await fetch(`https://codeforces.com/api/user.status?handle=${handle}`)
     if (!res.ok) {
@@ -100,6 +100,7 @@ start.onclick = async function() {
                 </tr>
             `
     }
+    document.getElementById("start").disabled = false
     console.log("We did it!!")
 }
 
