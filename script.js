@@ -87,11 +87,12 @@ start.onclick = async function() {
         return a - b
     })
     document.getElementById("table-list").innerHTML = ""
-    console.log(unsolvedTasks)
     if (!unsolvedTasks.length) {
         document.getElementById("table-list").innerHTML = "Congratulations, You haven't got any unsolved tasks🥳"
+        console.log("You haven't got any unsolved tasks")
         return 0
     }
+    console.log(unsolvedTasks)
     document.getElementById("table-main").hidden = false
     for (let i in unsolvedTasks) {
         let linkToTask = `https://codeforces.com/contest/${unsolvedTasks[i].problem.contestId}/problem/${unsolvedTasks[i].problem.index}`,
