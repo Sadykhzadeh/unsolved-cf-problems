@@ -1,6 +1,39 @@
-import {
-    reduction
-} from "./modules/reduction.js"
+const verdicts = [{
+        full: "WRONG_ANSWER",
+        short: "WA"
+    },
+    {
+        full: "TIME_LIMIT_EXCEEDED",
+        short: "TLE"
+    },
+    {
+        full: "COMPILATION_ERROR",
+        short: "CE"
+    },
+    {
+        full: "RUNTIME_ERROR",
+        short: "RE"
+    },
+    {
+        full: "CHALLENGED / HACKED",
+        short: "CHL"
+    },
+    {
+        full: "MEMORY_LIMIT_EXCEEDED",
+        short: "MLE"
+    },
+    {
+        full: "SKIPPED",
+        short: "IGNORED"
+    }
+]
+
+const reduction = (verdict) => {
+    for (let i of verdicts) {
+        if (i.full.includes(verdict)) return [i.short, i.full]
+    }
+    return [verdict, verdict]
+}
 
 let startButton = document.getElementById("handle");
 startButton.addEventListener("keyup", (event) => {
@@ -11,6 +44,7 @@ startButton.addEventListener("keyup", (event) => {
 
 start.onclick = async function() {
     document.getElementById("table-main").hidden = true
+    document.getElementById("counter").hidden = true
     document.getElementById("table-list").innerHTML = ""
     const handle = document.getElementById('handle').value
     if (handle == "") {
@@ -54,12 +88,14 @@ start.onclick = async function() {
     })
     document.getElementById("table-list").innerHTML = ""
     if (!unsolvedTasks.length) {
-        document.getElementById("table-list").innerHTML = "Congratulations, You haven't got any unsolved tasks🥳"
+        document.getElementById("table-list").innerHTML = "Congratulations, You haven't got any unsolved tasks! 🥳"
         console.log("You haven't got any unsolved tasks")
         return 0
     }
     console.log(unsolvedTasks)
     document.getElementById("table-main").hidden = false
+    document.getElementById("counter").hidden = false
+    document.getElementById("counter").innerHTML = `${handle} has got ${unsolvedTasks.length} unsolved problems! 😱`
     for (let i in unsolvedTasks) {
         let linkToTask = `https://codeforces.com/contest/${unsolvedTasks[i].problem.contestId}/problem/${unsolvedTasks[i].problem.index}`,
             slash = `${unsolvedTasks[i].problem.contestId}|${unsolvedTasks[i].problem.index}`,
