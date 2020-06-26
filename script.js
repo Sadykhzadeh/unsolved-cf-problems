@@ -52,6 +52,7 @@ start.onclick = async function() {
     }
     document.getElementById("table-list").innerHTML = "Loading..."
     document.getElementById("start").disabled = true
+    document.getElementById("doNotShowTags").disabled = true
     console.log(`Ok, handle is ${handle}`)
     const res = await fetch(`https://codeforces.com/api/user.status?handle=${handle}`)
     if (!res.ok) {
@@ -105,13 +106,14 @@ start.onclick = async function() {
                     <td><a href="${linkToTask}" target="_blank">${slash}</a></td>
                     <td><a href="${linkToTask}" target="_blank">${unsolvedTasks[i].problem.name}</a></td>
                     <td>${(unsolvedTasks[i].problem.tags.length) ? unsolvedTasks[i].problem.tags.join(", "): '-'}</td>
-                    <td>${(unsolvedTasks[i].problem.rating == undefined) ? '-' : unsolvedTasks[i].problem.rating}</td>
+                    <td>${(document.getElementById('doNotShowTags').checked) ? "We don't show tags 🙈" : (unsolvedTasks[i].problem.rating == undefined) ? '-' : unsolvedTasks[i].problem.rating}</td>
                     <td title="${reduction(unsolvedTasks[i].verdict)[1]}">${reduction(unsolvedTasks[i].verdict)[0]}</td>
                     <td><a href="${linkToLastSubmit}" target="_blank">Last Submit</a></td>
                 </tr>
             `
     }
     document.getElementById("start").disabled = false
+    document.getElementById("doNotShowTags").disabled = false
     console.log("We did it!!")
 }
 
