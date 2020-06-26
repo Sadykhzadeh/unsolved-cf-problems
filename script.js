@@ -43,9 +43,9 @@ start.onclick = async function() {
                 ArrOfunsolvedTasks[submition[i].problem.contestId + submition[i].problem.index] = submition[i]
         }
     }
-    delete allNotOkSumbitions
+    allNotOkSumbitions = ""
     for (let i in ArrOfunsolvedTasks) unsolvedTasks.push(ArrOfunsolvedTasks[i])
-    delete ArrOfunsolvedTasks
+    ArrOfunsolvedTasks = ""
     console.log("sorting...")
     unsolvedTasks.sort((q, w) => {
         let a = (q.problem.rating == undefined) ? 10e7 : q.problem.rating,
