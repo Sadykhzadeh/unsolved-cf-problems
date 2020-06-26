@@ -35,6 +35,14 @@ const reduction = (verdict) => {
     return [verdict, verdict]
 }
 
+let startButton = document.getElementById("handle");
+
+startButton.addEventListener("keyup", (event) => {
+    if (event.keyCode === 13) {
+        document.getElementById("start").click();
+    }
+});
+
 start.onclick = async function() {
     document.getElementById("table-main").hidden = true
     document.getElementById("table-list").innerHTML = ""
