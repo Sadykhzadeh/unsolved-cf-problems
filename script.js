@@ -83,8 +83,8 @@ start.onclick = async function() {
     ArrOfunsolvedTasks = ""
     console.log("sorting...")
     unsolvedTasks.sort((q, w) => {
-        let a = (q.problem.rating == undefined) ? 10e7 : q.problem.rating,
-            b = (w.problem.rating == undefined) ? 10e7 : w.problem.rating
+        let a = (q.problem.rating == undefined) ? 10e5 : q.problem.rating,
+            b = (w.problem.rating == undefined) ? 10e5 : w.problem.rating
         return a - b
     })
     document.getElementById("table-list").innerHTML = ""
@@ -101,6 +101,9 @@ start.onclick = async function() {
         let linkToTask = `https://codeforces.com/contest/${unsolvedTasks[i].problem.contestId}/problem/${unsolvedTasks[i].problem.index}`,
             slash = `${unsolvedTasks[i].problem.contestId}|${unsolvedTasks[i].problem.index}`,
             linkToLastSubmit = `https://codeforces.com/contest/${unsolvedTasks[i].problem.contestId}/submission/${unsolvedTasks[i].id}`
+        if (+unsolvedTasks[i].problem.contestId > 10e5) {
+            linkToTask = `https://codeforces.com/problemset/gymProblem/${unsolvedTasks[i].problem.contestId}/${unsolvedTasks[i].problem.index}`
+        }
         document.getElementById('table-list').innerHTML += `
                 <tr style = "border-bottom: solid 1px white;">
                     <td><a href="${linkToTask}" target="_blank">${slash}</a></td>
