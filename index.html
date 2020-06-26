@@ -1,32 +1,39 @@
 <!DOCTYPE HTML>
-<html lang="ru">
+<html lang="en">
 
 <head>
     <title>Unsolved Codeforces Problems</title>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="apple-touch-icon" sizes="57x57" href="https://sta.codeforces.com/s/11868/apple-icon-57x57.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="https://sta.codeforces.com/s/11868/apple-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="76x76" href="https://sta.codeforces.com/s/11868/apple-icon-76x76.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="https://sta.codeforces.com/s/11868/apple-icon-114x114.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="https://sta.codeforces.com/s/11868/apple-icon-120x120.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="https://sta.codeforces.com/s/11868/apple-icon-144x144.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="https://sta.codeforces.com/s/11868/apple-icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="https://sta.codeforces.com/s/11868/apple-icon-180x180.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="https://sta.codeforces.com/s/11868/android-icon-192x192.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="https://sta.codeforces.com/s/11868/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="96x96" href="https://sta.codeforces.com/s/11868/favicon-96x96.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="https://sta.codeforces.com/s/11868/favicon-16x16.png">
     <link rel="stylesheet" href="styles/styles.css">
 </head>
-<style>
-    table,
-    tbody,
-    thead {
-        border: solid 1px white;
-    }
-</style>
 
 <body>
-    <input type="text" id="handle" placeholder="Введите свой handle.">
-    <button id="start">Поиск нерешённых задач</button>
+    <h3>Unsolved Codeforces Problems</h3>
+    <input type="text" id="handle" placeholder="Input your handle here.">
+    <button id="start">Search unsolved tasks</button>
+    <a id="about">About</a>
     <table style="width:100%">
-        <thead>
+        <thead id="table-main" hidden>
             <tr>
                 <th>#</th>
                 <th>Name</th>
                 <th>Tags</th>
                 <th>Rating</th>
-                <th>Last Submit / Link</th>
+                <th colspan="2">Last Submit / Link</th>
             </tr>
         </thead>
         <tbody id="table-list">

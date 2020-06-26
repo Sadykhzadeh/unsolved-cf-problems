@@ -6,3 +6,49 @@ body {
     color: white;
     text-align: center
 }
+
+table,
+th,
+td {
+    border: 1px solid rgba(80, 80, 80, 0.5);
+    border-collapse: collapse;
+}
+
+#handle {
+    background-color: #111115;
+    color: white;
+    font-size: large;
+    border: #111115;
+    width: 15%;
+}
+
+#start {
+    background-color: #575757;
+    color: rgb(0, 0, 0);
+    font-size: large;
+    border: #111115;
+}
+
+#start:hover {
+    transition: 0.5s;
+    color: white;
+    background-color: #111115;
+}
+
+#start:not(:hover) {
+    transition: 0.5s
+}
+
+#about {
+    text-align: right;
+}
+
+#about:hover {
+    background-color: white;
+    color: black;
+    transition: 0.5s;
+}
+
+#about:not(:hover) {
+    transition: 0.5s
+}
