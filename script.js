@@ -119,12 +119,14 @@ start.onclick = async function() {
 
 about.onclick = async function() {
     document.getElementById("table-main").hidden = true
+    document.getElementById("counter").hidden = true
     if (document.getElementById("table-list").innerHTML.includes("sadykhzadeh")) {
         document.getElementById("table-list").innerHTML = ""
         return 0
     }
     document.getElementById("table-list").innerHTML = `
-        <h3><a href="https://sadykhzadeh.github.io/unsolved-cf-problems" target="_blank">Project's Github</a> | 
+        </br>
+        <a href="https://github.com/sadykhzadeh/unsolved-cf-problems/stargazers"style="margin-right:1%;"><img alt="GitHub stars" src="https://img.shields.io/github/stars/sadykhzadeh/unsolved-cf-problems?color=darkgreen&style=flat-square"></a><a href="https://github.com/sadykhzadeh/unsolved-cf-problems/issues"><img alt="GitHub issues" src="https://img.shields.io/github/issues/sadykhzadeh/unsolved-cf-problems?color=blue&style=flat-square"></a><h3><a href="https://sadykhzadeh.github.io/unsolved-cf-problems" target="_blank">Project's Github</a> |
         by Azer Sadykhzadeh [<a href="https://sadykhzadeh.github.io/" target="_blank">Github</a>]</h3>
     `
 }
