@@ -59,49 +59,48 @@ start.onclick = async function() {
         let error = `Error 4xx`
         console.log(error)
         document.getElementById("table-list").innerHTML = error
-        return -1
-    }
-    console.log("Yeah, CodeForces is working!")
-    let submition = await res.json()
-    submition = submition.result
-    let allNotOkSumbitions = {},
-        ArrOfunsolvedTasks = {},
-        unsolvedTasks = [];
-    for (let i in submition) {
-        if (submition[i].verdict === 'OK') {
-            allNotOkSumbitions[submition[i].problem.contestId + submition[i].problem.index] = submition[i]
+    } else {
+        console.log("Yeah, CodeForces is working!")
+        let submition = await res.json()
+        submition = submition.result
+        let allNotOkSumbitions = {},
+            ArrOfunsolvedTasks = {},
+            unsolvedTasks = [];
+        for (let i in submition) {
+            if (submition[i].verdict === 'OK') {
+                allNotOkSumbitions[submition[i].problem.contestId + submition[i].problem.index] = submition[i]
+            }
         }
-    }
-    for (let i in submition) {
-        if (allNotOkSumbitions[submition[i].problem.contestId + submition[i].problem.index] == null) {
-            if (!ArrOfunsolvedTasks[submition[i].problem.contestId + submition[i].problem.index])
-                ArrOfunsolvedTasks[submition[i].problem.contestId + submition[i].problem.index] = submition[i]
+        for (let i in submition) {
+            if (allNotOkSumbitions[submition[i].problem.contestId + submition[i].problem.index] == null) {
+                if (!ArrOfunsolvedTasks[submition[i].problem.contestId + submition[i].problem.index])
+                    ArrOfunsolvedTasks[submition[i].problem.contestId + submition[i].problem.index] = submition[i]
+            }
         }
-    }
-    allNotOkSumbitions = ""
-    for (let i in ArrOfunsolvedTasks) unsolvedTasks.push(ArrOfunsolvedTasks[i])
-    ArrOfunsolvedTasks = ""
-    console.log("sorting...")
-    unsolvedTasks.sort((q, w) => {
-        let a = (q.problem.rating == undefined) ? 10e5 : q.problem.rating,
-            b = (w.problem.rating == undefined) ? 10e5 : w.problem.rating
-        return a - b
-    })
-    document.getElementById("table-list").innerHTML = ""
-    if (!unsolvedTasks.length) {
-        document.getElementById("table-list").innerHTML = "Congratulations, You haven't got any unsolved tasks! 🥳"
-        console.log("You haven't got any unsolved tasks")
-        return 0
-    }
-    console.log(unsolvedTasks)
-    document.getElementById("table-main").hidden = false
-    document.getElementById("counter").hidden = false
-    document.getElementById("counter").innerHTML = `${handle} has got ${unsolvedTasks.length} unsolved problems! 😱`
-    for (let i in unsolvedTasks) {
-        let linkToTask = (+unsolvedTasks[i].problem.contestId >= 100000) ? `https://codeforces.com/problemset/gymProblem/${unsolvedTasks[i].problem.contestId}/${unsolvedTasks[i].problem.index}` : `https://codeforces.com/contest/${unsolvedTasks[i].problem.contestId}/problem/${unsolvedTasks[i].problem.index}`,
-            slash = `${unsolvedTasks[i].problem.contestId}|${unsolvedTasks[i].problem.index}`,
-            linkToLastSubmit = `https://codeforces.com/contest/${unsolvedTasks[i].problem.contestId}/submission/${unsolvedTasks[i].id}`
-        document.getElementById('table-list').innerHTML += `
+        allNotOkSumbitions = ""
+        for (let i in ArrOfunsolvedTasks) unsolvedTasks.push(ArrOfunsolvedTasks[i])
+        ArrOfunsolvedTasks = ""
+        console.log("sorting...")
+        unsolvedTasks.sort((q, w) => {
+            let a = (q.problem.rating == undefined) ? 10e5 : q.problem.rating,
+                b = (w.problem.rating == undefined) ? 10e5 : w.problem.rating
+            return a - b
+        })
+        document.getElementById("table-list").innerHTML = ""
+        if (!unsolvedTasks.length) {
+            document.getElementById("counter").hidden = false
+            document.getElementById("counter").innerHTML = "Congratulations, You haven't got any unsolved tasks! 🥳"
+            console.log("You haven't got any unsolved tasks")
+        } else {
+            console.log(unsolvedTasks)
+            document.getElementById("table-main").hidden = false
+            document.getElementById("counter").hidden = false
+            document.getElementById("counter").innerHTML = `${handle} has got ${unsolvedTasks.length} unsolved problems! 😱`
+            for (let i in unsolvedTasks) {
+                let linkToTask = (+unsolvedTasks[i].problem.contestId >= 100000) ? `https://codeforces.com/problemset/gymProblem/${unsolvedTasks[i].problem.contestId}/${unsolvedTasks[i].problem.index}` : `https://codeforces.com/contest/${unsolvedTasks[i].problem.contestId}/problem/${unsolvedTasks[i].problem.index}`,
+                    slash = `${unsolvedTasks[i].problem.contestId}|${unsolvedTasks[i].problem.index}`,
+                    linkToLastSubmit = `https://codeforces.com/contest/${unsolvedTasks[i].problem.contestId}/submission/${unsolvedTasks[i].id}`
+                document.getElementById('table-list').innerHTML += `
                 <tr style = "border-bottom: solid 1px white;">
                     <td><a href="${linkToTask}" target="_blank">${slash}</a></td>
                     <td><a href="${linkToTask}" target="_blank">${unsolvedTasks[i].problem.name}</a></td>
@@ -111,6 +110,8 @@ start.onclick = async function() {
                     <td><a href="${linkToLastSubmit}" target="_blank">Last Submit</a></td>
                 </tr>
             `
+            }
+        }
     }
     document.getElementById("start").disabled = false
     document.getElementById("doNotShowTags").disabled = false
