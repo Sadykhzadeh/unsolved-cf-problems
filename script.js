@@ -127,6 +127,6 @@ about.onclick = async function() {
     document.getElementById("table-list").innerHTML = `
         </br>
         <a href="https://github.com/sadykhzadeh/unsolved-cf-problems/stargazers"style="margin-right:1%;"><img alt="GitHub stars" src="https://img.shields.io/github/stars/sadykhzadeh/unsolved-cf-problems?color=darkgreen&style=flat-square"></a><a href="https://github.com/sadykhzadeh/unsolved-cf-problems/issues"><img alt="GitHub issues" src="https://img.shields.io/github/issues/sadykhzadeh/unsolved-cf-problems?color=blue&style=flat-square"></a><h3><a href="https://github.com/sadykhzadeh/unsolved-cf-problems" target="_blank">Project's Github</a> |
-        by Azer Sadykhzadeh [<a href="https://sadykhzadeh.github.io/" target="_blank">Github</a>]</h3>
+        by Azer Sadykhzadeh [<a href="https://github.com/sadykhzadeh" target="_blank">Github</a>]</h3>
     `
 }
