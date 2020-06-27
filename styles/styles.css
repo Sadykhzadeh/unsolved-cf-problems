@@ -7,6 +7,14 @@ body {
     text-align: center
 }
 
+a {
+    color: rgb(202, 202, 202);
+}
+
+a:visited {
+    color: gray;
+}
+
 #doNotShowTags {
     margin-left: -5%;
 }
