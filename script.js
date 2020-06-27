@@ -44,21 +44,22 @@ startButton.addEventListener("keyup", (event) => {
 
 start.onclick = async function() {
     document.getElementById("table-main").hidden = true
-    document.getElementById("counter").hidden = true
+    document.getElementById("counter").hidden = false
     document.getElementById("table-list").innerHTML = ""
     const handle = document.getElementById('handle').value
     if (handle == "") {
+        document.getElementById("counter").hidden = true
         return -1
     }
-    document.getElementById("table-list").innerHTML = "Loading..."
+    document.getElementById("counter").innerHTML = "Loading..."
     document.getElementById("start").disabled = true
     document.getElementById("doNotShowTags").disabled = true
     console.log(`Ok, handle is ${handle}`)
     const res = await fetch(`https://codeforces.com/api/user.status?handle=${handle}`)
     if (!res.ok) {
-        let error = `Error 4xx`
+        let error = "Error 4xx: Perhaps this handle does not exist"
         console.log(error)
-        document.getElementById("table-list").innerHTML = error
+        document.getElementById("counter").innerHTML = error
     } else {
         console.log("Yeah, CodeForces is working!")
         let submition = await res.json()
@@ -94,7 +95,6 @@ start.onclick = async function() {
         } else {
             console.log(unsolvedTasks)
             document.getElementById("table-main").hidden = false
-            document.getElementById("counter").hidden = false
             document.getElementById("counter").innerHTML = `${handle} has got ${unsolvedTasks.length} unsolved problems! 😱`
             for (let i in unsolvedTasks) {
                 let linkToTask = (+unsolvedTasks[i].problem.contestId >= 100000) ? `https://codeforces.com/problemset/gymProblem/${unsolvedTasks[i].problem.contestId}/${unsolvedTasks[i].problem.index}` : `https://codeforces.com/contest/${unsolvedTasks[i].problem.contestId}/problem/${unsolvedTasks[i].problem.index}`,
