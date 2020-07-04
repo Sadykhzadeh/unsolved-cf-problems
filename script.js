@@ -54,19 +54,20 @@ start.onclick = async function() {
     document.getElementById("counter").innerHTML = "Loading..."
     document.getElementById("start").disabled = true
     document.getElementById("doNotShowTags").disabled = true
-    console.log(`Ok, handle is ${handle}`)
+    console.log(`Ok, handle is "${handle}"`)
     const res = await fetch(`https://codeforces.com/api/user.status?handle=${handle}`)
     if (!res.ok) {
-        let error = "Error 4xx: Perhaps this handle does not exist"
+        let error = ":( Error 4xx: Perhaps this handle does not exist"
         console.log(error)
         document.getElementById("counter").innerHTML = error
     } else {
-        console.log("Yeah, CodeForces is working!")
+        console.log("Yeah, CodeForces is working! ^_^")
         let submition = await res.json()
         submition = submition.result
         let allNotOkSumbitions = {},
             ArrOfunsolvedTasks = {},
             unsolvedTasks = [];
+        console.log(`Finding ${handle}'s unsolved tasks...`)
         for (let i in submition) {
             if (submition[i].verdict === 'OK') {
                 allNotOkSumbitions[submition[i].problem.contestId + submition[i].problem.index] = submition[i]
@@ -81,7 +82,7 @@ start.onclick = async function() {
         allNotOkSumbitions = ""
         for (let i in ArrOfunsolvedTasks) unsolvedTasks.push(ArrOfunsolvedTasks[i])
         ArrOfunsolvedTasks = ""
-        console.log("sorting...")
+        console.log("Sorting problems by rating...")
         unsolvedTasks.sort((q, w) => {
             let a = (q.problem.rating == undefined) ? 10e5 : q.problem.rating,
                 b = (w.problem.rating == undefined) ? 10e5 : w.problem.rating
@@ -104,10 +105,10 @@ start.onclick = async function() {
                 <tr style = "border-bottom: solid 1px white;">
                     <td><a href="${linkToTask}" target="_blank">${slash}</a></td>
                     <td><a href="${linkToTask}" target="_blank">${unsolvedTasks[i].problem.name}</a></td>
-                    <td>${(document.getElementById('doNotShowTags').checked) ? "We don't show tags 🙈" : (unsolvedTasks[i].problem.tags.length) ? unsolvedTasks[i].problem.tags.join(", "): '-'}</td>
-                    <td>${(unsolvedTasks[i].problem.rating == undefined) ? '-' : unsolvedTasks[i].problem.rating}</td>
+                    <td>${(!document.getElementById('doNotShowTags').checked) ? "We don't show tags 🙈" : (unsolvedTasks[i].problem.tags.length) ? unsolvedTasks[i].problem.tags.join(", "): '-'}</td>
+                    <td title="Rating">${(unsolvedTasks[i].problem.rating == undefined) ? '-' : unsolvedTasks[i].problem.rating}</td>
                     <td title="${reduction(unsolvedTasks[i].verdict)[1]}">${reduction(unsolvedTasks[i].verdict)[0]}</td>
-                    <td><a href="${linkToLastSubmit}" target="_blank">Last Submit</a></td>
+                    <td><a href="${linkToLastSubmit}" target="_blank">${unsolvedTasks[i].id}</a></td>
                 </tr>
             `
             }

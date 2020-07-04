@@ -27,10 +27,12 @@
 
 <body>
     <h3>Unsolved Codeforces Problems</h3>
-    <input type="checkbox" id="doNotShowTags">
-    <label for="doNotShowTags" id="doNotShowTags-label">Don't show problem's tags</label>
     <input type="text" id="handle" placeholder="Input your handle here.">
+    </br>
     <button id="start">Search unsolved tasks</button>
+    </br>
+    <input type="checkbox" id="doNotShowTags">
+    <label for="doNotShowTags" id="doNotShowTags-label">Show problem's tags</label>
     <a id="about">About</a>
     <table style="width:100%">
         <caption id="counter" hidden></caption>
@@ -40,7 +42,7 @@
                 <th>Name</th>
                 <th>Tags</th>
                 <th>Rating</th>
-                <th colspan="2">Last Submit / Link</th>
+                <th colspan="2">Last Verdict / Submit Link</th>
             </tr>
         </thead>
         <tbody id="table-list">
