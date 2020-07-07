@@ -25,33 +25,31 @@
     <link rel="stylesheet" href="styles/styles.css">
 </head>
 
-<body>
+<body onload="onloadFunction(lang);">
     <h3>Unsolved Codeforces Problems</h3>
     <input type="text" id="handle" placeholder="Input your handle here.">
     </br>
-    <button id="start">Search unsolved tasks</button>
+    <button id="start"></button>
     </br>
     <input type="checkbox" id="doNotShowTags">
-    <label for="doNotShowTags" id="doNotShowTags-label">Show problem's tags</label>
-    <a id="about">About</a>
+    <label for="doNotShowTags" id="doNotShowTags-label"></label>
+    <a id="about"></a>
     <table style="width:100%">
         <caption id="counter" hidden></caption>
         <thead id="table-main" hidden>
             <tr>
                 <th>#</th>
-                <th>Name
-                    <input type="text" id="searchTask" placeholder="Search...">
+                <th id="nameTD">
                 </th>
-                <th>Tags</th>
-                <th>Rating</th>
-                <th colspan="2">Last Verdict / Submit Link</th>
+                <th id="tagsTD"></th>
+                <th id="ratingTD"></th>
+                <th id="lastTD" colspan="2"></th>
             </tr>
         </thead>
         <tbody id="table-list">
-
         </tbody>
     </table>
-    <script src="script.js"></script>
+    <script src="script.js "></script>
 </body>
 
 </html>
