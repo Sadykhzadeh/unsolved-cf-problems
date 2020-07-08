@@ -55,23 +55,15 @@ const localize = [{
     }
 }]
 
-const getParameterByName = (name, url) => {
-    url = (!url) ? window.location.href : url;
-    name = name.replace(/[\[\]]/g, '\\$&');
-    let regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)'),
-        results = regex.exec(url);
-    return (!results) ? null : (!results[2]) ? '' : decodeURIComponent(results[2].replace(/\+/g, ' '))
-}
+let url = new URL(window.location.href).searchParams.get("lang");
+let lang = (localStorage.lang == undefined && url == undefined) ? "en" :
+    (url != undefined && (url == "en" || url == "ru")) ?
+    url : (url != undefined) ? "en" : localStorage.lang
 
-let lang = (localStorage.lang == undefined && getParameterByName("lang") == undefined) ? "en" :
-    (getParameterByName("lang") != undefined) ? getParameterByName("lang") : localStorage.lang
 
 const onloadFunction = (lang) => {
-    if (localStorage.lang != lang) {
-        localStorage.lang = lang
-    }
+    localStorage.lang = lang
     document.getElementById("handle").value = (localStorage.handle != undefined) ? localStorage.handle : ""
-    document.getElementById("start").click()
     document.getElementById("start").innerHTML = localize[0][`${lang}`].searchHandleButton
     document.getElementById("doNotShowTags-label").innerHTML = localize[0][`${lang}`].showTagsChexBox
     document.getElementById("about").innerHTML = localize[0][`${lang}`].aboutButton
@@ -80,6 +72,12 @@ const onloadFunction = (lang) => {
     document.getElementById("ratingTD").innerHTML = localize[0][`${lang}`].ratingTD
     document.getElementById("lastTD").innerHTML = localize[0][`${lang}`].lastTD
 }
+
+
+document.addEventListener("DOMContentLoaded", () => {
+    onloadFunction(lang);
+    document.getElementById("start").click();
+});
 
 const reduction = (verdict) => {
     for (let i of verdicts) {
@@ -90,9 +88,8 @@ const reduction = (verdict) => {
 
 let startButton = document.getElementById("handle");
 startButton.addEventListener("keyup", (event) => {
-    if (event.keyCode === 13) {
+    if (event.keyCode === 13)
         document.getElementById("start").click();
-    }
 });
 
 start.onclick = async() => {
@@ -201,19 +198,20 @@ about.onclick = async function() {
 }
 
 let searchTasks = () => {
-    try
-    {let name = document.getElementById('searchTask')
-    name.addEventListener('keyup', () => {
-        let whatWeSearch = name.value.toLowerCase(),
-            taskList = document.querySelectorAll('#table-list tr');
-        taskList.forEach(elem => {
-            let namee = elem.querySelectorAll('#problemName')[0]
-            if (namee.innerHTML.toLowerCase().indexOf(whatWeSearch) > -1) {
-                elem.style.display = '';
-            } else {
-                elem.style.display = 'none';
-            }
-        })
-    });} catch{};
+    try{
+        let name = document.getElementById('searchTask')
+        name.addEventListener('keyup', () => {
+            let whatWeSearch = name.value.toLowerCase(),
+                taskList = document.querySelectorAll('#table-list tr');
+            taskList.forEach(elem => {
+                if (elem.querySelectorAll('#problemName')[0].innerHTML.toLowerCase().indexOf(whatWeSearch) > -1)
+                    elem.style.display = '';
+                else
+                    elem.style.display = 'none';
+            })
+        });
+    } catch{
+
+    };
 }
 searchTasks()
