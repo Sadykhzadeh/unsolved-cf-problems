@@ -15,6 +15,15 @@ a:visited {
     color: gray
 }
 
+#flags {
+    text-align: right;
+    text-decoration: none
+}
+
+h3 {
+    text-align: center;
+}
+
 #doNotShowTags {
     margin-left: -5%
 }
@@ -49,14 +58,30 @@ td {
     margin-right: 1%
 }
 
+#start,
+#about {
+    color: rgb(212, 212, 212);
+    background-color: #111115;
+    border: solid 1px rgb(212, 212, 212);
+    border-radius: 5px;
+}
+
 #start {
-    background-color: rgb(212, 212, 212);
-    color: #111115;
-    border: #111115;
     font-size: 23px;
     width: 25%;
-    border-radius: 5px;
     margin-right: 1%
+}
+
+#start:hover,
+#about:hover {
+    background-color: rgb(212, 212, 212);
+    color: #111115;
+    transition: 0.5s;
+}
+
+#start:not(:hover),
+#about:not(:hover) {
+    transition: 0.5s
 }
 
 @media only screen and (max-width: 950px) {
@@ -66,29 +91,19 @@ td {
     }
 }
 
-#start:hover {
-    transition: 0.5s;
-    color: rgb(212, 212, 212);
-    background-color: #111115
+#nameTD,
+#tagsTD {
+    width: 40%;
 }
 
-#start:not(:hover) {
-    transition: 0.5s
+#numberOfTask {
+    width: 6%;
 }
 
-#about {
-    background-color: rgb(212, 212, 212);
-    color: #111115;
-    border: #111115;
-    border-radius: 5px;
+#ratingTD {
+    width: 4%;
 }
 
-#about:hover {
-    color: rgb(212, 212, 212);
-    background-color: #111115;
-    transition: 0.5s
-}
-
-#about:not(:hover) {
-    transition: 0.5s
+#lastTD {
+    width: 10%;
 }
