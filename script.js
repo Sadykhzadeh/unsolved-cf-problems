@@ -60,7 +60,6 @@ let lang = (!localStorage.lang && !url) ? "en" :
     (url == "en" || url == "ru") ?
     url : (url) ? "en" : localStorage.lang
 
-
 const onloadFunction = (lang) => {
     localStorage.lang = lang
     document.getElementById("handle").value = (localStorage.handle != undefined) ? localStorage.handle : ""
@@ -68,11 +67,10 @@ const onloadFunction = (lang) => {
     document.getElementById("doNotShowTags-label").innerHTML = localize[0][`${lang}`].showTagsChexBox
     document.getElementById("about").innerHTML = localize[0][`${lang}`].aboutButton
     document.getElementById("nameTD").innerHTML = localize[0][`${lang}`].nameTD
-    document.getElementById("tagsTD").innerHTML = localize[0][`${lang}`].tagsTD
     document.getElementById("ratingTD").innerHTML = localize[0][`${lang}`].ratingTD
     document.getElementById("lastTD").innerHTML = localize[0][`${lang}`].lastTD
+    document.getElementById("tagsTD").innerHTML = localize[0][`${lang}`].tagsTD
 }
-
 
 document.addEventListener("DOMContentLoaded", () => {
     onloadFunction(lang);
@@ -94,6 +92,7 @@ startButton.addEventListener("keyup", (event) => {
 
 start.onclick = async() => {
         document.getElementById("nameTD").innerHTML = localize[0][`${lang}`].nameTD
+        document.getElementById("tagsTD").hidden = true
         document.getElementById("table-main").hidden = true
         document.getElementById("counter").hidden = false
         document.getElementById("table-list").innerHTML = ""
@@ -156,21 +155,27 @@ start.onclick = async() => {
                         : `https://codeforces.com/contest/${unsolvedTasks[i].problem.contestId}/problem/${unsolvedTasks[i].problem.index}`,
                     slash = `${unsolvedTasks[i].problem.contestId}|${unsolvedTasks[i].problem.index}`,
                     linkToLastSubmit = `https://codeforces.com/contest/${unsolvedTasks[i].problem.contestId}/submission/${unsolvedTasks[i].id}`
-                document.getElementById('table-list').innerHTML += `
+                let add = `
                 <tr style = "border-bottom: solid 1px white;">
                     <td><a href="${linkToTask}" target="_blank">${slash}</a></td>
                     <td><a href="${linkToTask}" target="_blank" id="problemName">${unsolvedTasks[i].problem.name}</a></td>
-                    <td>${(!document.getElementById('doNotShowTags').checked) 
-                            ? "We don't show tags 🙈" 
-                            : (unsolvedTasks[i].problem.tags.length) 
-                            ? unsolvedTasks[i].problem.tags.join(", "): '-'}</td>
+                `
+                if(document.getElementById('doNotShowTags').checked){
+                    add +=`<td>${(unsolvedTasks[i].problem.tags.length) 
+                                                                ? unsolvedTasks[i].problem.tags.join(", "): '-'}</td>`
+                }
+                add += `
                     <td title="Rating">${(unsolvedTasks[i].problem.rating == undefined) ? '-' : unsolvedTasks[i].problem.rating}</td>
                     <td title="${reduction(unsolvedTasks[i].verdict)[1]}">${reduction(unsolvedTasks[i].verdict)[0]}</td>
                     <td><a href="${linkToLastSubmit}" target="_blank">${unsolvedTasks[i].id}</a></td>
                 </tr>
             `
+            document.getElementById('table-list').innerHTML += add
             }
         }
+    }
+    if((document.getElementById('doNotShowTags').checked)){
+        document.getElementById("tagsTD").hidden = false
     }
     document.getElementById("start").disabled = false
     document.getElementById("doNotShowTags").disabled = false
