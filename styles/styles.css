@@ -25,7 +25,7 @@ h3 {
 }
 
 #doNotShowTags {
-    margin-left: -5%
+    margin-left: -2%
 }
 
 #doNotShowTags-label {
@@ -69,7 +69,8 @@ td {
 #start {
     font-size: 23px;
     width: 25%;
-    margin-right: 1%
+    margin-right: 1%;
+    margin-bottom: 5px;
 }
 
 #start:hover,
