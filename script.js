@@ -56,9 +56,9 @@ const localize = [{
 }]
 
 let url = new URL(window.location.href).searchParams.get("lang");
-let lang = (localStorage.lang == undefined && url == undefined) ? "en" :
-    (url != undefined && (url == "en" || url == "ru")) ?
-    url : (url != undefined) ? "en" : localStorage.lang
+let lang = (!localStorage.lang && !url) ? "en" :
+    (url == "en" || url == "ru") ?
+    url : (url) ? "en" : localStorage.lang
 
 
 const onloadFunction = (lang) => {
