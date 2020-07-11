@@ -63,7 +63,7 @@ let lang = (!localStorage.lang && !url) ? "en" :
 const onloadFunction = (lang) => {
     localStorage.lang = lang
     document.getElementById("handle").value = (localStorage.handle != undefined) ? localStorage.handle : ""
-    document.getElementById("start").innerHTML = localize[0][`${lang}`].searchHandleButton
+        //document.getElementById("start").innerHTML = localize[0][`${lang}`].searchHandleButton
     document.getElementById("doNotShowTags-label").innerHTML = localize[0][`${lang}`].showTagsChexBox
     document.getElementById("about").innerHTML = localize[0][`${lang}`].aboutButton
     document.getElementById("nameTD").innerHTML = localize[0][`${lang}`].nameTD
