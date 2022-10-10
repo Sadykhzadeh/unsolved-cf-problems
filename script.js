@@ -86,9 +86,9 @@ const reduction = (verdict) => {
   return [verdict, verdict];
 };
 
-let startButton = document.getElementById("handle");
+const startButton = document.getElementById("handle");
 startButton.addEventListener("keyup", (event) => {
-  if (event.keyCode === 13) {
+  if (event.key === "Enter") {
     document.getElementById("start").click();
   }
 });
@@ -121,40 +121,40 @@ start.onclick = async () => {
     console.log("Yeah, CodeForces is working! ^_^");
     let submition = await res.json();
     submition = submition.result;
-    let allNotOkSumbitions = {},
-      ArrOfunsolvedTasks = {},
+    let allBadSubmissions = {},
+      listOfUnsolved = {},
       unsolvedTasks = [];
     console.log(`Finding ${handle}'s unsolved tasks...`);
-    for (let i in submition) {
-      if (submition[i].verdict === "OK") {
-        allNotOkSumbitions[
-          submition[i].problem.contestId + submition[i].problem.index
-        ] = submition[i];
+    for (const item of submition) {
+      if (item.verdict === "OK") {
+        allBadSubmissions[
+          item.problem.contestId + item.problem.index
+        ] = item;
       }
     }
-    for (let i in submition) {
+    for (const item of submition) {
       if (
-        allNotOkSumbitions[
-          submition[i].problem.contestId + submition[i].problem.index
+        allBadSubmissions[
+          item.problem.contestId + item.problem.index
         ] == null
       ) {
         if (
-          !ArrOfunsolvedTasks[
-            submition[i].problem.contestId + submition[i].problem.index
+          !listOfUnsolved[
+            item.problem.contestId + item.problem.index
           ]
         ) {
-          ArrOfunsolvedTasks[
-            submition[i].problem.contestId + submition[i].problem.index
-          ] = submition[i];
+          listOfUnsolved[
+            item.problem.contestId + item.problem.index
+          ] = item;
         }
       }
     }
-    allNotOkSumbitions = "";
-    for (let i in ArrOfunsolvedTasks) unsolvedTasks.push(ArrOfunsolvedTasks[i]);
-    ArrOfunsolvedTasks = "";
+    allBadSubmissions = "";
+    for (const i in listOfUnsolved) unsolvedTasks.push(listOfUnsolved[i]);
+    listOfUnsolved = "";
     console.log("Sorting problems by rating...");
     unsolvedTasks.sort((q, w) => {
-      let a = (q.problem.rating == undefined) ? 10e5 : q.problem.rating,
+      const a = (q.problem.rating == undefined) ? 10e5 : q.problem.rating,
         b = (w.problem.rating == undefined) ? 10e5 : w.problem.rating;
       return a - b;
     });
