@@ -25,7 +25,6 @@ const localize = [{
   "en": {
     searchHandleButton: "Search unsolved tasks",
     showTagsChexBox: " Show problem's tags",
-    aboutButton: "About",
     counterOfProblems: `😱 Count of problems: `,
     nameTD: "Name ",
     tagsTD: "Tags",
@@ -33,11 +32,12 @@ const localize = [{
     lastTD: "Last Verdict / Submit Link",
     congratsText: "Congratulations, You haven't got any unsolved tasks! 🥳",
     errorText: ":( Error 4xx: Perhaps this handle does not exist",
+    aboutButton: "About",
+    aboutProject: "More about the Project",
   },
   "ru": {
     searchHandleButton: "Поиск нерешённых задач",
     showTagsChexBox: " Показывать теги задач",
-    aboutButton: "О нас",
     counterOfProblems: `😱 Количество задач: `,
     nameTD: "Название ",
     tagsTD: "Теги",
@@ -45,6 +45,8 @@ const localize = [{
     lastTD: "Последний вердикт / Последняя отправка",
     congratsText: "Поздравляю, У тебя нет нерешённых задач! 🥳",
     errorText: ":( Ошибка 4xx: Возможно данного хендла не существует",
+    aboutButton: "О проекте",
+    aboutProject: "Подробнее о проекте",
   },
 }];
 
@@ -62,16 +64,14 @@ const onloadFunction = (lang) => {
   document.getElementById("handle").value = (localStorage.handle != undefined)
     ? localStorage.handle
     : "";
-  //document.getElementById("start").innerHTML = localize[0][`${lang}`].searchHandleButton
+  //document.getElementById("start").innerHTML = localize[0][lang].searchHandleButton
   document.getElementById("doNotShowTags-label").innerHTML =
-    localize[0][`${lang}`].showTagsChexBox;
-  document.getElementById("about").innerHTML =
-    localize[0][`${lang}`].aboutButton;
-  document.getElementById("nameTD").innerHTML = localize[0][`${lang}`].nameTD;
-  document.getElementById("ratingTD").innerHTML =
-    localize[0][`${lang}`].ratingTD;
-  document.getElementById("lastTD").innerHTML = localize[0][`${lang}`].lastTD;
-  document.getElementById("tagsTD").innerHTML = localize[0][`${lang}`].tagsTD;
+    localize[0][lang].showTagsChexBox;
+  document.getElementById("about").innerHTML = localize[0][lang].aboutButton;
+  document.getElementById("nameTD").innerHTML = localize[0][lang].nameTD;
+  document.getElementById("ratingTD").innerHTML = localize[0][lang].ratingTD;
+  document.getElementById("lastTD").innerHTML = localize[0][lang].lastTD;
+  document.getElementById("tagsTD").innerHTML = localize[0][lang].tagsTD;
 };
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -94,7 +94,7 @@ startButton.addEventListener("keyup", (event) => {
 });
 
 start.onclick = async () => {
-  document.getElementById("nameTD").innerHTML = localize[0][`${lang}`].nameTD;
+  document.getElementById("nameTD").innerHTML = localize[0][lang].nameTD;
   document.getElementById("tagsTD").hidden = true;
   document.getElementById("table-main").hidden = true;
   document.getElementById("counter").hidden = false;
@@ -113,7 +113,7 @@ start.onclick = async () => {
     `https://codeforces.com/api/user.status?handle=${handle}&lang=${lang}`,
   );
   if (!res.ok) {
-    let error = localize[0][`${lang}`].errorText;
+    let error = localize[0][lang].errorText;
     localStorage.handle = "";
     console.log(error);
     document.getElementById("counter").innerHTML = error;
@@ -162,13 +162,13 @@ start.onclick = async () => {
     if (!unsolvedTasks.length) {
       document.getElementById("counter").hidden = false;
       document.getElementById("counter").innerHTML =
-        localize[0][`${lang}`].congratsText;
+        localize[0][lang].congratsText;
       console.log("You haven't got any unsolved tasks :)");
     } else {
       console.log(unsolvedTasks);
       document.getElementById("table-main").hidden = false;
       document.getElementById("counter").innerHTML = `${
-        localize[0][`${lang}`].counterOfProblems
+        localize[0][lang].counterOfProblems
       } ${unsolvedTasks.length}`;
       for (let i in unsolvedTasks) {
         let linkToTask = (+unsolvedTasks[i].problem.contestId >= 100000)
@@ -236,12 +236,11 @@ about.onclick = async function () {
   }
   document.getElementById("table-list").innerHTML = `
         </br>
-        <a href="https://github.com/sadykhzadeh/unsolved-cf-problems/stargazers"style="margin-right:1%;"> \
-        <img alt="GitHub stars" src="https://img.shields.io/github/stars/sadykhzadeh/unsolved-cf-problems?color=darkgreen&style=flat-square"> \
-        </a><a href="https://github.com/sadykhzadeh/unsolved-cf-problems/issues"> \
-        <img alt="GitHub issues" src="https://img.shields.io/github/issues/sadykhzadeh/unsolved-cf-problems?color=blue&style=flat-square"> \
-        </a><h3><a href="https://github.com/sadykhzadeh/unsolved-cf-problems" target="_blank">Project's Github</a> |
-        by Azer Sadykhzadeh [<a href="https://github.com/sadykhzadeh" target="_blank">Github</a>]</h3>
+        <a href="https://codeforces.com/blog/entry/79960?locale=${lang}" target="_blank">${
+    localize[0][lang].aboutProject
+  }</a>
+        </a><h6><a href="https://github.com/sadykhzadeh/unsolved-cf-problems" target="_blank">Github</a> |
+        <a href="https://github.com/sadykhzadeh" target="_blank">Azer Sadykhzadeh</a></h6>
     `;
 };
 
