@@ -1,5 +1,5 @@
 <!DOCTYPE HTML>
-<html>
+<html lang="en">
 
 <head>
     <title>Unsolved Codeforces Problems</title>
@@ -31,12 +31,13 @@
         <a href="?lang=ru"><img src="./flags/ru.png" title="По-русски" alt="По-русски"></a>
     </div>
     <h2>Unsolved Codeforces Problems</h2>
-    <input type="text" id="handle" placeholder="Input your handle here.">
-    <button id="start">🔎</button>
-    </br>
+    <label class="visually-hidden" for="handle">Codeforces handle</label>
+    <input type="text" id="handle" placeholder="Input your handle here." autocomplete="off" spellcheck="false">
+    <button type="button" id="start" title="Search unsolved tasks" aria-label="Search unsolved tasks">🔎</button>
+    <br>
     <input type="checkbox" id="doNotShowTags">
     <label for="doNotShowTags" id="doNotShowTags-label"></label>
-    <a id="about"></a>
+    <button type="button" id="about"></button>
     <table style="width:100%">
         <caption id="counter" hidden></caption>
         <thead id="table-main" hidden>
@@ -52,7 +53,7 @@
         <tbody id="table-list">
         </tbody>
     </table>
-    <script src="script.js "></script>
+    <script src="script.js" defer></script>
 </body>
 
 </html>
