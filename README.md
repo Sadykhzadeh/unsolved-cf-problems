@@ -2,9 +2,23 @@
 
 [Site link is here](https://sadykhzadeh.github.io/unsolved-cf-problems/)
 
-## Important point
+## How it works
 
-The code has NOT been polished and is provided "as is". There's a lot of code
-that is redundant and there are tons of improvements that can be made.
+It asks the Codeforces API for every submission a handle has made
+(`user.status`), sets aside the problems that were ever accepted, and lists
+what is left - sorted by rating, with unrated problems last. Everything runs
+in the browser; there is no backend and nothing is stored anywhere but your
+own `localStorage`, which keeps the last handle and the chosen language.
+
+## Running it locally
+
+Any static file server will do, because the page loads `script.js` as a
+separate file:
+
+```sh
+npx http-server -p 4340
+```
+
+`?lang=en` and `?lang=ru` switch language; the choice is remembered.
 
 ### Author - [Azer Sadykhzadeh](https://github.com/sadykhzadeh).
