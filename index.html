@@ -26,6 +26,9 @@
     <meta property="og:url" content="https://sadykhzadeh.github.io/unsolved-cf-problems/" />
     <meta property="og:description" content="Website that shows unsolved problems of Codeforces user." />
     <link rel="stylesheet" href="styles/styles.css">
+    <!-- script.js imports lib.js; without this the browser only finds out
+         after script.js has arrived, a whole extra round trip. -->
+    <link rel="modulepreload" href="lib.js">
 </head>
 
 <body>
