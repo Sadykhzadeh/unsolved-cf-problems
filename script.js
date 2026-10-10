@@ -1,13 +1,16 @@
 import {
+  ageParts,
   defaultDescending,
   describeFailure,
   findUnsolved,
   makeFilter,
   matchesFilter,
+  packRows,
   problemLink,
   sortRows,
   submissionLink,
   tagCounts,
+  unpackRows,
   verdictLabel,
 } from "./lib.js";
 
@@ -36,6 +39,11 @@ const localize = [{
     maxRating: "Maximum rating",
     anyTag: "Any tag",
     shownText: "Showing {shown} of {total}",
+    updatedText: "Updated {ago}.",
+    justNow: "just now",
+    refreshingText: "Checking Codeforces for changes...",
+    refreshButton: "Refresh",
+    showingSavedText: "Showing what was saved {ago}.",
   },
   "ru": {
     searchHandleButton: "Поиск нерешённых задач",
@@ -61,6 +69,11 @@ const localize = [{
     maxRating: "Максимальный рейтинг",
     anyTag: "Любой тег",
     shownText: "Показано {shown} из {total}",
+    updatedText: "Обновлено {ago}.",
+    justNow: "только что",
+    refreshingText: "Проверяю, что изменилось на Codeforces...",
+    refreshButton: "Обновить",
+    showingSavedText: "Показаны данные, сохранённые {ago}.",
   },
 }];
 
@@ -89,6 +102,7 @@ const onloadFunction = (lang) => {
   byId("handle").value = localStorage.handle ?? "";
   byId("doNotShowTags-label").textContent = text.showTagsChexBox;
   byId("about").textContent = text.aboutButton;
+  byId("refresh").textContent = text.refreshButton;
   byId("nameLabel").textContent = text.nameTD;
   byId("searchTask").placeholder = text.searchPlaceholder;
   byId("searchTask").setAttribute("aria-label", text.searchPlaceholder);
@@ -201,7 +215,7 @@ const failureText = (error, handle) => {
 
 // The last lookup, kept so that showing tags or filtering redraws from memory
 // instead of asking Codeforces for every submission again.
-const state = { handle: "", rows: [], sort: { key: "rating", descending: false } };
+const state = { handle: "", rows: [], savedAt: null, sort: { key: "rating", descending: false } };
 
 // Each drawn <tr> with the row it shows, so filtering only flips `hidden`
 // instead of rebuilding the table.
@@ -308,9 +322,89 @@ byId("doNotShowTags").addEventListener("change", () => {
   if (state.rows.length) render();
 });
 
+// Lookups are kept in localStorage, so a revisit, a reload or a language
+// switch shows the list at once instead of after a multi-megabyte download.
+// A copy younger than FRESH_FOR is used as it is; an older one is shown
+// while a fresh one loads. Only the last few handles are kept, because the
+// storage is shared with every other page on this origin.
+const SAVED_KEY = "unsolved-cf-problems:lookups";
+const SAVED_VERSION = 1;
+const FRESH_FOR = 10 * 60 * 1000;
+const KEEP_HANDLES = 3;
+
+const savedId = (handle) => `${lang}:${handle.toLowerCase()}`;
+
+const readStore = () => {
+  try {
+    const store = JSON.parse(localStorage.getItem(SAVED_KEY));
+    if (store?.version === SAVED_VERSION && store.entries && typeof store.entries === "object") return store;
+  } catch {
+    // Unreadable or blocked storage is the same as an empty one.
+  }
+  return { version: SAVED_VERSION, entries: {} };
+};
+
+const readSaved = (handle) => {
+  const entry = readStore().entries[savedId(handle)];
+  const rows = entry && Number.isFinite(entry.savedAt) ? unpackRows(entry.rows) : null;
+  return rows ? { handle: entry.handle ?? handle, savedAt: entry.savedAt, rows } : null;
+};
+
+const writeStore = (store) => {
+  try {
+    localStorage.setItem(SAVED_KEY, JSON.stringify(store));
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+const save = (handle, rows, savedAt) => {
+  const store = readStore();
+  const id = savedId(handle);
+  store.entries[id] = { handle, savedAt, rows: packRows(rows) };
+  const newestFirst = Object.keys(store.entries)
+    .sort((a, b) => store.entries[b].savedAt - store.entries[a].savedAt);
+  for (const old of newestFirst.slice(KEEP_HANDLES)) delete store.entries[old];
+  // Over quota: keep just this lookup, and failing that, nothing.
+  if (!writeStore(store)) writeStore({ version: SAVED_VERSION, entries: { [id]: store.entries[id] } });
+};
+
+const forget = (handle) => {
+  const store = readStore();
+  delete store.entries[savedId(handle)];
+  writeStore(store);
+};
+
+const relativeTime = new Intl.RelativeTimeFormat(lang, { numeric: "auto" });
+const ago = (savedAt) => {
+  const [value, unit] = ageParts(Date.now() - savedAt);
+  return value === 0 ? text.justNow : relativeTime.format(value, unit);
+};
+
+const showFreshness = (refreshing) => {
+  const line = byId("freshness");
+  line.hidden = !state.savedAt;
+  if (!state.savedAt) return;
+  byId("savedAgo").textContent = refreshing
+    ? text.refreshingText
+    : fill(text.updatedText, { ago: ago(state.savedAt) });
+  byId("refresh").disabled = refreshing;
+};
+
+// Keeps "updated 3 minutes ago" true while the page stays open.
+setInterval(() => {
+  if (!byId("freshness").hidden && !byId("refresh").disabled) showFreshness(false);
+}, 30 * 1000);
+
 const showResults = () => {
   const counter = byId("counter");
+  showFreshness(false);
   if (!state.rows.length) {
+    byId("table-main").hidden = true;
+    byId("filters").hidden = true;
+    byId("table-list").replaceChildren();
+    drawn = [];
     counter.textContent = state.handle ? text.congratsText : "";
     return;
   }
@@ -320,35 +414,68 @@ const showResults = () => {
   render();
 };
 
-byId("start").addEventListener("click", async () => {
-  const counter = byId("counter");
-  const tableMain = byId("table-main");
-
-  tableMain.hidden = true;
-  byId("filters").hidden = true;
+const clearResults = () => {
   state.handle = "";
   state.rows = [];
+  state.savedAt = null;
   drawn = [];
+  byId("table-main").hidden = true;
+  byId("filters").hidden = true;
+  byId("freshness").hidden = true;
   byId("table-list").replaceChildren();
   delete byId("table-list").dataset.showing;
+};
 
-  const handle = byId("handle").value.trim();
-  if (handle === "") {
-    counter.textContent = "";
-    return;
+const setBusy = (busy) => {
+  byId("start").disabled = busy;
+  byId("refresh").disabled = busy;
+};
+
+// A response that arrives after a newer lookup started is dropped.
+let lookupNumber = 0;
+
+const lookup = async (handle, { force = false } = {}) => {
+  const number = ++lookupNumber;
+  const counter = byId("counter");
+  delete byId("table-list").dataset.showing;
+  const sameHandle = state.savedAt !== null && state.handle.toLowerCase() === handle.toLowerCase();
+
+  if (!sameHandle) {
+    clearResults();
+    if (handle === "") {
+      counter.textContent = "";
+      return;
+    }
+    const saved = readSaved(handle);
+    if (saved) {
+      Object.assign(state, saved);
+      fillTagFilter();
+      showResults();
+    }
   }
 
-  localStorage.handle = handle;
-  counter.textContent = fill(text.loadingText, { handle });
-  byId("start").disabled = true;
+  try {
+    localStorage.handle = handle;
+  } catch {
+    // Remembering the handle is a convenience, not a requirement.
+  }
+  if (!force && state.savedAt !== null && Date.now() - state.savedAt < FRESH_FOR) return;
+
+  setBusy(true);
+  if (state.savedAt !== null) showFreshness(true);
+  else counter.textContent = fill(text.loadingText, { handle });
 
   try {
     const submissions = await loadSubmissions(handle);
+    if (number !== lookupNumber) return;
     state.handle = handle;
     state.rows = findUnsolved(submissions);
+    state.savedAt = Date.now();
+    save(handle, state.rows, state.savedAt);
     fillTagFilter();
     showResults();
   } catch (error) {
+    if (number !== lookupNumber) return;
     // Nothing caught a failed fetch, so a dropped connection left the page on
     // "Loading..." with both controls disabled and no way back.
     console.error(error);
@@ -356,13 +483,41 @@ byId("start").addEventListener("click", async () => {
     // connection or a busy Codeforces used to wipe it too, so the next visit
     // opened on an empty form.
     const kind = error.failure?.kind;
-    if (kind === "notFound" || kind === "badHandle") localStorage.handle = "";
-    counter.textContent = failureText(error, handle);
+    if (kind === "notFound" || kind === "badHandle") {
+      try {
+        localStorage.handle = "";
+      } catch {
+        // See above.
+      }
+      forget(handle);
+      clearResults();
+    }
+    const message = failureText(error, handle);
+    if (state.savedAt !== null) {
+      // What was saved is still worth seeing; say how old it is.
+      showFreshness(false);
+      counter.textContent = `${message} ${fill(text.showingSavedText, { ago: ago(state.savedAt) })}`;
+    } else {
+      counter.textContent = message;
+    }
   } finally {
     // This used to be the last statement of the handler, so anything that
     // threw on the way left the form dead.
-    byId("start").disabled = false;
+    if (number === lookupNumber) setBusy(false);
   }
+};
+
+// Searching for the handle already on screen means "check again", so it
+// skips the saved copy; any other handle starts from its saved copy if there
+// is one.
+byId("start").addEventListener("click", () => {
+  const handle = byId("handle").value.trim();
+  const again = state.savedAt !== null && state.handle.toLowerCase() === handle.toLowerCase();
+  lookup(handle, { force: again });
+});
+
+byId("refresh").addEventListener("click", () => {
+  if (state.handle) lookup(state.handle, { force: true });
 });
 
 byId("about").addEventListener("click", () => {

@@ -157,6 +157,42 @@ export const tagCounts = (rows) => {
   return [...counts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
 };
 
+// Rows as arrays for localStorage: the field names would otherwise be most of
+// the bytes, and the storage is shared with every other page on the origin.
+const PACKED_FIELDS = ["contestId", "index", "name", "rating", "tags", "verdict", "submissionId", "lastTime", "tries"];
+
+export const packRows = (rows) => rows.map((row) => PACKED_FIELDS.map((field) => row[field] ?? null));
+
+// Anything that does not look like a packed row is a sign the stored copy is
+// not ours or not this version's, so the whole thing is refused.
+export const unpackRows = (packed) => {
+  if (!Array.isArray(packed)) return null;
+  const rows = [];
+  for (const item of packed) {
+    if (!Array.isArray(item) || item.length !== PACKED_FIELDS.length) return null;
+    const row = {};
+    PACKED_FIELDS.forEach((field, i) => {
+      if (item[i] !== null) row[field] = item[i];
+    });
+    if (!Number.isFinite(row.contestId) || typeof row.index !== "string" || typeof row.name !== "string") {
+      return null;
+    }
+    row.tags = Array.isArray(row.tags) ? row.tags : [];
+    rows.push(row);
+  }
+  return rows;
+};
+
+// How long ago, as the [value, unit] Intl.RelativeTimeFormat wants: "now"
+// under a minute, then minutes, hours and days.
+export const ageParts = (ms) => {
+  const seconds = Math.max(0, ms) / 1000;
+  if (seconds < 60) return [0, "second"];
+  if (seconds < 3600) return [-Math.floor(seconds / 60), "minute"];
+  if (seconds < 86400) return [-Math.floor(seconds / 3600), "hour"];
+  return [-Math.floor(seconds / 86400), "day"];
+};
+
 const UNRATED_SORTS_LAST = 1e6;
 
 // One row per unsolved problem: the problem, its newest attempt, and how many
