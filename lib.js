@@ -66,6 +66,25 @@ export const problemLink = (problem) => {
 export const submissionLink = (submission) =>
   `https://codeforces.com/contest/${submission.problem.contestId}/submission/${submission.id}`;
 
+// Sorts a failed user.status call into something a person can act on. Every
+// failure used to read "Error 4xx: Perhaps this handle does not exist",
+// including Codeforces being down or rate-limiting, which sent people off to
+// check a handle that was fine.
+export const describeFailure = (httpStatus, payload) => {
+  const comment = typeof payload?.comment === "string" ? payload.comment : "";
+  // "handle: User with handle X not found" - in English whatever the lang
+  // parameter says, unlike the validation messages.
+  if (/not found/i.test(comment)) return { kind: "notFound", detail: comment };
+  if (/call limit/i.test(comment) || httpStatus === 429) {
+    return { kind: "rateLimited", detail: comment };
+  }
+  if (comment.startsWith("handle:")) {
+    return { kind: "badHandle", detail: comment.slice("handle:".length).trim() };
+  }
+  if (httpStatus >= 500 || !payload) return { kind: "unavailable", detail: `HTTP ${httpStatus}` };
+  return { kind: "otherError", detail: comment || `HTTP ${httpStatus}` };
+};
+
 const UNRATED_SORTS_LAST = 1e6;
 
 // user.status lists submissions newest first, so the first one seen for a

@@ -38,8 +38,10 @@
     <input type="checkbox" id="doNotShowTags">
     <label for="doNotShowTags" id="doNotShowTags-label"></label>
     <button type="button" id="about"></button>
+    <!-- Announced as it changes, so a screen reader hears "Loading..." and
+         then the count or the error, not silence. -->
+    <p id="counter" role="status"></p>
     <table style="width:100%">
-        <caption id="counter" hidden></caption>
         <thead id="table-main" hidden>
             <tr>
                 <th id="numberOfTask">#</th>
