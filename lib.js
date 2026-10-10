@@ -63,8 +63,8 @@ export const problemLink = (problem) => {
     : `https://codeforces.com/contest/${problem.contestId}/problem/${problem.index}`;
 };
 
-export const submissionLink = (submission) =>
-  `https://codeforces.com/contest/${submission.problem.contestId}/submission/${submission.id}`;
+export const submissionLink = (row) =>
+  `https://codeforces.com/contest/${row.contestId}/submission/${row.submissionId}`;
 
 // Sorts a failed user.status call into something a person can act on. Every
 // failure used to read "Error 4xx: Perhaps this handle does not exist",
@@ -87,8 +87,9 @@ export const describeFailure = (httpStatus, payload) => {
 
 const UNRATED_SORTS_LAST = 1e6;
 
-// user.status lists submissions newest first, so the first one seen for a
-// problem is the latest attempt at it.
+// One row per unsolved problem: the problem, its newest attempt, and how many
+// attempts there were. user.status lists submissions newest first, so the
+// first one seen for a problem is the latest.
 export const findUnsolved = (submissions) => {
   // This was two passes over a map called allBadSubmissions that in fact held
   // the solved ones, and it read `== null` to mean absent. A Set of the
@@ -101,13 +102,29 @@ export const findUnsolved = (submissions) => {
   const unsolved = new Map();
   for (const item of submissions) {
     const key = problemKey(item.problem);
-    if (solved.has(key) || unsolved.has(key)) continue;
-    unsolved.set(key, item);
+    if (solved.has(key)) continue;
+    const seen = unsolved.get(key);
+    if (seen) {
+      seen.tries += 1;
+      continue;
+    }
+    const { problem } = item;
+    unsolved.set(key, {
+      contestId: problem.contestId,
+      index: problem.index,
+      name: problem.name,
+      rating: problem.rating,
+      tags: problem.tags ?? [],
+      verdict: item.verdict,
+      submissionId: item.id,
+      lastTime: item.creationTimeSeconds,
+      tries: 1,
+    });
   }
 
   return [...unsolved.values()].sort((left, right) => {
-    const a = left.problem.rating ?? UNRATED_SORTS_LAST;
-    const b = right.problem.rating ?? UNRATED_SORTS_LAST;
+    const a = left.rating ?? UNRATED_SORTS_LAST;
+    const b = right.rating ?? UNRATED_SORTS_LAST;
     return a - b;
   });
 };

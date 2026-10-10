@@ -10,8 +10,11 @@ import {
 } from "../lib.js";
 
 let nextId = 1000;
+let clock = 2_000_000_000;
+// Built in the order user.status returns them: newest first.
 const submission = (contestId, index, verdict, rating) => ({
   id: nextId++,
+  creationTimeSeconds: clock--,
   verdict,
   problem: { contestId, index, name: `${contestId}${index}`, tags: [], rating },
 });
@@ -25,16 +28,24 @@ test("a problem accepted once is solved, however many attempts failed", () => {
   assert.deepEqual(rows, []);
 });
 
-test("each unsolved problem appears once, with its newest attempt", () => {
-  // user.status lists newest first.
+test("each unsolved problem appears once, with its newest attempt and the count", () => {
   const newest = submission(2, "B", "TIME_LIMIT_EXCEEDED", 1200);
   const rows = findUnsolved([
     newest,
     submission(2, "B", "WRONG_ANSWER", 1200),
     submission(2, "B", "COMPILATION_ERROR", 1200),
   ]);
-  assert.equal(rows.length, 1);
-  assert.equal(rows[0], newest);
+  assert.deepEqual(rows, [{
+    contestId: 2,
+    index: "B",
+    name: "2B",
+    rating: 1200,
+    tags: [],
+    verdict: "TIME_LIMIT_EXCEEDED",
+    submissionId: newest.id,
+    lastTime: newest.creationTimeSeconds,
+    tries: 3,
+  }]);
 });
 
 test("the same index in two contests is two problems", () => {
@@ -42,7 +53,7 @@ test("the same index in two contests is two problems", () => {
     submission(3, "A", "OK", 800),
     submission(4, "A", "WRONG_ANSWER", 800),
   ]);
-  assert.deepEqual(rows.map((r) => r.problem.contestId), [4]);
+  assert.deepEqual(rows.map((r) => r.contestId), [4]);
 });
 
 test("rows go easiest first, unrated last", () => {
@@ -51,7 +62,7 @@ test("rows go easiest first, unrated last", () => {
     submission(6, "A", "WRONG_ANSWER", 2100),
     submission(7, "A", "WRONG_ANSWER", 800),
   ]);
-  assert.deepEqual(rows.map((r) => r.problem.rating), [800, 2100, undefined]);
+  assert.deepEqual(rows.map((r) => r.rating), [800, 2100, undefined]);
 });
 
 test("verdicts get short labels; unknown and missing ones do not break", () => {
@@ -94,7 +105,7 @@ test("gym problems link to the gym", () => {
 
 test("submission links point at the submission", () => {
   assert.equal(
-    submissionLink({ id: 42, problem: { contestId: 1520, index: "F2" } }),
+    submissionLink({ contestId: 1520, index: "F2", submissionId: 42 }),
     "https://codeforces.com/contest/1520/submission/42",
   );
 });
