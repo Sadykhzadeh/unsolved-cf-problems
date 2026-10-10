@@ -2,14 +2,17 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  ageParts,
   describeFailure,
   findUnsolved,
   makeFilter,
   matchesFilter,
+  packRows,
   problemLink,
   sortRows,
   submissionLink,
   tagCounts,
+  unpackRows,
   verdictLabel,
 } from "../lib.js";
 
@@ -113,6 +116,32 @@ test("the filter narrows by name or id, tag and rating range", () => {
 test("tags are counted, commonest first", () => {
   const rows = [{ tags: ["dp", "math"] }, { tags: ["math"] }, { tags: ["graphs", "dp", "math"] }];
   assert.deepEqual(tagCounts(rows), [["math", 3], ["dp", 2], ["graphs", 1]]);
+});
+
+test("rows survive packing for storage, and foreign data is refused", () => {
+  const rows = findUnsolved([
+    submission(1520, "F2", "WRONG_ANSWER", 2200),
+    submission(1520, "F2", "TIME_LIMIT_EXCEEDED", 2200),
+    submission(2000, "H", undefined, undefined),
+  ]);
+  const stored = JSON.parse(JSON.stringify(packRows(rows)));
+  // Missing fields come back missing rather than as explicit undefined.
+  assert.deepEqual(unpackRows(stored), JSON.parse(JSON.stringify(rows)));
+  assert.equal(unpackRows(stored)[1].rating, undefined);
+
+  assert.equal(unpackRows(null), null);
+  assert.equal(unpackRows({ rows: [] }), null);
+  assert.equal(unpackRows([["1520", "F2"]]), null);
+  assert.equal(unpackRows([[null, "A", "x", null, [], null, 1, 1, 1]]), null);
+  assert.deepEqual(unpackRows([]), []);
+});
+
+test("ages round down to the largest whole unit", () => {
+  assert.deepEqual(ageParts(5_000), [0, "second"]);
+  assert.deepEqual(ageParts(-5_000), [0, "second"], "a clock moved back is now");
+  assert.deepEqual(ageParts(119_000), [-1, "minute"]);
+  assert.deepEqual(ageParts(3 * 3600_000 + 59_000), [-3, "hour"]);
+  assert.deepEqual(ageParts(50 * 3600_000), [-2, "day"]);
 });
 
 test("verdicts get short labels; unknown and missing ones do not break", () => {
