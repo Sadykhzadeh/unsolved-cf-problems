@@ -157,6 +157,43 @@ td {
     }
 }
 
+/* Seven columns do not fit a phone. The table scrolls sideways inside its
+   own box instead of widening the whole page, which made phones zoom the
+   page out until the text was unreadable. */
+.table-scroll {
+    overflow-x: auto
+}
+
+@media only screen and (max-width: 600px) {
+    html,
+    body,
+    #handle,
+    #start {
+        font-size: 18px
+    }
+
+    h2 {
+        font-size: 1.3em
+    }
+
+    table {
+        font-size: 15px
+    }
+
+    th,
+    td {
+        padding: 4px
+    }
+
+    #filters {
+        gap: 8px 12px
+    }
+
+    #searchTask {
+        width: 100%
+    }
+}
+
 #nameTD,
 #tagsTD {
     width: 40%
