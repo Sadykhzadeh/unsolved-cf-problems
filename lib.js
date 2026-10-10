@@ -157,6 +157,39 @@ export const tagCounts = (rows) => {
   return [...counts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
 };
 
+// The page state that belongs in a link: whose list, and how it is sorted
+// and filtered. Defaults are left out so links stay short.
+export const readParams = (search) => {
+  const params = new URLSearchParams(search);
+  const sort = params.get("sort") ?? "";
+  const descending = sort.startsWith("-");
+  const key = descending ? sort.slice(1) : sort;
+  return {
+    handle: (params.get("handle") ?? "").trim(),
+    sort: Object.hasOwn(SORTS, key) ? { key, descending } : null,
+    query: params.get("q") ?? "",
+    min: params.get("min") ?? "",
+    max: params.get("max") ?? "",
+    tag: params.get("tag") ?? "",
+    showTags: params.get("tags") === "1",
+  };
+};
+
+export const writeParams = ({ lang, handle, sort, query = "", min = "", max = "", tag = "", showTags = false }) => {
+  const params = new URLSearchParams();
+  if (lang) params.set("lang", lang);
+  if (handle) params.set("handle", handle);
+  if (sort && !(sort.key === "rating" && !sort.descending)) {
+    params.set("sort", `${sort.descending ? "-" : ""}${sort.key}`);
+  }
+  if (query.trim()) params.set("q", query.trim());
+  if (bound(min) !== null) params.set("min", String(bound(min)));
+  if (bound(max) !== null) params.set("max", String(bound(max)));
+  if (tag) params.set("tag", tag);
+  if (showTags) params.set("tags", "1");
+  return params.toString();
+};
+
 // Rows as arrays for localStorage: the field names would otherwise be most of
 // the bytes, and the storage is shared with every other page on the origin.
 const PACKED_FIELDS = ["contestId", "index", "name", "rating", "tags", "verdict", "submissionId", "lastTime", "tries"];

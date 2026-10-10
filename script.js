@@ -7,11 +7,13 @@ import {
   matchesFilter,
   packRows,
   problemLink,
+  readParams,
   sortRows,
   submissionLink,
   tagCounts,
   unpackRows,
   verdictLabel,
+  writeParams,
 } from "./lib.js";
 
 const localize = [{
@@ -115,8 +117,48 @@ const onloadFunction = (lang) => {
   byId("tagsTD").textContent = text.tagsTD;
 };
 
+// A link can name the handle, the sort and the filters; anything it leaves
+// out falls back to the remembered handle and the defaults.
+const applyParams = () => {
+  const params = readParams(window.location.search);
+  if (params.handle) byId("handle").value = params.handle;
+  if (params.sort) state.sort = params.sort;
+  byId("searchTask").value = params.query;
+  byId("minRating").value = params.min;
+  byId("maxRating").value = params.max;
+  pendingTag = params.tag;
+  byId("doNotShowTags").checked = params.showTags;
+};
+
+const currentParams = () => ({
+  handle: state.handle || byId("handle").value.trim(),
+  sort: state.sort,
+  query: byId("searchTask").value,
+  min: byId("minRating").value,
+  max: byId("maxRating").value,
+  tag: byId("tagFilter").value || pendingTag,
+  showTags: byId("doNotShowTags").checked,
+});
+
+// Keeps the address bar a link to what is on screen, and the language flags
+// pointing at the same view in the other language. Typing is debounced:
+// browsers throttle pages that rewrite history on every keystroke.
+let urlTimer = 0;
+const syncUrl = () => {
+  clearTimeout(urlTimer);
+  urlTimer = setTimeout(() => {
+    const params = currentParams();
+    const search = writeParams(params);
+    history.replaceState(history.state, "", `${window.location.pathname}${search ? `?${search}` : ""}`);
+    for (const link of document.querySelectorAll("#flags a[data-lang]")) {
+      link.href = `?${writeParams({ ...params, lang: link.dataset.lang })}`;
+    }
+  }, 250);
+};
+
 document.addEventListener("DOMContentLoaded", () => {
   onloadFunction(lang);
+  applyParams();
   byId("start").click();
 });
 
@@ -242,9 +284,13 @@ const applyFilters = () => {
 };
 
 // The tag list offers only tags that occur among the rows, with counts.
+// A tag named by the link waits here until the list has tags to pick from.
+let pendingTag = "";
+
 const fillTagFilter = () => {
   const select = byId("tagFilter");
-  const chosen = select.value;
+  const chosen = pendingTag || select.value;
+  pendingTag = "";
   const any = new Option(text.anyTag, "");
   const options = tagCounts(state.rows).map(([tag, count]) => new Option(`${tag} (${count})`, tag));
   select.replaceChildren(any, ...options);
@@ -293,6 +339,7 @@ for (const button of document.querySelectorAll("button.sort")) {
       ? { key, descending: !state.sort.descending }
       : { key, descending: defaultDescending(key) };
     if (state.rows.length) render();
+    syncUrl();
   });
 }
 
@@ -300,7 +347,10 @@ for (const button of document.querySelectorAll("button.sort")) {
 // while its listener was attached only to the first one, so after a second
 // lookup typing in it did nothing. The filters are in the page once.
 for (const id of ["searchTask", "minRating", "maxRating", "tagFilter"]) {
-  byId(id).addEventListener("input", applyFilters);
+  byId(id).addEventListener("input", () => {
+    applyFilters();
+    syncUrl();
+  });
 }
 
 // "/" jumps to the search box from anywhere but another field, as on most
@@ -320,6 +370,7 @@ document.addEventListener("keydown", (event) => {
 // downloading every submission again.
 byId("doNotShowTags").addEventListener("change", () => {
   if (state.rows.length) render();
+  syncUrl();
 });
 
 // Lookups are kept in localStorage, so a revisit, a reload or a language
@@ -444,6 +495,7 @@ const lookup = async (handle, { force = false } = {}) => {
     clearResults();
     if (handle === "") {
       counter.textContent = "";
+      syncUrl();
       return;
     }
     const saved = readSaved(handle);
@@ -459,6 +511,7 @@ const lookup = async (handle, { force = false } = {}) => {
   } catch {
     // Remembering the handle is a convenience, not a requirement.
   }
+  syncUrl();
   if (!force && state.savedAt !== null && Date.now() - state.savedAt < FRESH_FOR) return;
 
   setBusy(true);

@@ -9,11 +9,13 @@ import {
   matchesFilter,
   packRows,
   problemLink,
+  readParams,
   sortRows,
   submissionLink,
   tagCounts,
   unpackRows,
   verdictLabel,
+  writeParams,
 } from "../lib.js";
 
 let nextId = 1000;
@@ -142,6 +144,37 @@ test("ages round down to the largest whole unit", () => {
   assert.deepEqual(ageParts(119_000), [-1, "minute"]);
   assert.deepEqual(ageParts(3 * 3600_000 + 59_000), [-3, "hour"]);
   assert.deepEqual(ageParts(50 * 3600_000), [-2, "day"]);
+});
+
+test("a link carries the handle, sort and filters, and nothing at their defaults", () => {
+  const state = {
+    handle: "tourist",
+    sort: { key: "tries", descending: true },
+    query: " bear ",
+    min: "1200",
+    max: "",
+    tag: "dp",
+    showTags: true,
+  };
+  const search = writeParams(state);
+  assert.equal(search, "handle=tourist&sort=-tries&q=bear&min=1200&tag=dp&tags=1");
+  assert.deepEqual(readParams(`?${search}`), { ...state, query: "bear" });
+
+  assert.equal(writeParams({ handle: "a b&c", sort: { key: "rating", descending: false } }), "handle=a+b%26c");
+  assert.equal(writeParams({ lang: "ru", handle: "x", min: "abc" }), "lang=ru&handle=x");
+});
+
+test("unknown or broken parameters fall back to the defaults", () => {
+  assert.deepEqual(readParams("?sort=-toString&tags=yes"), {
+    handle: "",
+    sort: null,
+    query: "",
+    min: "",
+    max: "",
+    tag: "",
+    showTags: false,
+  });
+  assert.deepEqual(readParams("?sort=name").sort, { key: "name", descending: false });
 });
 
 test("verdicts get short labels; unknown and missing ones do not break", () => {
