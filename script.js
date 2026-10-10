@@ -2,9 +2,12 @@ import {
   defaultDescending,
   describeFailure,
   findUnsolved,
+  makeFilter,
+  matchesFilter,
   problemLink,
   sortRows,
   submissionLink,
+  tagCounts,
   verdictLabel,
 } from "./lib.js";
 
@@ -29,7 +32,10 @@ const localize = [{
     networkErrorText: ":( Could not reach Codeforces. Check your connection and try again.",
     aboutButton: "About",
     aboutProject: "More about the Project",
-    searchPlaceholder: "Search...",
+    searchPlaceholder: "Search by name or id",
+    maxRating: "Maximum rating",
+    anyTag: "Any tag",
+    shownText: "Showing {shown} of {total}",
   },
   "ru": {
     searchHandleButton: "Поиск нерешённых задач",
@@ -51,7 +57,10 @@ const localize = [{
     networkErrorText: ":( Не удалось связаться с Codeforces. Проверьте соединение и попробуйте снова.",
     aboutButton: "О проекте",
     aboutProject: "Подробнее о проекте",
-    searchPlaceholder: "Поиск...",
+    searchPlaceholder: "Поиск по названию или номеру",
+    maxRating: "Максимальный рейтинг",
+    anyTag: "Любой тег",
+    shownText: "Показано {shown} из {total}",
   },
 }];
 
@@ -82,6 +91,9 @@ const onloadFunction = (lang) => {
   byId("about").textContent = text.aboutButton;
   byId("nameLabel").textContent = text.nameTD;
   byId("searchTask").placeholder = text.searchPlaceholder;
+  byId("searchTask").setAttribute("aria-label", text.searchPlaceholder);
+  byId("ratingFilterLabel").textContent = text.ratingTD;
+  byId("maxRating").setAttribute("aria-label", text.maxRating);
   byId("ratingLabel").textContent = text.ratingTD;
   byId("triesLabel").textContent = text.triesTD;
   byId("verdictTD").textContent = text.verdictTD;
@@ -191,15 +203,38 @@ const failureText = (error, handle) => {
 // instead of asking Codeforces for every submission again.
 const state = { handle: "", rows: [], sort: { key: "rating", descending: false } };
 
-// The search box used to be created anew in the Name header on every lookup,
-// while its listener was attached only to the first one, so after a second
-// lookup typing in it did nothing. It is in the page once now.
-const applySearch = () => {
-  const needle = byId("searchTask").value.trim().toLowerCase();
-  for (const row of byId("table-list").rows) {
-    const name = row.querySelector(".problemName");
-    row.hidden = Boolean(needle) && !(name && name.textContent.toLowerCase().includes(needle));
+// Each drawn <tr> with the row it shows, so filtering only flips `hidden`
+// instead of rebuilding the table.
+let drawn = [];
+let built = new WeakMap();
+let builtWithTags = false;
+
+const applyFilters = () => {
+  const filter = makeFilter({
+    query: byId("searchTask").value,
+    min: byId("minRating").value,
+    max: byId("maxRating").value,
+    tag: byId("tagFilter").value,
+  });
+  let shown = 0;
+  for (const [tr, row] of drawn) {
+    const keep = matchesFilter(row, filter);
+    tr.hidden = !keep;
+    if (keep) shown += 1;
   }
+  byId("shown").textContent = shown === drawn.length
+    ? ""
+    : fill(text.shownText, { shown, total: drawn.length });
+};
+
+// The tag list offers only tags that occur among the rows, with counts.
+const fillTagFilter = () => {
+  const select = byId("tagFilter");
+  const chosen = select.value;
+  const any = new Option(text.anyTag, "");
+  const options = tagCounts(state.rows).map(([tag, count]) => new Option(`${tag} (${count})`, tag));
+  select.replaceChildren(any, ...options);
+  select.value = options.some((option) => option.value === chosen) ? chosen : "";
 };
 
 const render = () => {
@@ -211,11 +246,23 @@ const render = () => {
   // One fragment, one insertion.
   const fragment = document.createDocumentFragment();
   const { key, descending } = state.sort;
-  for (const problem of sortRows(state.rows, key, descending)) {
-    fragment.append(buildRow(problem, showTags));
+  // A re-sort moves the rows already built rather than building them again:
+  // 2500 rows took 64 ms to rebuild.
+  if (builtWithTags !== showTags) {
+    built = new WeakMap();
+    builtWithTags = showTags;
   }
+  drawn = sortRows(state.rows, key, descending).map((problem) => {
+    let tr = built.get(problem);
+    if (!tr) {
+      tr = buildRow(problem, showTags);
+      built.set(problem, tr);
+    }
+    return [tr, problem];
+  });
+  for (const [tr] of drawn) fragment.append(tr);
   byId("table-list").replaceChildren(fragment);
-  applySearch();
+  applyFilters();
 
   for (const button of document.querySelectorAll("button.sort")) {
     const th = button.closest("th");
@@ -235,7 +282,25 @@ for (const button of document.querySelectorAll("button.sort")) {
   });
 }
 
-byId("searchTask").addEventListener("input", applySearch);
+// The search box used to be created anew in the Name header on every lookup,
+// while its listener was attached only to the first one, so after a second
+// lookup typing in it did nothing. The filters are in the page once.
+for (const id of ["searchTask", "minRating", "maxRating", "tagFilter"]) {
+  byId(id).addEventListener("input", applyFilters);
+}
+
+// "/" jumps to the search box from anywhere but another field, as on most
+// sites with a search.
+document.addEventListener("keydown", (event) => {
+  if (event.key !== "/" || event.ctrlKey || event.metaKey || event.altKey) return;
+  const target = event.target;
+  if (target instanceof HTMLInputElement || target instanceof HTMLSelectElement
+    || target instanceof HTMLTextAreaElement || target.isContentEditable) return;
+  if (byId("filters").hidden) return;
+  event.preventDefault();
+  byId("searchTask").focus();
+  byId("searchTask").select();
+});
 
 // Showing tags used to take effect only on the next lookup, which meant
 // downloading every submission again.
@@ -243,13 +308,29 @@ byId("doNotShowTags").addEventListener("change", () => {
   if (state.rows.length) render();
 });
 
+const showResults = () => {
+  const counter = byId("counter");
+  if (!state.rows.length) {
+    counter.textContent = state.handle ? text.congratsText : "";
+    return;
+  }
+  byId("table-main").hidden = false;
+  byId("filters").hidden = false;
+  counter.textContent = `${text.counterOfProblems} ${state.rows.length}`;
+  render();
+};
+
 byId("start").addEventListener("click", async () => {
   const counter = byId("counter");
   const tableMain = byId("table-main");
 
   tableMain.hidden = true;
+  byId("filters").hidden = true;
+  state.handle = "";
   state.rows = [];
+  drawn = [];
   byId("table-list").replaceChildren();
+  delete byId("table-list").dataset.showing;
 
   const handle = byId("handle").value.trim();
   if (handle === "") {
@@ -265,15 +346,8 @@ byId("start").addEventListener("click", async () => {
     const submissions = await loadSubmissions(handle);
     state.handle = handle;
     state.rows = findUnsolved(submissions);
-
-    if (!state.rows.length) {
-      counter.textContent = text.congratsText;
-      return;
-    }
-
-    tableMain.hidden = false;
-    counter.textContent = `${text.counterOfProblems} ${state.rows.length}`;
-    render();
+    fillTagFilter();
+    showResults();
   } catch (error) {
     // Nothing caught a failed fetch, so a dropped connection left the page on
     // "Loading..." with both controls disabled and no way back.
@@ -294,13 +368,16 @@ byId("start").addEventListener("click", async () => {
 byId("about").addEventListener("click", () => {
   const tableList = byId("table-list");
   byId("table-main").hidden = true;
+  byId("filters").hidden = true;
   byId("counter").textContent = "";
 
   // The old version decided whether the panel was open by searching the
-  // table's markup for the string "sadykhzadeh".
+  // table's markup for the string "sadykhzadeh". Closing it used to leave an
+  // empty page; the last results come back instead.
   if (tableList.dataset.showing === "about") {
     tableList.replaceChildren();
     delete tableList.dataset.showing;
+    showResults();
     return;
   }
 

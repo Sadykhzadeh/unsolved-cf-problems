@@ -41,14 +41,22 @@
     <!-- Announced as it changes, so a screen reader hears "Loading..." and
          then the count or the error, not silence. -->
     <p id="counter" role="status"></p>
+    <div id="filters" hidden>
+        <input type="search" id="searchTask" autocomplete="off" spellcheck="false" aria-keyshortcuts="/">
+        <span class="range">
+            <label for="minRating" id="ratingFilterLabel"></label>
+            <input type="number" id="minRating" min="0" max="4000" step="100" inputmode="numeric" placeholder="800">
+            <span aria-hidden="true">-</span>
+            <input type="number" id="maxRating" min="0" max="4000" step="100" inputmode="numeric" placeholder="3500">
+        </span>
+        <select id="tagFilter"></select>
+        <span id="shown" aria-live="polite"></span>
+    </div>
     <table style="width:100%">
         <thead id="table-main" hidden>
             <tr>
                 <th id="numberOfTask" scope="col"><button type="button" class="sort" data-sort="problem">#</button></th>
-                <th id="nameTD" scope="col">
-                    <button type="button" class="sort" data-sort="name" id="nameLabel"></button>
-                    <input type="search" id="searchTask" aria-labelledby="nameLabel" autocomplete="off" spellcheck="false">
-                </th>
+                <th id="nameTD" scope="col"><button type="button" class="sort" data-sort="name" id="nameLabel"></button></th>
                 <th id="tagsTD" scope="col" hidden></th>
                 <th id="ratingTD" scope="col"><button type="button" class="sort" data-sort="rating" id="ratingLabel"></button></th>
                 <th id="triesTD" scope="col"><button type="button" class="sort" data-sort="tries" id="triesLabel"></button></th>

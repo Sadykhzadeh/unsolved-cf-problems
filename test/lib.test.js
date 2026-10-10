@@ -4,9 +4,12 @@ import assert from "node:assert/strict";
 import {
   describeFailure,
   findUnsolved,
+  makeFilter,
+  matchesFilter,
   problemLink,
   sortRows,
   submissionLink,
+  tagCounts,
   verdictLabel,
 } from "../lib.js";
 
@@ -85,6 +88,31 @@ test("rows sort by any column either way, unrated staying last", () => {
   // A < A2 < B within a contest, and contest 10 after contest 2.
   assert.deepEqual(names(sortRows(rows, "problem", false)), ["Gamma", "alpha", "Delta", "Beta"]);
   assert.equal(rows[0].name, "Beta", "the input is left alone");
+});
+
+test("the filter narrows by name or id, tag and rating range", () => {
+  const row = (contestId, index, name, rating, tags) => ({ contestId, index, name, rating, tags });
+  const rows = [
+    row(1520, "F2", "Guess the K-th Zero (Hard version)", 2200, ["binary search", "interactive"]),
+    row(4, "A", "Watermelon", 800, ["brute force", "math"]),
+    row(2000, "H", "Fresh One", undefined, ["dp"]),
+  ];
+  const pick = (fields) => rows.filter((r) => matchesFilter(r, makeFilter(fields))).map((r) => r.name);
+
+  assert.equal(pick({}).length, 3, "an empty filter keeps everything");
+  assert.deepEqual(pick({ query: "  WATER " }), ["Watermelon"]);
+  assert.deepEqual(pick({ query: "1520f2" }), ["Guess the K-th Zero (Hard version)"]);
+  assert.deepEqual(pick({ query: "1520|F" }), ["Guess the K-th Zero (Hard version)"]);
+  assert.deepEqual(pick({ tag: "math" }), ["Watermelon"]);
+  assert.deepEqual(pick({ min: "1000" }), ["Guess the K-th Zero (Hard version)"]);
+  assert.deepEqual(pick({ max: 800 }), ["Watermelon"]);
+  assert.deepEqual(pick({ min: "800", max: "2200" }).length, 2, "bounds are inclusive; unrated is out");
+  assert.equal(pick({ min: "abc" }).length, 3, "an unreadable bound is no bound");
+});
+
+test("tags are counted, commonest first", () => {
+  const rows = [{ tags: ["dp", "math"] }, { tags: ["math"] }, { tags: ["graphs", "dp", "math"] }];
+  assert.deepEqual(tagCounts(rows), [["math", 3], ["dp", 2], ["graphs", 1]]);
 });
 
 test("verdicts get short labels; unknown and missing ones do not break", () => {

@@ -115,6 +115,48 @@ export const sortRows = (rows, key, descending) => {
   });
 };
 
+const bound = (value) => {
+  if (value === "" || value === null || value === undefined) return null;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+};
+
+// Normalises what the filter fields hold: an empty or unreadable bound is no
+// bound, and the search is case-insensitive.
+export const makeFilter = ({ query = "", min = "", max = "", tag = "" } = {}) => ({
+  query: String(query).trim().toLowerCase(),
+  min: bound(min),
+  max: bound(max),
+  tag: String(tag),
+});
+
+// The search matches the name or the problem id, written either way the
+// table shows it ("1520F2" or "1520|F2").
+export const matchesFilter = (row, filter) => {
+  if (filter.query) {
+    const id = `${row.contestId}${row.index}`.toLowerCase();
+    const haystack = `${row.name.toLowerCase()}\n${id}\n${row.contestId}|${row.index.toLowerCase()}`;
+    if (!haystack.includes(filter.query)) return false;
+  }
+  if (filter.tag && !row.tags.includes(filter.tag)) return false;
+  if (filter.min !== null || filter.max !== null) {
+    // An unrated problem cannot be said to sit inside a range.
+    if (row.rating === undefined) return false;
+    if (filter.min !== null && row.rating < filter.min) return false;
+    if (filter.max !== null && row.rating > filter.max) return false;
+  }
+  return true;
+};
+
+// Every tag among the rows with how many rows carry it, commonest first.
+export const tagCounts = (rows) => {
+  const counts = new Map();
+  for (const row of rows) {
+    for (const tag of row.tags) counts.set(tag, (counts.get(tag) ?? 0) + 1);
+  }
+  return [...counts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+};
+
 const UNRATED_SORTS_LAST = 1e6;
 
 // One row per unsolved problem: the problem, its newest attempt, and how many
