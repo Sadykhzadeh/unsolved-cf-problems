@@ -1,6 +1,38 @@
 # Unsolved Codeforces Problems
 
-[Site link is here](https://sadykhzadeh.github.io/unsolved-cf-problems/)
+Every problem a Codeforces user has tried and not solved, in one table.
+
+**Live:** https://azer.is-a.dev/unsolved-cf-problems/
+
+## What it does
+
+- Lists each unsolved problem once, with its rating, how many times it was
+  tried, the last verdict and the date of the last attempt (linking to that
+  submission).
+- Sorts by problem, name, rating, tries or last attempt: click a header,
+  click again to reverse.
+- Filters by name or problem id (`1520F2` or `1520|F2`), by a rating range
+  and by tag. Press `/` to jump to the search box.
+- Shows or hides the problem tags without reloading anything.
+- Keeps the view in the address bar, so a link opens the same list, sorted
+  and filtered the same way.
+- Shows the last lookup instantly on the next visit (see below).
+- Says why a lookup failed: no such user, an invalid handle, the API rate
+  limit, Codeforces being down, or no connection.
+- English and Russian; follows the system's light or dark theme; fits a
+  phone.
+
+## Link parameters
+
+| Parameter | Example | Meaning |
+| --- | --- | --- |
+| `handle` | `handle=tourist` | whose problems to list |
+| `sort` | `sort=-tries` | `problem`, `name`, `rating`, `tries` or `last`; a leading `-` sorts descending |
+| `q` | `q=tree` | name or problem id contains this |
+| `min`, `max` | `min=1600&max=2000` | rating range, inclusive |
+| `tag` | `tag=dp` | has this tag |
+| `tags` | `tags=1` | show the tags column |
+| `lang` | `lang=ru` | `en` or `ru`; remembered |
 
 ## How it works
 
@@ -16,13 +48,18 @@ asks again.
 
 ## Running it locally
 
-Any static file server will do, because the page loads `script.js` as a
-separate file:
+Any static file server will do; the page loads its scripts as ES modules,
+which browsers refuse to do from `file://`:
 
 ```sh
 npx http-server -p 4340
 ```
 
-`?lang=en` and `?lang=ru` switch language; the choice is remembered.
+The logic that does not touch the page lives in `lib.js` and is tested with
+Node's built-in runner, no dependencies needed:
+
+```sh
+npm test
+```
 
 ### Author - [Azer Sadykhzadeh](https://github.com/sadykhzadeh).
