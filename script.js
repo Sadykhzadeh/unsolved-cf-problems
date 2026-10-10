@@ -78,7 +78,8 @@ const onloadFunction = (lang) => {
   byId("handle").value = localStorage.handle ?? "";
   byId("doNotShowTags-label").textContent = text.showTagsChexBox;
   byId("about").textContent = text.aboutButton;
-  byId("nameTD").textContent = text.nameTD;
+  byId("nameLabel").textContent = text.nameTD;
+  byId("searchTask").placeholder = text.searchPlaceholder;
   byId("ratingTD").textContent = text.ratingTD;
   byId("triesTD").textContent = text.triesTD;
   byId("verdictTD").textContent = text.verdictTD;
@@ -184,34 +185,49 @@ const failureText = (error, handle) => {
   return fill(text[`${kind}Text`], { handle, detail });
 };
 
-let searchListenerAttached = false;
+// The last lookup, kept so that showing tags or filtering redraws from memory
+// instead of asking Codeforces for every submission again.
+const state = { handle: "", rows: [] };
 
-const attachSearch = () => {
-  const input = byId("searchTask");
-  if (!input || searchListenerAttached) return;
-  searchListenerAttached = true;
-  // searchTasks() used to add a fresh keyup listener on every search, so the
-  // filter ran once per search performed so far on every keystroke.
-  input.addEventListener("keyup", () => {
-    const needle = input.value.toLowerCase();
-    for (const row of document.querySelectorAll("#table-list tr")) {
-      const name = row.querySelector(".problemName");
-      const matches = !name || name.textContent.toLowerCase().includes(needle);
-      row.style.display = matches ? "" : "none";
-    }
-  });
+// The search box used to be created anew in the Name header on every lookup,
+// while its listener was attached only to the first one, so after a second
+// lookup typing in it did nothing. It is in the page once now.
+const applySearch = () => {
+  const needle = byId("searchTask").value.trim().toLowerCase();
+  for (const row of byId("table-list").rows) {
+    const name = row.querySelector(".problemName");
+    row.hidden = Boolean(needle) && !(name && name.textContent.toLowerCase().includes(needle));
+  }
 };
+
+const render = () => {
+  const showTags = byId("doNotShowTags").checked;
+  byId("tagsTD").hidden = !showTags;
+  // Rows used to be appended with `innerHTML +=` inside the loop, which
+  // reparses the whole table for every row - quadratic in the number of
+  // problems, and problem names from the API landed in markup unescaped.
+  // One fragment, one insertion.
+  const fragment = document.createDocumentFragment();
+  for (const problem of state.rows) fragment.append(buildRow(problem, showTags));
+  byId("table-list").replaceChildren(fragment);
+  applySearch();
+};
+
+byId("searchTask").addEventListener("input", applySearch);
+
+// Showing tags used to take effect only on the next lookup, which meant
+// downloading every submission again.
+byId("doNotShowTags").addEventListener("change", () => {
+  if (state.rows.length) render();
+});
 
 byId("start").addEventListener("click", async () => {
   const counter = byId("counter");
   const tableMain = byId("table-main");
-  const tableList = byId("table-list");
-  const showTags = byId("doNotShowTags").checked;
 
-  byId("nameTD").textContent = text.nameTD;
-  byId("tagsTD").hidden = true;
   tableMain.hidden = true;
-  tableList.replaceChildren();
+  state.rows = [];
+  byId("table-list").replaceChildren();
 
   const handle = byId("handle").value.trim();
   if (handle === "") {
@@ -222,36 +238,20 @@ byId("start").addEventListener("click", async () => {
   localStorage.handle = handle;
   counter.textContent = fill(text.loadingText, { handle });
   byId("start").disabled = true;
-  byId("doNotShowTags").disabled = true;
 
   try {
     const submissions = await loadSubmissions(handle);
-    const unsolved = findUnsolved(submissions);
+    state.handle = handle;
+    state.rows = findUnsolved(submissions);
 
-    if (!unsolved.length) {
+    if (!state.rows.length) {
       counter.textContent = text.congratsText;
       return;
     }
 
     tableMain.hidden = false;
-    counter.textContent = `${text.counterOfProblems} ${unsolved.length}`;
-
-    // Rows used to be appended with `innerHTML +=` inside the loop, which
-    // reparses the whole table for every row - quadratic in the number of
-    // problems, and problem names from the API landed in markup unescaped.
-    // One fragment, one insertion.
-    const fragment = document.createDocumentFragment();
-    for (const problem of unsolved) fragment.append(buildRow(problem, showTags));
-    tableList.append(fragment);
-
-    if (showTags) byId("tagsTD").hidden = false;
-
-    const search = document.createElement("input");
-    search.type = "text";
-    search.id = "searchTask";
-    search.placeholder = text.searchPlaceholder;
-    byId("nameTD").append(search);
-    attachSearch();
+    counter.textContent = `${text.counterOfProblems} ${state.rows.length}`;
+    render();
   } catch (error) {
     // Nothing caught a failed fetch, so a dropped connection left the page on
     // "Loading..." with both controls disabled and no way back.
@@ -266,7 +266,6 @@ byId("start").addEventListener("click", async () => {
     // This used to be the last statement of the handler, so anything that
     // threw on the way left the form dead.
     byId("start").disabled = false;
-    byId("doNotShowTags").disabled = false;
   }
 });
 
