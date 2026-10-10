@@ -13,8 +13,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: the script has to parse
-        run: node --check script.js
+      - name: the scripts have to parse
+        run: |
+          for f in script.js lib.js; do
+            echo "checking $f"
+            node --check "$f"
+          done
+      - name: tests
+        run: npm test
       - name: every local file index.html references has to exist
         run: |
           # Skips absolute URLs, fragments and the ?lang= links, which are
