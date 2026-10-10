@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  describeFailure,
   findUnsolved,
   problemLink,
   submissionLink,
@@ -58,6 +59,26 @@ test("verdicts get short labels; unknown and missing ones do not break", () => {
   assert.deepEqual(verdictLabel("CHALLENGED"), ["CHL", "CHALLENGED / HACKED"]);
   assert.deepEqual(verdictLabel("SOMETHING_NEW"), ["SOMETHING_NEW", "SOMETHING_NEW"]);
   assert.deepEqual(verdictLabel(undefined), ["?", "not judged yet"]);
+});
+
+test("failures say whether the handle, the limit or Codeforces is to blame", () => {
+  const failed = (comment) => ({ status: "FAILED", comment });
+  assert.equal(
+    describeFailure(400, failed("handle: User with handle nobody not found")).kind,
+    "notFound",
+  );
+  assert.deepEqual(
+    describeFailure(400, failed("handle: Field should contain between 3 and 24 characters, inclusive")),
+    { kind: "badHandle", detail: "Field should contain between 3 and 24 characters, inclusive" },
+  );
+  assert.equal(describeFailure(503, failed("Call limit exceeded")).kind, "rateLimited");
+  assert.equal(describeFailure(429, null).kind, "rateLimited");
+  // An HTML error page parses as nothing.
+  assert.deepEqual(describeFailure(502, null), { kind: "unavailable", detail: "HTTP 502" });
+  assert.deepEqual(describeFailure(200, failed("Internal error")), {
+    kind: "otherError",
+    detail: "Internal error",
+  });
 });
 
 test("gym problems link to the gym", () => {

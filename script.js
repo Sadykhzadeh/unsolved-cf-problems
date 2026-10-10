@@ -1,4 +1,5 @@
 import {
+  describeFailure,
   findUnsolved,
   problemLink,
   submissionLink,
@@ -15,7 +16,12 @@ const localize = [{
     ratingTD: "Rating",
     lastTD: "Last Verdict / Submit Link",
     congratsText: "Congratulations, You haven't got any unsolved tasks! 🥳",
-    errorText: ":( Error 4xx: Perhaps this handle does not exist",
+    loadingText: "Loading the submissions of {handle}...",
+    notFoundText: ":( There is no Codeforces user called \"{handle}\".",
+    badHandleText: ":( Codeforces did not accept this handle: {detail}",
+    rateLimitedText: ":( Codeforces is limiting requests right now. Wait a few seconds and try again.",
+    unavailableText: ":( Codeforces is not answering ({detail}). It may be down for maintenance; try again later.",
+    otherErrorText: ":( Codeforces returned an error: {detail}",
     networkErrorText: ":( Could not reach Codeforces. Check your connection and try again.",
     aboutButton: "About",
     aboutProject: "More about the Project",
@@ -30,7 +36,12 @@ const localize = [{
     ratingTD: "Рейтинг",
     lastTD: "Последний вердикт / Последняя отправка",
     congratsText: "Поздравляю, У тебя нет нерешённых задач! 🥳",
-    errorText: ":( Ошибка 4xx: Возможно данного хендла не существует",
+    loadingText: "Загружаю посылки {handle}...",
+    notFoundText: ":( На Codeforces нет пользователя «{handle}».",
+    badHandleText: ":( Codeforces не принял этот хендл: {detail}",
+    rateLimitedText: ":( Codeforces сейчас ограничивает число запросов. Подождите несколько секунд и попробуйте снова.",
+    unavailableText: ":( Codeforces не отвечает ({detail}). Возможно, идут технические работы; попробуйте позже.",
+    otherErrorText: ":( Codeforces вернул ошибку: {detail}",
     networkErrorText: ":( Не удалось связаться с Codeforces. Проверьте соединение и попробуйте снова.",
     aboutButton: "О проекте",
     aboutProject: "Подробнее о проекте",
@@ -130,14 +141,34 @@ const loadSubmissions = async (handle) => {
     encodeURIComponent(handle)
   }&lang=${encodeURIComponent(lang)}`;
   const response = await fetch(url);
-  if (!response.ok) throw new Error(text.errorText);
-  const payload = await response.json();
+  // Errors come back as JSON with a comment saying what went wrong, except
+  // when Codeforces itself is down and an HTML page answers instead.
+  const payload = await response.json().catch(() => null);
   // The API answers 200 with {status: "FAILED"}. payload.result was read
   // regardless, and `for (const item of undefined)` threw.
-  if (payload.status !== "OK" || !Array.isArray(payload.result)) {
-    throw new Error(text.errorText);
+  if (response.ok && payload?.status === "OK" && Array.isArray(payload.result)) {
+    return payload.result;
   }
-  return payload.result;
+  throw new LookupFailure(describeFailure(response.status, payload));
+};
+
+class LookupFailure extends Error {
+  constructor(failure) {
+    super(failure.detail);
+    this.failure = failure;
+  }
+}
+
+const fill = (template, values) =>
+  template.replace(/\{(\w+)\}/g, (match, name) => values[name] ?? match);
+
+const failureText = (error, handle) => {
+  // fetch rejects with a TypeError when the request never got an answer.
+  if (!(error instanceof LookupFailure)) {
+    return error instanceof TypeError ? text.networkErrorText : String(error.message || error);
+  }
+  const { kind, detail } = error.failure;
+  return fill(text[`${kind}Text`], { handle, detail });
 };
 
 let searchListenerAttached = false;
@@ -167,17 +198,16 @@ byId("start").addEventListener("click", async () => {
   byId("nameTD").textContent = text.nameTD;
   byId("tagsTD").hidden = true;
   tableMain.hidden = true;
-  counter.hidden = false;
   tableList.replaceChildren();
 
   const handle = byId("handle").value.trim();
   if (handle === "") {
-    counter.hidden = true;
+    counter.textContent = "";
     return;
   }
 
   localStorage.handle = handle;
-  counter.textContent = "Loading...";
+  counter.textContent = fill(text.loadingText, { handle });
   byId("start").disabled = true;
   byId("doNotShowTags").disabled = true;
 
@@ -186,7 +216,6 @@ byId("start").addEventListener("click", async () => {
     const unsolved = findUnsolved(submissions);
 
     if (!unsolved.length) {
-      counter.hidden = false;
       counter.textContent = text.congratsText;
       return;
     }
@@ -214,9 +243,12 @@ byId("start").addEventListener("click", async () => {
     // Nothing caught a failed fetch, so a dropped connection left the page on
     // "Loading..." with both controls disabled and no way back.
     console.error(error);
-    localStorage.handle = "";
-    counter.hidden = false;
-    counter.textContent = error instanceof TypeError ? text.networkErrorText : error.message;
+    // Only forget the handle when it is the handle that was wrong. A dropped
+    // connection or a busy Codeforces used to wipe it too, so the next visit
+    // opened on an empty form.
+    const kind = error.failure?.kind;
+    if (kind === "notFound" || kind === "badHandle") localStorage.handle = "";
+    counter.textContent = failureText(error, handle);
   } finally {
     // This used to be the last statement of the handler, so anything that
     // threw on the way left the form dead.
@@ -228,7 +260,7 @@ byId("start").addEventListener("click", async () => {
 byId("about").addEventListener("click", () => {
   const tableList = byId("table-list");
   byId("table-main").hidden = true;
-  byId("counter").hidden = true;
+  byId("counter").textContent = "";
 
   // The old version decided whether the panel was open by searching the
   // table's markup for the string "sadykhzadeh".
