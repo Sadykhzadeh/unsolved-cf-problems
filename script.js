@@ -14,7 +14,9 @@ const localize = [{
     nameTD: "Name ",
     tagsTD: "Tags",
     ratingTD: "Rating",
-    lastTD: "Last Verdict / Submit Link",
+    triesTD: "Tries",
+    verdictTD: "Last verdict",
+    lastTriedTD: "Last attempt",
     congratsText: "Congratulations, You haven't got any unsolved tasks! 🥳",
     loadingText: "Loading the submissions of {handle}...",
     notFoundText: ":( There is no Codeforces user called \"{handle}\".",
@@ -34,7 +36,9 @@ const localize = [{
     nameTD: "Название ",
     tagsTD: "Теги",
     ratingTD: "Рейтинг",
-    lastTD: "Последний вердикт / Последняя отправка",
+    triesTD: "Попытки",
+    verdictTD: "Последний вердикт",
+    lastTriedTD: "Последняя попытка",
     congratsText: "Поздравляю, У тебя нет нерешённых задач! 🥳",
     loadingText: "Загружаю посылки {handle}...",
     notFoundText: ":( На Codeforces нет пользователя «{handle}».",
@@ -76,7 +80,9 @@ const onloadFunction = (lang) => {
   byId("about").textContent = text.aboutButton;
   byId("nameTD").textContent = text.nameTD;
   byId("ratingTD").textContent = text.ratingTD;
-  byId("lastTD").textContent = text.lastTD;
+  byId("triesTD").textContent = text.triesTD;
+  byId("verdictTD").textContent = text.verdictTD;
+  byId("lastTriedTD").textContent = text.lastTriedTD;
   byId("tagsTD").textContent = text.tagsTD;
 };
 
@@ -108,8 +114,9 @@ const cell = (content, title) => {
   return td;
 };
 
-const buildRow = (submission, showTags) => {
-  const { problem } = submission;
+const dateFormat = new Intl.DateTimeFormat(lang, { dateStyle: "medium" });
+
+const buildRow = (problem, showTags) => {
   const href = problemLink(problem);
   const row = document.createElement("tr");
 
@@ -126,10 +133,16 @@ const buildRow = (submission, showTags) => {
   }
 
   row.append(cell(problem.rating === undefined ? "-" : String(problem.rating), "Rating"));
+  row.append(cell(String(problem.tries)));
 
-  const [short, full] = verdictLabel(submission.verdict);
+  const [short, full] = verdictLabel(problem.verdict);
   row.append(cell(short, full));
-  row.append(cell(anchor(submissionLink(submission), String(submission.id))));
+
+  const when = anchor(submissionLink(problem), dateFormat.format(problem.lastTime * 1000));
+  when.title = `#${problem.submissionId}`;
+  const whenCell = cell(when);
+  whenCell.className = "when";
+  row.append(whenCell);
 
   return row;
 };
@@ -228,7 +241,7 @@ byId("start").addEventListener("click", async () => {
     // problems, and problem names from the API landed in markup unescaped.
     // One fragment, one insertion.
     const fragment = document.createDocumentFragment();
-    for (const submission of unsolved) fragment.append(buildRow(submission, showTags));
+    for (const problem of unsolved) fragment.append(buildRow(problem, showTags));
     tableList.append(fragment);
 
     if (showTags) byId("tagsTD").hidden = false;
@@ -272,7 +285,7 @@ byId("about").addEventListener("click", () => {
 
   const row = document.createElement("tr");
   const td = document.createElement("td");
-  td.colSpan = 6;
+  td.colSpan = 7;
   td.append(anchor(
     `https://codeforces.com/blog/entry/79960?locale=${encodeURIComponent(lang)}`,
     text.aboutProject,
