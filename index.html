@@ -44,16 +44,16 @@
     <table style="width:100%">
         <thead id="table-main" hidden>
             <tr>
-                <th id="numberOfTask">#</th>
-                <th id="nameTD">
-                    <span id="nameLabel"></span>
+                <th id="numberOfTask" scope="col"><button type="button" class="sort" data-sort="problem">#</button></th>
+                <th id="nameTD" scope="col">
+                    <button type="button" class="sort" data-sort="name" id="nameLabel"></button>
                     <input type="search" id="searchTask" aria-labelledby="nameLabel" autocomplete="off" spellcheck="false">
                 </th>
-                <th id="tagsTD" hidden></th>
-                <th id="ratingTD"></th>
-                <th id="triesTD"></th>
-                <th id="verdictTD"></th>
-                <th id="lastTriedTD"></th>
+                <th id="tagsTD" scope="col" hidden></th>
+                <th id="ratingTD" scope="col"><button type="button" class="sort" data-sort="rating" id="ratingLabel"></button></th>
+                <th id="triesTD" scope="col"><button type="button" class="sort" data-sort="tries" id="triesLabel"></button></th>
+                <th id="verdictTD" scope="col"></th>
+                <th id="lastTriedTD" scope="col"><button type="button" class="sort" data-sort="last" id="lastTriedLabel"></button></th>
             </tr>
         </thead>
         <tbody id="table-list">

@@ -85,6 +85,36 @@ export const describeFailure = (httpStatus, payload) => {
   return { kind: "otherError", detail: comment || `HTTP ${httpStatus}` };
 };
 
+// What each sortable column compares, and which way a first click sorts it:
+// easiest, most fought over and most recent first.
+const SORTS = {
+  problem: {
+    compare: (a, b) => a.contestId - b.contestId || a.index.localeCompare(b.index, "en", { numeric: true }),
+    descending: true,
+  },
+  name: { compare: (a, b) => a.name.localeCompare(b.name), descending: false },
+  rating: { compare: (a, b) => a.rating - b.rating, descending: false },
+  tries: { compare: (a, b) => a.tries - b.tries, descending: true },
+  last: { compare: (a, b) => a.lastTime - b.lastTime, descending: true },
+};
+
+export const SORT_KEYS = Object.keys(SORTS);
+export const defaultDescending = (key) => SORTS[key].descending;
+
+// A new array; the rows keep their order among equals, so ties stay easiest
+// first. Unrated problems have nothing to compare and stay at the bottom
+// whichever way the ratings run.
+export const sortRows = (rows, key, descending) => {
+  const { compare } = SORTS[key] ?? SORTS.rating;
+  const sign = descending ? -1 : 1;
+  return [...rows].sort((a, b) => {
+    if (key === "rating" && (a.rating === undefined || b.rating === undefined)) {
+      return (a.rating === undefined) - (b.rating === undefined);
+    }
+    return sign * compare(a, b);
+  });
+};
+
 const UNRATED_SORTS_LAST = 1e6;
 
 // One row per unsolved problem: the problem, its newest attempt, and how many

@@ -5,6 +5,7 @@ import {
   describeFailure,
   findUnsolved,
   problemLink,
+  sortRows,
   submissionLink,
   verdictLabel,
 } from "../lib.js";
@@ -63,6 +64,27 @@ test("rows go easiest first, unrated last", () => {
     submission(7, "A", "WRONG_ANSWER", 800),
   ]);
   assert.deepEqual(rows.map((r) => r.rating), [800, 2100, undefined]);
+});
+
+test("rows sort by any column either way, unrated staying last", () => {
+  const row = (contestId, index, name, rating, tries, lastTime) =>
+    ({ contestId, index, name, rating, tries, lastTime });
+  const rows = [
+    row(10, "B", "Beta", 1500, 1, 300),
+    row(10, "A", "alpha", undefined, 7, 100),
+    row(2, "C", "Gamma", 900, 3, 200),
+    row(10, "A2", "Delta", 1500, 2, 50),
+  ];
+  const names = (sorted) => sorted.map((r) => r.name);
+
+  assert.deepEqual(names(sortRows(rows, "rating", false)), ["Gamma", "Beta", "Delta", "alpha"]);
+  assert.deepEqual(names(sortRows(rows, "rating", true)), ["Beta", "Delta", "Gamma", "alpha"]);
+  assert.deepEqual(names(sortRows(rows, "tries", true)), ["alpha", "Gamma", "Delta", "Beta"]);
+  assert.deepEqual(names(sortRows(rows, "last", true)), ["Beta", "Gamma", "alpha", "Delta"]);
+  assert.deepEqual(names(sortRows(rows, "name", false)), ["alpha", "Beta", "Delta", "Gamma"]);
+  // A < A2 < B within a contest, and contest 10 after contest 2.
+  assert.deepEqual(names(sortRows(rows, "problem", false)), ["Gamma", "alpha", "Delta", "Beta"]);
+  assert.equal(rows[0].name, "Beta", "the input is left alone");
 });
 
 test("verdicts get short labels; unknown and missing ones do not break", () => {

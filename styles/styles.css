@@ -134,3 +134,29 @@ td {
     text-decoration: underline;
     cursor: pointer;
 }
+
+/* Header labels are buttons so they can be sorted by from the keyboard, but
+   they should still read as header text. */
+.sort {
+    background: none;
+    border: 0;
+    padding: 0;
+    font: inherit;
+    font-weight: bold;
+    color: inherit;
+    cursor: pointer;
+}
+
+th[aria-sort] .sort::after {
+    font-size: 0.6em;
+    vertical-align: middle;
+    padding-left: 0.25em;
+}
+
+th[aria-sort="ascending"] .sort::after {
+    content: "\25B2";
+}
+
+th[aria-sort="descending"] .sort::after {
+    content: "\25BC";
+}

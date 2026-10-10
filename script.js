@@ -1,7 +1,9 @@
 import {
+  defaultDescending,
   describeFailure,
   findUnsolved,
   problemLink,
+  sortRows,
   submissionLink,
   verdictLabel,
 } from "./lib.js";
@@ -80,10 +82,10 @@ const onloadFunction = (lang) => {
   byId("about").textContent = text.aboutButton;
   byId("nameLabel").textContent = text.nameTD;
   byId("searchTask").placeholder = text.searchPlaceholder;
-  byId("ratingTD").textContent = text.ratingTD;
-  byId("triesTD").textContent = text.triesTD;
+  byId("ratingLabel").textContent = text.ratingTD;
+  byId("triesLabel").textContent = text.triesTD;
   byId("verdictTD").textContent = text.verdictTD;
-  byId("lastTriedTD").textContent = text.lastTriedTD;
+  byId("lastTriedLabel").textContent = text.lastTriedTD;
   byId("tagsTD").textContent = text.tagsTD;
 };
 
@@ -187,7 +189,7 @@ const failureText = (error, handle) => {
 
 // The last lookup, kept so that showing tags or filtering redraws from memory
 // instead of asking Codeforces for every submission again.
-const state = { handle: "", rows: [] };
+const state = { handle: "", rows: [], sort: { key: "rating", descending: false } };
 
 // The search box used to be created anew in the Name header on every lookup,
 // while its listener was attached only to the first one, so after a second
@@ -208,10 +210,30 @@ const render = () => {
   // problems, and problem names from the API landed in markup unescaped.
   // One fragment, one insertion.
   const fragment = document.createDocumentFragment();
-  for (const problem of state.rows) fragment.append(buildRow(problem, showTags));
+  const { key, descending } = state.sort;
+  for (const problem of sortRows(state.rows, key, descending)) {
+    fragment.append(buildRow(problem, showTags));
+  }
   byId("table-list").replaceChildren(fragment);
   applySearch();
+
+  for (const button of document.querySelectorAll("button.sort")) {
+    const th = button.closest("th");
+    if (button.dataset.sort === key) th.setAttribute("aria-sort", descending ? "descending" : "ascending");
+    else th.removeAttribute("aria-sort");
+  }
 };
+
+// Clicking a header sorts by it; clicking it again reverses the order.
+for (const button of document.querySelectorAll("button.sort")) {
+  button.addEventListener("click", () => {
+    const key = button.dataset.sort;
+    state.sort = state.sort.key === key
+      ? { key, descending: !state.sort.descending }
+      : { key, descending: defaultDescending(key) };
+    if (state.rows.length) render();
+  });
+}
 
 byId("searchTask").addEventListener("input", applySearch);
 
