@@ -54,6 +54,14 @@ export const verdictLabel = (verdict) => {
   return [known.short, known.label ?? known.full];
 };
 
+// How long a Codeforces call may take. Without a limit a connection that
+// stalls leaves the page on "Loading..." for as long as the tab is open.
+export const REQUEST_TIMEOUT_MS = 30000;
+
+// AbortSignal.timeout() aborts with a TimeoutError, which is what a stalled
+// call looks like to the code that catches it.
+export const isTimeout = (error) => Boolean(error) && error.name === "TimeoutError";
+
 export const problemKey = (problem) => `${problem.contestId}|${problem.index}`;
 
 export const problemLink = (problem) => {

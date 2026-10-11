@@ -5,6 +5,7 @@ import {
   ageParts,
   describeFailure,
   findUnsolved,
+  isTimeout,
   makeFilter,
   matchesFilter,
   packRows,
@@ -220,4 +221,14 @@ test("submission links point at the submission", () => {
     submissionLink({ contestId: 1520, index: "F2", submissionId: 42 }),
     "https://codeforces.com/contest/1520/submission/42",
   );
+});
+
+test("a call that never answers is cut off and recognised as a timeout", async () => {
+  // A stand-in for fetch that honours the signal and otherwise hangs.
+  const hang = (url, { signal }) => new Promise((resolve, reject) => {
+    signal.addEventListener("abort", () => reject(signal.reason));
+  });
+  await assert.rejects(hang("x", { signal: AbortSignal.timeout(20) }), isTimeout);
+  assert.equal(isTimeout(new TypeError("Failed to fetch")), false);
+  assert.equal(isTimeout(undefined), false);
 });

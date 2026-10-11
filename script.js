@@ -3,11 +3,13 @@ import {
   defaultDescending,
   describeFailure,
   findUnsolved,
+  isTimeout,
   makeFilter,
   matchesFilter,
   packRows,
   problemLink,
   readParams,
+  REQUEST_TIMEOUT_MS,
   sortRows,
   submissionLink,
   tagCounts,
@@ -35,6 +37,7 @@ const localize = [{
     unavailableText: ":( Codeforces is not answering ({detail}). It may be down for maintenance; try again later.",
     otherErrorText: ":( Codeforces returned an error: {detail}",
     networkErrorText: ":( Could not reach Codeforces. Check your connection and try again.",
+    timeoutText: ":( Codeforces did not answer within 30 seconds. Try again in a moment.",
     aboutButton: "About",
     aboutProject: "More about the Project",
     searchPlaceholder: "Search by name or id",
@@ -65,6 +68,7 @@ const localize = [{
     unavailableText: ":( Codeforces не отвечает ({detail}). Возможно, идут технические работы; попробуйте позже.",
     otherErrorText: ":( Codeforces вернул ошибку: {detail}",
     networkErrorText: ":( Не удалось связаться с Codeforces. Проверьте соединение и попробуйте снова.",
+    timeoutText: ":( Codeforces не ответил за 30 секунд. Попробуйте ещё раз чуть позже.",
     aboutButton: "О проекте",
     aboutProject: "Подробнее о проекте",
     searchPlaceholder: "Поиск по названию или номеру",
@@ -224,7 +228,7 @@ const loadSubmissions = async (handle) => {
   const url = `https://codeforces.com/api/user.status?handle=${
     encodeURIComponent(handle)
   }&lang=${encodeURIComponent(lang)}`;
-  const response = await fetch(url);
+  const response = await fetch(url, { signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
   // Errors come back as JSON with a comment saying what went wrong, except
   // when Codeforces itself is down and an HTML page answers instead.
   const payload = await response.json().catch(() => null);
@@ -249,6 +253,7 @@ const fill = (template, values) =>
 const failureText = (error, handle) => {
   // fetch rejects with a TypeError when the request never got an answer.
   if (!(error instanceof LookupFailure)) {
+    if (isTimeout(error)) return text.timeoutText;
     return error instanceof TypeError ? text.networkErrorText : String(error.message || error);
   }
   const { kind, detail } = error.failure;
