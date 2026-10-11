@@ -1,0 +1,41 @@
+name: ci
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: the scripts have to parse
+        run: |
+          for f in script.js lib.js; do
+            echo "checking $f"
+            node --check "$f"
+          done
+      - name: tests
+        run: npm test
+      - name: every local file index.html references has to exist
+        run: |
+          # Skips absolute URLs, fragments and the ?lang= links, which are
+          # queries against this same page rather than files.
+          grep -oE '(src|href)="[^"]+"' index.html \
+            | sed -E 's/.*="([^"]+)"/\1/' \
+            | grep -vE '^([a-z]+:|//|#|\?)' \
+            | while read -r path; do
+                test -f "${path#./}" || { echo "missing: $path"; exit 1; }
+                echo "ok: $path"
+              done
+      - name: no closing tag on a void element
+        run: |
+          if grep -q '</br>' index.html; then echo '</br> is not a tag'; exit 1; fi
+          echo "clean"
