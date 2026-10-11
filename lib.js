@@ -40,10 +40,8 @@ const verdicts = [{
   short: "FAILED",
 }];
 
-// Exact lookup rather than `full.includes(verdict)`: a substring match maps
-// any verdict that happens to sit inside another one onto the wrong row, and
-// a submission still being judged has no verdict at all - `includes(undefined)`
-// came back false and the table printed the word "undefined".
+// Exact lookup: a substring match would map a verdict that sits inside
+// another one onto the wrong row.
 const verdictsByName = new Map(verdicts.map((v) => [v.full, v]));
 
 // Returns [short label, full label].
@@ -74,10 +72,8 @@ export const problemLink = (problem) => {
 export const submissionLink = (row) =>
   `https://codeforces.com/contest/${row.contestId}/submission/${row.submissionId}`;
 
-// Sorts a failed user.status call into something a person can act on. Every
-// failure used to read "Error 4xx: Perhaps this handle does not exist",
-// including Codeforces being down or rate-limiting, which sent people off to
-// check a handle that was fine.
+// Sorts a failed user.status call into something a person can act on, so
+// that Codeforces being down is not reported as a wrong handle.
 export const describeFailure = (httpStatus, payload) => {
   const comment = typeof payload?.comment === "string" ? payload.comment : "";
   // "handle: User with handle X not found" - in English whatever the lang
@@ -240,9 +236,6 @@ const UNRATED_SORTS_LAST = 1e6;
 // attempts there were. user.status lists submissions newest first, so the
 // first one seen for a problem is the latest.
 export const findUnsolved = (submissions) => {
-  // This was two passes over a map called allBadSubmissions that in fact held
-  // the solved ones, and it read `== null` to mean absent. A Set of the
-  // problems that were ever accepted says what it means.
   const solved = new Set();
   for (const item of submissions) {
     if (item.verdict === "OK") solved.add(problemKey(item.problem));

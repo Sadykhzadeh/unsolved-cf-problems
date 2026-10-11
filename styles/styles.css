@@ -1,5 +1,4 @@
-/* The page was dark only. It still is by default, and follows the system
-   when that asks for light. */
+/* Dark by default; light when the system asks for it. */
 :root {
     color-scheme: dark;
     --bg: #111115;

@@ -305,10 +305,8 @@ const fillTagFilter = () => {
 const render = () => {
   const showTags = byId("doNotShowTags").checked;
   byId("tagsTD").hidden = !showTags;
-  // Rows used to be appended with `innerHTML +=` inside the loop, which
-  // reparses the whole table for every row - quadratic in the number of
-  // problems, and problem names from the API landed in markup unescaped.
-  // One fragment, one insertion.
+  // Build into one fragment and insert once; names are set as text, never
+  // as markup.
   const fragment = document.createDocumentFragment();
   const { key, descending } = state.sort;
   // A re-sort moves the rows already built rather than building them again:
@@ -348,9 +346,7 @@ for (const button of document.querySelectorAll("button.sort")) {
   });
 }
 
-// The search box used to be created anew in the Name header on every lookup,
-// while its listener was attached only to the first one, so after a second
-// lookup typing in it did nothing. The filters are in the page once.
+// The filters exist once in the page, so their listeners are attached once.
 for (const id of ["searchTask", "minRating", "maxRating", "tagFilter"]) {
   byId(id).addEventListener("input", () => {
     applyFilters();
@@ -371,8 +367,7 @@ document.addEventListener("keydown", (event) => {
   byId("searchTask").select();
 });
 
-// Showing tags used to take effect only on the next lookup, which meant
-// downloading every submission again.
+// Showing tags redraws from memory; it does not ask Codeforces again.
 byId("doNotShowTags").addEventListener("change", () => {
   if (state.rows.length) render();
   syncUrl();
@@ -584,9 +579,7 @@ byId("about").addEventListener("click", () => {
   byId("filters").hidden = true;
   byId("counter").textContent = "";
 
-  // The old version decided whether the panel was open by searching the
-  // table's markup for the string "sadykhzadeh". Closing it used to leave an
-  // empty page; the last results come back instead.
+  // Closing the about panel brings the last results back.
   if (tableList.dataset.showing === "about") {
     tableList.replaceChildren();
     delete tableList.dataset.showing;
