@@ -235,16 +235,30 @@ const UNRATED_SORTS_LAST = 1e6;
 // One row per unsolved problem: the problem, its newest attempt, and how many
 // attempts there were. user.status lists submissions newest first, so the
 // first one seen for a problem is the latest.
+//
+// A problem shared by a Div. 1 and a Div. 2 round is submitted to under either
+// contest, so one solved in one counts as solved in the other: same name and
+// rating, in a contest one or two numbers away (parallel rounds are numbered
+// side by side). Only the user's own submissions are needed for that.
 export const findUnsolved = (submissions) => {
   const solved = new Set();
+  const solvedByName = new Map();
   for (const item of submissions) {
-    if (item.verdict === "OK") solved.add(problemKey(item.problem));
+    if (item.verdict !== "OK") continue;
+    const { problem } = item;
+    solved.add(problemKey(problem));
+    if (!solvedByName.has(problem.name)) solvedByName.set(problem.name, []);
+    solvedByName.get(problem.name).push(problem);
   }
+  const solvedInTwin = (problem) => solvedByName.get(problem.name)?.some((other) => {
+    const apart = Math.abs(other.contestId - problem.contestId);
+    return apart >= 1 && apart <= 2 && other.rating === problem.rating;
+  });
 
   const unsolved = new Map();
   for (const item of submissions) {
     const key = problemKey(item.problem);
-    if (solved.has(key)) continue;
+    if (solved.has(key) || solvedInTwin(item.problem)) continue;
     const seen = unsolved.get(key);
     if (seen) {
       seen.tries += 1;

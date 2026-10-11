@@ -66,6 +66,19 @@ test("the same index in two contests is two problems", () => {
   assert.deepEqual(rows.map((r) => r.contestId), [4]);
 });
 
+test("a problem solved in its parallel round is not unsolved", () => {
+  const twin = (contestId, index, verdict, rating = 1900) => {
+    const item = submission(contestId, index, verdict, rating);
+    item.problem.name = "Shared";
+    return item;
+  };
+  assert.deepEqual(findUnsolved([twin(1500, "C", "WRONG_ANSWER"), twin(1501, "E", "OK")]), []);
+  assert.deepEqual(findUnsolved([twin(1501, "E", "OK"), twin(1500, "C", "WRONG_ANSWER")]), []);
+  // too far apart, or another rating: a different problem with the same name
+  assert.equal(findUnsolved([twin(1500, "C", "WRONG_ANSWER"), twin(1503, "E", "OK")]).length, 1);
+  assert.equal(findUnsolved([twin(1500, "C", "WRONG_ANSWER"), twin(1501, "E", "OK", 1200)]).length, 1);
+});
+
 test("rows go easiest first, unrated last", () => {
   const rows = findUnsolved([
     submission(5, "A", "WRONG_ANSWER", undefined),
