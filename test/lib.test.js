@@ -228,7 +228,10 @@ test("a call that never answers is cut off and recognised as a timeout", async (
   const hang = (url, { signal }) => new Promise((resolve, reject) => {
     signal.addEventListener("abort", () => reject(signal.reason));
   });
+  // Node does not keep the process alive for AbortSignal.timeout() alone.
+  const keepAlive = setTimeout(() => {}, 1000);
   await assert.rejects(hang("x", { signal: AbortSignal.timeout(20) }), isTimeout);
+  clearTimeout(keepAlive);
   assert.equal(isTimeout(new TypeError("Failed to fetch")), false);
   assert.equal(isTimeout(undefined), false);
 });
