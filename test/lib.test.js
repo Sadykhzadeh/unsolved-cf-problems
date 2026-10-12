@@ -79,6 +79,13 @@ test("a problem solved in its parallel round is not unsolved", () => {
   // too far apart, or another rating: a different problem with the same name
   assert.equal(findUnsolved([twin(1500, "C", "WRONG_ANSWER"), twin(1503, "E", "OK")]).length, 1);
   assert.equal(findUnsolved([twin(1500, "C", "WRONG_ANSWER"), twin(1501, "E", "OK", 1200)]).length, 1);
+  // neighbouring gym contests, both unrated, each with a problem called "E"
+  const gym = (contestId, verdict) => {
+    const item = submission(contestId, "E", verdict, undefined);
+    item.problem.name = "E";
+    return item;
+  };
+  assert.equal(findUnsolved([gym(100093, "TIME_LIMIT_EXCEEDED"), gym(100092, "OK")]).length, 1);
 });
 
 test("acmsguru problems, which have no contest, are listed, linked and kept", () => {
