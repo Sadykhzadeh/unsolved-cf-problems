@@ -257,12 +257,16 @@ th[aria-sort] .sort::after {
     padding-left: 0.25em;
 }
 
+/* The arrow is for the eye; aria-sort already tells a screen reader, so the
+   empty alternative text keeps the arrow out of the button's name. */
 th[aria-sort="ascending"] .sort::after {
     content: "\25B2";
+    content: "\25B2" / "";
 }
 
 th[aria-sort="descending"] .sort::after {
     content: "\25BC";
+    content: "\25BC" / "";
 }
 
 #freshness {

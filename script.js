@@ -141,6 +141,7 @@ const onloadFunction = (lang) => {
   byId("searchTask").setAttribute("aria-label", text.searchPlaceholder);
   byId("ratingFilterLabel").textContent = text.ratingTD;
   byId("maxRating").setAttribute("aria-label", text.maxRating);
+  byId("tagFilter").setAttribute("aria-label", text.tagsTD);
   byId("ratingLabel").textContent = text.ratingTD;
   byId("triesLabel").textContent = text.triesTD;
   byId("verdictTD").textContent = text.verdictTD;
