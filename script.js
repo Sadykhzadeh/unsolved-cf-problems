@@ -109,9 +109,8 @@ const remember = (key, value) => {
   }
 };
 
-// Anything the generator cannot read is not a language. localStorage.lang used
-// to be trusted as-is, so one bad value left every label undefined until it
-// was cleared by hand.
+// Only a language with labels counts; anything else in the link or in storage
+// falls back to English rather than leaving every label undefined.
 const LANGUAGES = ["en", "ru"];
 const isLanguage = (value) => LANGUAGES.includes(value);
 
@@ -230,8 +229,6 @@ const buildRow = (problem, showTags) => {
   row.append(cell(anchor(href, problemKey(problem))));
 
   const name = anchor(href, problem.name);
-  // Every row used to carry id="problemName", so the document had as many
-  // elements with that id as it had rows. A class is what this wanted.
   name.className = "problemName";
   row.append(cell(name));
 
@@ -255,8 +252,7 @@ const buildRow = (problem, showTags) => {
 };
 
 const loadSubmissions = async (handle) => {
-  // The handle went into the query unescaped, so one containing & or # built
-  // a different request than intended.
+  // Escaped, so a handle containing & or # cannot change the request.
   const url = `https://codeforces.com/api/user.status?handle=${
     encodeURIComponent(handle)
   }&lang=${encodeURIComponent(lang)}`;
@@ -264,8 +260,8 @@ const loadSubmissions = async (handle) => {
   // Errors come back as JSON with a comment saying what went wrong, except
   // when Codeforces itself is down and an HTML page answers instead.
   const payload = await response.json().catch(() => null);
-  // The API answers 200 with {status: "FAILED"}. payload.result was read
-  // regardless, and `for (const item of undefined)` threw.
+  // A failed call can still answer 200, with {status: "FAILED"} and no
+  // result, so only an OK status with an array counts as submissions.
   if (response.ok && payload?.status === "OK" && Array.isArray(payload.result)) {
     return payload.result;
   }
@@ -557,12 +553,12 @@ const lookup = async (handle, { force = false } = {}) => {
     showResults();
   } catch (error) {
     if (number !== lookupNumber) return;
-    // Nothing caught a failed fetch, so a dropped connection left the page on
-    // "Loading..." with both controls disabled and no way back.
+    // Every failure ends up here, so the page never stays on "Loading..."
+    // with both controls disabled.
     console.error(error);
-    // Only forget the handle when it is the handle that was wrong. A dropped
-    // connection or a busy Codeforces used to wipe it too, so the next visit
-    // opened on an empty form.
+    // Only forget the handle when it is the handle that was wrong, so a
+    // dropped connection or a busy Codeforces does not leave the next visit
+    // on an empty form.
     const kind = error.failure?.kind;
     if (kind === "notFound" || kind === "badHandle") {
       remember("handle", "");
@@ -578,8 +574,7 @@ const lookup = async (handle, { force = false } = {}) => {
       counter.textContent = message;
     }
   } finally {
-    // This used to be the last statement of the handler, so anything that
-    // threw on the way left the form dead.
+    // In finally, so that nothing thrown on the way leaves the form dead.
     if (number === lookupNumber) setBusy(false);
   }
 };
