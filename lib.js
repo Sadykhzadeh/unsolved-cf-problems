@@ -258,7 +258,9 @@ const UNRATED_SORTS_LAST = 1e6;
 // A problem shared by a Div. 1 and a Div. 2 round is submitted to under either
 // contest, so one solved in one counts as solved in the other: same name and
 // rating, in a contest one or two numbers away (parallel rounds are numbered
-// side by side). Only the user's own submissions are needed for that.
+// side by side). Only the user's own submissions are needed for that. The gym
+// has no parallel rounds, and its problems are mostly unrated and often named
+// after their letter, so neighbouring gym contests would match by accident.
 export const findUnsolved = (submissions) => {
   const solved = new Set();
   const solvedByName = new Map();
@@ -269,7 +271,7 @@ export const findUnsolved = (submissions) => {
     if (!solvedByName.has(problem.name)) solvedByName.set(problem.name, []);
     solvedByName.get(problem.name).push(problem);
   }
-  const solvedInTwin = (problem) => solvedByName.get(problem.name)?.some((other) => {
+  const solvedInTwin = (problem) => !isGym(problem.contestId) && solvedByName.get(problem.name)?.some((other) => {
     const apart = Math.abs(other.contestId - problem.contestId);
     return apart >= 1 && apart <= 2 && other.rating === problem.rating;
   });
