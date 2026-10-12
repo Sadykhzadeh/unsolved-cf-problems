@@ -79,6 +79,25 @@ test("a problem solved in its parallel round is not unsolved", () => {
   // too far apart, or another rating: a different problem with the same name
   assert.equal(findUnsolved([twin(1500, "C", "WRONG_ANSWER"), twin(1503, "E", "OK")]).length, 1);
   assert.equal(findUnsolved([twin(1500, "C", "WRONG_ANSWER"), twin(1501, "E", "OK", 1200)]).length, 1);
+  // Round 942: Div. 2 is contest 1972 and Div. 1 is 1967, started together
+  const inRound = (contestId, index, verdict, participantType, startTimeSeconds) => {
+    const item = twin(contestId, index, verdict, 1400);
+    item.author = { participantType, startTimeSeconds };
+    return item;
+  };
+  assert.deepEqual(findUnsolved([
+    inRound(1972, "D1", "WRONG_ANSWER", "PRACTICE", 1714487700),
+    inRound(1967, "B1", "OK", "PRACTICE", 1714487700),
+  ]), []);
+  // a virtual run of the Div. 2 round says nothing about when it started
+  assert.equal(findUnsolved([
+    inRound(1972, "D1", "WRONG_ANSWER", "VIRTUAL", 1714487700),
+    inRound(1967, "B1", "OK", "VIRTUAL", 1714487700),
+  ]).length, 1);
+  assert.equal(findUnsolved([
+    inRound(1972, "D1", "WRONG_ANSWER", "CONTESTANT", 1714487700),
+    inRound(1967, "B1", "OK", "PRACTICE", 1714400000),
+  ]).length, 1);
   // neighbouring gym contests, both unrated, each with a problem called "E"
   const gym = (contestId, verdict) => {
     const item = submission(contestId, "E", verdict, undefined);
