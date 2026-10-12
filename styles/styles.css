@@ -39,8 +39,8 @@ a:visited {
 }
 
 /* Inputs and buttons draw their own borders, so the browser's focus ring
-   was the only thing showing where the keyboard was, and on the dark page
-   it barely did. */
+   is the only thing showing where the keyboard is, and on the dark page it
+   barely shows. */
 :focus-visible {
     outline: 2px solid var(--fg);
     outline-offset: 2px
@@ -157,8 +157,8 @@ td {
 }
 
 /* Seven columns do not fit a phone. The table scrolls sideways inside its
-   own box instead of widening the whole page, which made phones zoom the
-   page out until the text was unreadable. */
+   own box rather than widening the whole page, which would make phones zoom
+   the page out until the text is unreadable. */
 .table-scroll {
     overflow-x: auto
 }
@@ -228,7 +228,7 @@ td {
     border: 0;
 }
 
-/* #about used to be an <a>; as a <button> it needs the link's look back. */
+/* #about is a <button> that looks like a link. */
 #about {
     background: none;
     border: 0;
