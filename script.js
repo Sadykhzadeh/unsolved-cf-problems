@@ -7,6 +7,7 @@ import {
   makeFilter,
   matchesFilter,
   packRows,
+  problemKey,
   problemLink,
   readParams,
   REQUEST_TIMEOUT_MS,
@@ -195,7 +196,7 @@ const buildRow = (problem, showTags) => {
   const href = problemLink(problem);
   const row = document.createElement("tr");
 
-  row.append(cell(anchor(href, `${problem.contestId}|${problem.index}`)));
+  row.append(cell(anchor(href, problemKey(problem))));
 
   const name = anchor(href, problem.name);
   // Every row used to carry id="problemName", so the document had as many
@@ -379,7 +380,7 @@ byId("doNotShowTags").addEventListener("change", () => {
 // while a fresh one loads. Only the last few handles are kept, because the
 // storage is shared with every other page on this origin.
 const SAVED_KEY = "unsolved-cf-problems:lookups";
-const SAVED_VERSION = 1;
+const SAVED_VERSION = 2;
 const FRESH_FOR = 10 * 60 * 1000;
 const KEEP_HANDLES = 3;
 

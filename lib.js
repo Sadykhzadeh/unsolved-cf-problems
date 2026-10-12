@@ -60,17 +60,30 @@ export const REQUEST_TIMEOUT_MS = 30000;
 // call looks like to the code that catches it.
 export const isTimeout = (error) => Boolean(error) && error.name === "TimeoutError";
 
-export const problemKey = (problem) => `${problem.contestId}|${problem.index}`;
+// acmsguru problems belong to no contest: they come with a problemsetName
+// instead of a contestId, and Codeforces files them under contest 99999.
+export const problemKey = (problem) => `${problem.contestId ?? problem.problemsetName}|${problem.index}`;
+
+const isGym = (contestId) => +contestId >= 100000;
 
 export const problemLink = (problem) => {
+  if (problem.contestId === undefined) {
+    return `https://codeforces.com/problemsets/${problem.problemsetName}/problem/99999/${problem.index}`;
+  }
   // Gym contests live under a different path.
-  return +problem.contestId >= 100000
+  return isGym(problem.contestId)
     ? `https://codeforces.com/problemset/gymProblem/${problem.contestId}/${problem.index}`
     : `https://codeforces.com/contest/${problem.contestId}/problem/${problem.index}`;
 };
 
-export const submissionLink = (row) =>
-  `https://codeforces.com/contest/${row.contestId}/submission/${row.submissionId}`;
+export const submissionLink = (row) => {
+  if (row.contestId === undefined) {
+    return `https://codeforces.com/problemsets/${row.problemsetName}/submission/99999/${row.submissionId}`;
+  }
+  return isGym(row.contestId)
+    ? `https://codeforces.com/gym/${row.contestId}/submission/${row.submissionId}`
+    : `https://codeforces.com/contest/${row.contestId}/submission/${row.submissionId}`;
+};
 
 // Sorts a failed user.status call into something a person can act on, so
 // that Codeforces being down is not reported as a wrong handle.
@@ -89,11 +102,14 @@ export const describeFailure = (httpStatus, payload) => {
   return { kind: "otherError", detail: comment || `HTTP ${httpStatus}` };
 };
 
+const NO_CONTEST_SORTS_LAST = 1e9;
+
 // What each sortable column compares, and which way a first click sorts it:
 // easiest, most fought over and most recent first.
 const SORTS = {
   problem: {
-    compare: (a, b) => a.contestId - b.contestId || a.index.localeCompare(b.index, "en", { numeric: true }),
+    compare: (a, b) => (a.contestId ?? NO_CONTEST_SORTS_LAST) - (b.contestId ?? NO_CONTEST_SORTS_LAST)
+      || a.index.localeCompare(b.index, "en", { numeric: true }),
     descending: true,
   },
   name: { compare: (a, b) => a.name.localeCompare(b.name), descending: false },
@@ -138,8 +154,8 @@ export const makeFilter = ({ query = "", min = "", max = "", tag = "" } = {}) =>
 // table shows it ("1520F2" or "1520|F2").
 export const matchesFilter = (row, filter) => {
   if (filter.query) {
-    const id = `${row.contestId}${row.index}`.toLowerCase();
-    const haystack = `${row.name.toLowerCase()}\n${id}\n${row.contestId}|${row.index.toLowerCase()}`;
+    const id = problemKey(row).toLowerCase();
+    const haystack = `${row.name.toLowerCase()}\n${id.replace("|", "")}\n${id}`;
     if (!haystack.includes(filter.query)) return false;
   }
   if (filter.tag && !row.tags.includes(filter.tag)) return false;
@@ -196,7 +212,9 @@ export const writeParams = ({ lang, handle, sort, query = "", min = "", max = ""
 
 // Rows as arrays for localStorage: the field names would otherwise be most of
 // the bytes, and the storage is shared with every other page on the origin.
-const PACKED_FIELDS = ["contestId", "index", "name", "rating", "tags", "verdict", "submissionId", "lastTime", "tries"];
+const PACKED_FIELDS = [
+  "contestId", "index", "name", "rating", "tags", "verdict", "submissionId", "lastTime", "tries", "problemsetName",
+];
 
 export const packRows = (rows) => rows.map((row) => PACKED_FIELDS.map((field) => row[field] ?? null));
 
@@ -211,7 +229,8 @@ export const unpackRows = (packed) => {
     PACKED_FIELDS.forEach((field, i) => {
       if (item[i] !== null) row[field] = item[i];
     });
-    if (!Number.isFinite(row.contestId) || typeof row.index !== "string" || typeof row.name !== "string") {
+    const contest = Number.isFinite(row.contestId) || typeof row.problemsetName === "string";
+    if (!contest || typeof row.index !== "string" || typeof row.name !== "string") {
       return null;
     }
     row.tags = Array.isArray(row.tags) ? row.tags : [];
@@ -267,6 +286,7 @@ export const findUnsolved = (submissions) => {
     const { problem } = item;
     unsolved.set(key, {
       contestId: problem.contestId,
+      problemsetName: problem.problemsetName,
       index: problem.index,
       name: problem.name,
       rating: problem.rating,

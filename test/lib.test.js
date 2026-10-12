@@ -9,6 +9,7 @@ import {
   makeFilter,
   matchesFilter,
   packRows,
+  problemKey,
   problemLink,
   readParams,
   sortRows,
@@ -47,6 +48,7 @@ test("each unsolved problem appears once, with its newest attempt and the count"
   ]);
   assert.deepEqual(rows, [{
     contestId: 2,
+    problemsetName: undefined,
     index: "B",
     name: "2B",
     rating: 1200,
@@ -77,6 +79,29 @@ test("a problem solved in its parallel round is not unsolved", () => {
   // too far apart, or another rating: a different problem with the same name
   assert.equal(findUnsolved([twin(1500, "C", "WRONG_ANSWER"), twin(1503, "E", "OK")]).length, 1);
   assert.equal(findUnsolved([twin(1500, "C", "WRONG_ANSWER"), twin(1501, "E", "OK", 1200)]).length, 1);
+});
+
+test("acmsguru problems, which have no contest, are listed, linked and kept", () => {
+  // As user.status returns them: a problemsetName and no contestId anywhere.
+  const sguru = (index, verdict) => {
+    const item = submission(undefined, index, verdict, undefined);
+    delete item.problem.contestId;
+    item.problem.problemsetName = "acmsguru";
+    return item;
+  };
+  const rows = findUnsolved([sguru("112", "WRONG_ANSWER"), sguru("105", "OK"), submission(4, "A", "WRONG_ANSWER", 800)]);
+  assert.deepEqual(rows.map(problemKey), ["4|A", "acmsguru|112"]);
+
+  const [, row] = rows;
+  assert.equal(problemLink(row), "https://codeforces.com/problemsets/acmsguru/problem/99999/112");
+  assert.equal(
+    submissionLink(row),
+    `https://codeforces.com/problemsets/acmsguru/submission/99999/${row.submissionId}`,
+  );
+  assert.deepEqual(sortRows(rows, "problem", false).map(problemKey), ["4|A", "acmsguru|112"]);
+  assert.deepEqual(sortRows(rows, "problem", true).map(problemKey), ["acmsguru|112", "4|A"]);
+  assert.equal(matchesFilter(row, makeFilter({ query: "acmsguru112" })), true);
+  assert.deepEqual(unpackRows(JSON.parse(JSON.stringify(packRows(rows)))), JSON.parse(JSON.stringify(rows)));
 });
 
 test("rows go easiest first, unrated last", () => {
@@ -233,6 +258,10 @@ test("submission links point at the submission", () => {
   assert.equal(
     submissionLink({ contestId: 1520, index: "F2", submissionId: 42 }),
     "https://codeforces.com/contest/1520/submission/42",
+  );
+  assert.equal(
+    submissionLink({ contestId: 103104, index: "J", submissionId: 42 }),
+    "https://codeforces.com/gym/103104/submission/42",
   );
 });
 
