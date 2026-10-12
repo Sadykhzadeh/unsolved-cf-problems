@@ -86,6 +86,25 @@ const localize = [{
 
 const byId = (id) => document.getElementById(id);
 
+// Remembering the language and the handle is a convenience. Storage can be
+// full, or blocked outright (site data turned off), and then even reading
+// it throws.
+const recall = (key) => {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+};
+
+const remember = (key, value) => {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    // Nothing is remembered, and the page works the same.
+  }
+};
+
 // Anything the generator cannot read is not a language. localStorage.lang used
 // to be trusted as-is, so one bad value left every label undefined until it
 // was cleared by hand.
@@ -95,7 +114,7 @@ const isLanguage = (value) => LANGUAGES.includes(value);
 const pickLanguage = () => {
   const fromUrl = new URL(window.location.href).searchParams.get("lang");
   if (isLanguage(fromUrl)) return fromUrl;
-  if (isLanguage(localStorage.lang)) return localStorage.lang;
+  if (isLanguage(recall("lang"))) return recall("lang");
   return "en";
 };
 
@@ -103,10 +122,10 @@ const lang = pickLanguage();
 const text = localize[0][lang];
 
 const onloadFunction = (lang) => {
-  localStorage.lang = lang;
+  remember("lang", lang);
   // The page is bilingual, so the document has to say which one it is in.
   document.documentElement.lang = lang;
-  byId("handle").value = localStorage.handle ?? "";
+  byId("handle").value = recall("handle") ?? "";
   byId("doNotShowTags-label").textContent = text.showTagsChexBox;
   byId("about").textContent = text.aboutButton;
   byId("refresh").textContent = text.refreshButton;
@@ -507,11 +526,7 @@ const lookup = async (handle, { force = false } = {}) => {
     }
   }
 
-  try {
-    localStorage.handle = handle;
-  } catch {
-    // Remembering the handle is a convenience, not a requirement.
-  }
+  remember("handle", handle);
   syncUrl();
   if (!force && state.savedAt !== null && Date.now() - state.savedAt < FRESH_FOR) return;
 
@@ -538,11 +553,7 @@ const lookup = async (handle, { force = false } = {}) => {
     // opened on an empty form.
     const kind = error.failure?.kind;
     if (kind === "notFound" || kind === "badHandle") {
-      try {
-        localStorage.handle = "";
-      } catch {
-        // See above.
-      }
+      remember("handle", "");
       forget(handle);
       clearResults();
     }
