@@ -22,6 +22,8 @@ import {
 const localize = [{
   "en": {
     searchHandleButton: "Search unsolved tasks",
+    handleLabel: "Codeforces handle",
+    handlePlaceholder: "Input your handle here.",
     showTagsChexBox: " Show problem's tags",
     counterOfProblems: `😱 Count of problems: `,
     nameTD: "Name ",
@@ -53,6 +55,8 @@ const localize = [{
   },
   "ru": {
     searchHandleButton: "Поиск нерешённых задач",
+    handleLabel: "Хендл на Codeforces",
+    handlePlaceholder: "Введите свой хендл.",
     showTagsChexBox: " Показывать теги задач",
     counterOfProblems: `😱 Количество задач: `,
     nameTD: "Название ",
@@ -126,6 +130,10 @@ const onloadFunction = (lang) => {
   // The page is bilingual, so the document has to say which one it is in.
   document.documentElement.lang = lang;
   byId("handle").value = recall("handle") ?? "";
+  byId("handleLabel").textContent = text.handleLabel;
+  byId("handle").placeholder = text.handlePlaceholder;
+  byId("start").title = text.searchHandleButton;
+  byId("start").setAttribute("aria-label", text.searchHandleButton);
   byId("doNotShowTags-label").textContent = text.showTagsChexBox;
   byId("about").textContent = text.aboutButton;
   byId("refresh").textContent = text.refreshButton;
@@ -227,7 +235,7 @@ const buildRow = (problem, showTags) => {
     row.append(cell(problem.tags.length ? problem.tags.join(", ") : "-"));
   }
 
-  row.append(cell(problem.rating === undefined ? "-" : String(problem.rating), "Rating"));
+  row.append(cell(problem.rating === undefined ? "-" : String(problem.rating), text.ratingTD));
   row.append(cell(String(problem.tries)));
 
   const [short, full] = verdictLabel(problem.verdict);
