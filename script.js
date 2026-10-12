@@ -172,9 +172,12 @@ const currentParams = () => ({
   showTags: byId("doNotShowTags").checked,
 });
 
+const pageTitle = document.title;
+
 // Keeps the address bar a link to what is on screen, and the language flags
 // pointing at the same view in the other language. Typing is debounced:
-// browsers throttle pages that rewrite history on every keystroke.
+// browsers throttle pages that rewrite history on every keystroke. The tab
+// title names the handle, so tabs, bookmarks and history tell lists apart.
 let urlTimer = 0;
 const syncUrl = () => {
   clearTimeout(urlTimer);
@@ -182,6 +185,7 @@ const syncUrl = () => {
     const params = currentParams();
     const search = writeParams(params);
     history.replaceState(history.state, "", `${window.location.pathname}${search ? `?${search}` : ""}`);
+    document.title = params.handle ? `${params.handle} - ${pageTitle}` : pageTitle;
     for (const link of document.querySelectorAll("#flags a[data-lang]")) {
       link.href = `?${writeParams({ ...params, lang: link.dataset.lang })}`;
     }
