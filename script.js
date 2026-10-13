@@ -515,16 +515,37 @@ const clearResults = () => {
   delete byId("table-list").dataset.showing;
 };
 
-const setBusy = (busy) => {
-  byId("start").disabled = busy;
-  byId("refresh").disabled = busy;
-};
-
 // A response that arrives after a newer lookup started is dropped.
 let lookupNumber = 0;
 
+// The handle the newest lookup is downloading, or "". Refresh waits for it,
+// and searching for it again does not ask Codeforces a second time; any
+// other handle can be searched for meanwhile.
+let loadingHandle = "";
+
+const setLoading = (handle) => {
+  loadingHandle = handle.toLowerCase();
+  byId("refresh").disabled = handle !== "";
+};
+
+// Codeforces asks for no more than one API call every two seconds, and
+// answers "Call limit exceeded" past that. A call waits for its turn, and is
+// not made at all if nothing wants it by then.
+const API_GAP = 2000;
+let lastCallAt = -Infinity;
+
+const waitForTurn = async (wanted) => {
+  while (Date.now() < lastCallAt + API_GAP) {
+    await new Promise((resolve) => setTimeout(resolve, lastCallAt + API_GAP - Date.now()));
+  }
+  if (!wanted()) return false;
+  lastCallAt = Date.now();
+  return true;
+};
+
 const lookup = async (handle, { force = false } = {}) => {
   const number = ++lookupNumber;
+  setLoading("");
   const counter = byId("counter");
   delete byId("table-list").dataset.showing;
   const sameHandle = state.savedAt !== null && state.handle.toLowerCase() === handle.toLowerCase();
@@ -548,11 +569,12 @@ const lookup = async (handle, { force = false } = {}) => {
   syncUrl();
   if (!force && state.savedAt !== null && Date.now() - state.savedAt < FRESH_FOR) return;
 
-  setBusy(true);
+  setLoading(handle);
   if (state.savedAt !== null) showFreshness(true);
   else counter.textContent = fill(text.loadingText, { handle });
 
   try {
+    if (!await waitForTurn(() => number === lookupNumber)) return;
     const submissions = await loadSubmissions(handle);
     if (number !== lookupNumber) return;
     state.handle = handle;
@@ -564,7 +586,7 @@ const lookup = async (handle, { force = false } = {}) => {
   } catch (error) {
     if (number !== lookupNumber) return;
     // Every failure ends up here, so the page never stays on "Loading..."
-    // with both controls disabled.
+    // with Refresh disabled.
     console.error(error);
     // Only forget the handle when it is the handle that was wrong, so a
     // dropped connection or a busy Codeforces does not leave the next visit
@@ -585,7 +607,7 @@ const lookup = async (handle, { force = false } = {}) => {
     }
   } finally {
     // In finally, so that nothing thrown on the way leaves the form dead.
-    if (number === lookupNumber) setBusy(false);
+    if (number === lookupNumber) setLoading("");
   }
 };
 
@@ -595,6 +617,7 @@ const lookup = async (handle, { force = false } = {}) => {
 byId("start").addEventListener("click", () => {
   const handle = parseHandle(byId("handle").value);
   byId("handle").value = handle;
+  if (loadingHandle && handle.toLowerCase() === loadingHandle) return;
   const again = state.savedAt !== null && state.handle.toLowerCase() === handle.toLowerCase();
   lookup(handle, { force: again });
 });
