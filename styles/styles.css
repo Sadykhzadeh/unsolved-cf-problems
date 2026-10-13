@@ -285,7 +285,7 @@ th[aria-sort="descending"] .sort::after {
     cursor: pointer
 }
 
-#refresh:disabled {
+#refresh[aria-disabled="true"] {
     cursor: progress;
     opacity: 0.6
 }
