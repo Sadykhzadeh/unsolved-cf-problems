@@ -116,6 +116,11 @@ td {
     opacity: 0.8
 }
 
+/* A box and its label wrap onto the next line together. */
+.check {
+    white-space: nowrap
+}
+
 #handle {
     width: 25%;
     margin-bottom: 7px

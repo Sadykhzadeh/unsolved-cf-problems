@@ -14,7 +14,9 @@ Every problem a Codeforces user has tried and not solved, in one table.
 - Sorts by problem, name, rating, tries or last attempt: click a header,
   click again to reverse.
 - Filters by name or problem id (`1520F2` or `1520|F2`), by a rating range
-  and by tag. Press `/` to jump to the search box.
+  and by tag, and can leave out the gym and the problems tagged `*special`
+  (April Fools, Kotlin Heroes, Q# rounds and such). Press `/` to jump to the
+  search box.
 - Shows or hides the problem tags without reloading anything.
 - Keeps the view in the address bar, so a link opens the same list, sorted
   and filtered the same way.
@@ -33,6 +35,8 @@ Every problem a Codeforces user has tried and not solved, in one table.
 | `q` | `q=tree` | name or problem id contains this |
 | `min`, `max` | `min=1600&max=2000` | rating range, inclusive |
 | `tag` | `tag=dp` | has this tag |
+| `nogym` | `nogym=1` | leave out the gym |
+| `nospecial` | `nospecial=1` | leave out problems tagged `*special` |
 | `tags` | `tags=1` | show the tags column |
 | `lang` | `lang=ru` | `en` or `ru`; remembered |
 
