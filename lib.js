@@ -152,12 +152,16 @@ const bound = (value) => {
 };
 
 // Normalises what the filter fields hold: an empty or unreadable bound is no
-// bound, and the search is case-insensitive.
-export const makeFilter = ({ query = "", min = "", max = "", tag = "" } = {}) => ({
+// bound, and the search is case-insensitive. `noGym` leaves out the gym, and
+// `noSpecial` the problems Codeforces tags *special: April Fools jokes,
+// rounds in Q#, Kotlin or an unknown language, olympiad mirrors.
+export const makeFilter = ({ query = "", min = "", max = "", tag = "", noGym = false, noSpecial = false } = {}) => ({
   query: String(query).trim().toLowerCase(),
   min: bound(min),
   max: bound(max),
   tag: String(tag),
+  noGym: Boolean(noGym),
+  noSpecial: Boolean(noSpecial),
 });
 
 // The search matches the name or the problem id, written either way the
@@ -169,6 +173,8 @@ export const matchesFilter = (row, filter) => {
     if (!haystack.includes(filter.query)) return false;
   }
   if (filter.tag && !row.tags.includes(filter.tag)) return false;
+  if (filter.noGym && isGym(row.contestId)) return false;
+  if (filter.noSpecial && row.tags.includes("*special")) return false;
   if (filter.min !== null || filter.max !== null) {
     // An unrated problem cannot be said to sit inside a range.
     if (row.rating === undefined) return false;
@@ -201,11 +207,15 @@ export const readParams = (search) => {
     min: params.get("min") ?? "",
     max: params.get("max") ?? "",
     tag: params.get("tag") ?? "",
+    noGym: params.get("nogym") === "1",
+    noSpecial: params.get("nospecial") === "1",
     showTags: params.get("tags") === "1",
   };
 };
 
-export const writeParams = ({ lang, handle, sort, query = "", min = "", max = "", tag = "", showTags = false }) => {
+export const writeParams = ({
+  lang, handle, sort, query = "", min = "", max = "", tag = "", noGym = false, noSpecial = false, showTags = false,
+}) => {
   const params = new URLSearchParams();
   if (lang) params.set("lang", lang);
   if (handle) params.set("handle", handle);
@@ -216,6 +226,8 @@ export const writeParams = ({ lang, handle, sort, query = "", min = "", max = ""
   if (bound(min) !== null) params.set("min", String(bound(min)));
   if (bound(max) !== null) params.set("max", String(bound(max)));
   if (tag) params.set("tag", tag);
+  if (noGym) params.set("nogym", "1");
+  if (noSpecial) params.set("nospecial", "1");
   if (showTags) params.set("tags", "1");
   return params.toString();
 };

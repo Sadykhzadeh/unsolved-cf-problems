@@ -48,6 +48,9 @@ const localize = [{
     searchPlaceholder: "Search by name or id",
     maxRating: "Maximum rating",
     anyTag: "Any tag",
+    noGymLabel: "Hide gym",
+    noSpecialLabel: "Hide special rounds",
+    noSpecialTitle: "April Fools, Kotlin Heroes, Q# and the rest tagged *special",
     shownText: "Showing {shown} of {total}",
     updatedText: "Updated {ago}.",
     justNow: "just now",
@@ -82,6 +85,9 @@ const localize = [{
     searchPlaceholder: "Поиск по названию или номеру",
     maxRating: "Максимальный рейтинг",
     anyTag: "Любой тег",
+    noGymLabel: "Без тренировок",
+    noSpecialLabel: "Без особых раундов",
+    noSpecialTitle: "1 апреля, Kotlin Heroes, Q# и остальные задачи с тегом *special",
     shownText: "Показано {shown} из {total}",
     updatedText: "Обновлено {ago}.",
     justNow: "только что",
@@ -145,6 +151,9 @@ const onloadFunction = (lang) => {
   byId("ratingFilterLabel").textContent = text.ratingTD;
   byId("maxRating").setAttribute("aria-label", text.maxRating);
   byId("tagFilter").setAttribute("aria-label", text.tagsTD);
+  byId("noGymLabel").textContent = text.noGymLabel;
+  byId("noSpecialLabel").textContent = text.noSpecialLabel;
+  byId("noSpecialLabel").parentElement.title = text.noSpecialTitle;
   byId("ratingLabel").textContent = text.ratingTD;
   byId("triesLabel").textContent = text.triesTD;
   byId("verdictTD").textContent = text.verdictTD;
@@ -162,6 +171,8 @@ const applyParams = () => {
   byId("minRating").value = params.min;
   byId("maxRating").value = params.max;
   pendingTag = params.tag;
+  byId("noGym").checked = params.noGym;
+  byId("noSpecial").checked = params.noSpecial;
   byId("doNotShowTags").checked = params.showTags;
 };
 
@@ -172,6 +183,8 @@ const currentParams = () => ({
   min: byId("minRating").value,
   max: byId("maxRating").value,
   tag: byId("tagFilter").value || pendingTag,
+  noGym: byId("noGym").checked,
+  noSpecial: byId("noSpecial").checked,
   showTags: byId("doNotShowTags").checked,
 });
 
@@ -308,6 +321,8 @@ const applyFilters = () => {
     min: byId("minRating").value,
     max: byId("maxRating").value,
     tag: byId("tagFilter").value,
+    noGym: byId("noGym").checked,
+    noSpecial: byId("noSpecial").checked,
   });
   let shown = 0;
   for (const [tr, row] of drawn) {
@@ -379,7 +394,7 @@ for (const button of document.querySelectorAll("button.sort")) {
 }
 
 // The filters exist once in the page, so their listeners are attached once.
-for (const id of ["searchTask", "minRating", "maxRating", "tagFilter"]) {
+for (const id of ["searchTask", "minRating", "maxRating", "tagFilter", "noGym", "noSpecial"]) {
   byId(id).addEventListener("input", () => {
     applyFilters();
     syncUrl();

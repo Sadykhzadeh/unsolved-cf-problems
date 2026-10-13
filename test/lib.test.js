@@ -161,16 +161,18 @@ test("rows sort by any column either way, unrated staying last", () => {
   assert.equal(rows[0].name, "Beta", "the input is left alone");
 });
 
-test("the filter narrows by name or id, tag and rating range", () => {
+test("the filter narrows by name or id, tag, rating range and kind of contest", () => {
   const row = (contestId, index, name, rating, tags) => ({ contestId, index, name, rating, tags });
   const rows = [
     row(1520, "F2", "Guess the K-th Zero (Hard version)", 2200, ["binary search", "interactive"]),
     row(4, "A", "Watermelon", 800, ["brute force", "math"]),
     row(2000, "H", "Fresh One", undefined, ["dp"]),
+    row(100092, "E", "E", undefined, []),
+    row(1952, "J", "Ordinary Problem", undefined, ["*special"]),
   ];
   const pick = (fields) => rows.filter((r) => matchesFilter(r, makeFilter(fields))).map((r) => r.name);
 
-  assert.equal(pick({}).length, 3, "an empty filter keeps everything");
+  assert.equal(pick({}).length, 5, "an empty filter keeps everything");
   assert.deepEqual(pick({ query: "  WATER " }), ["Watermelon"]);
   assert.deepEqual(pick({ query: "1520f2" }), ["Guess the K-th Zero (Hard version)"]);
   assert.deepEqual(pick({ query: "1520|F" }), ["Guess the K-th Zero (Hard version)"]);
@@ -178,7 +180,11 @@ test("the filter narrows by name or id, tag and rating range", () => {
   assert.deepEqual(pick({ min: "1000" }), ["Guess the K-th Zero (Hard version)"]);
   assert.deepEqual(pick({ max: 800 }), ["Watermelon"]);
   assert.deepEqual(pick({ min: "800", max: "2200" }).length, 2, "bounds are inclusive; unrated is out");
-  assert.equal(pick({ min: "abc" }).length, 3, "an unreadable bound is no bound");
+  assert.equal(pick({ min: "abc" }).length, 5, "an unreadable bound is no bound");
+  const all = pick({});
+  assert.deepEqual(pick({ noGym: true }), all.filter((name) => name !== "E"));
+  assert.deepEqual(pick({ noSpecial: true }), all.filter((name) => name !== "Ordinary Problem"));
+  assert.deepEqual(pick({ noGym: true, noSpecial: true, tag: "dp" }), ["Fresh One"]);
 });
 
 test("tags are counted, commonest first", () => {
@@ -220,10 +226,12 @@ test("a link carries the handle, sort and filters, and nothing at their defaults
     min: "1200",
     max: "",
     tag: "dp",
+    noGym: true,
+    noSpecial: true,
     showTags: true,
   };
   const search = writeParams(state);
-  assert.equal(search, "handle=tourist&sort=-tries&q=bear&min=1200&tag=dp&tags=1");
+  assert.equal(search, "handle=tourist&sort=-tries&q=bear&min=1200&tag=dp&nogym=1&nospecial=1&tags=1");
   assert.deepEqual(readParams(`?${search}`), { ...state, query: "bear" });
 
   assert.equal(writeParams({ handle: "a b&c", sort: { key: "rating", descending: false } }), "handle=a+b%26c");
@@ -238,6 +246,8 @@ test("unknown or broken parameters fall back to the defaults", () => {
     min: "",
     max: "",
     tag: "",
+    noGym: false,
+    noSpecial: false,
     showTags: false,
   });
   assert.deepEqual(readParams("?sort=name").sort, { key: "name", descending: false });
