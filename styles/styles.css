@@ -75,7 +75,8 @@ td {
 #searchTask,
 #minRating,
 #maxRating,
-#tagFilter {
+#tagFilter,
+#friend {
     background-color: var(--bg);
     color: var(--fg);
     font-size: 23px;
@@ -110,6 +111,14 @@ td {
 #minRating,
 #maxRating {
     width: 4.5em
+}
+
+#friend {
+    width: 8em
+}
+
+#friendStatus:empty {
+    display: none
 }
 
 #shown {

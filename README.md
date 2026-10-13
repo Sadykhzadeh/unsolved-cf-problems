@@ -17,6 +17,8 @@ Every problem a Codeforces user has tried and not solved, in one table.
   and by tag, and can leave out the gym and the problems tagged `*special`
   (April Fools, Kotlin Heroes, Q# rounds and such). Press `/` to jump to the
   search box.
+- Narrows the list to the problems a friend has solved, their parallel
+  rounds included: the ones worth asking them about.
 - Shows or hides the problem tags without reloading anything.
 - Keeps the view in the address bar, so a link opens the same list, sorted
   and filtered the same way.
@@ -37,6 +39,7 @@ Every problem a Codeforces user has tried and not solved, in one table.
 | `tag` | `tag=dp` | has this tag |
 | `nogym` | `nogym=1` | leave out the gym |
 | `nospecial` | `nospecial=1` | leave out problems tagged `*special` |
+| `friend` | `friend=jiangly` | only problems this handle has solved |
 | `tags` | `tags=1` | show the tags column |
 | `lang` | `lang=ru` | `en` or `ru`; remembered |
 
@@ -48,12 +51,14 @@ ones accepted in the parallel Div. 1 or Div. 2 round (same name and rating, in
 a contest that started at the same moment or is numbered one or two away), and
 lists what is left - sorted by rating,
 with unrated problems last. Everything runs
-in the browser; there is no backend and nothing is stored anywhere but your
-own `localStorage`, which keeps the last handle, the chosen language and the
+in the browser; there is no backend and nothing is stored outside it:
+`localStorage` keeps the last handle, the chosen language and the
 results of the last three lookups. A lookup younger than ten minutes is
 shown without asking Codeforces again; an older one is shown at once while a
 fresh copy loads, and "Refresh" (or searching for the same handle) always
-asks again.
+asks again. A friend's submissions are boiled down to the problems they
+solved and kept the same way, the latest friend only, in Cache Storage,
+which has room for them. Calls to the API are spaced two seconds apart, as Codeforces asks.
 
 ## Running it locally
 

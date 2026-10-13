@@ -154,14 +154,18 @@ const bound = (value) => {
 // Normalises what the filter fields hold: an empty or unreadable bound is no
 // bound, and the search is case-insensitive. `noGym` leaves out the gym, and
 // `noSpecial` the problems Codeforces tags *special: April Fools jokes,
-// rounds in Q#, Kotlin or an unknown language, olympiad mirrors.
-export const makeFilter = ({ query = "", min = "", max = "", tag = "", noGym = false, noSpecial = false } = {}) => ({
+// rounds in Q#, Kotlin or an unknown language, olympiad mirrors. `solvedBy`,
+// a check from solvedCheck(), keeps only what someone else has solved.
+export const makeFilter = ({
+  query = "", min = "", max = "", tag = "", noGym = false, noSpecial = false, solvedBy = null,
+} = {}) => ({
   query: String(query).trim().toLowerCase(),
   min: bound(min),
   max: bound(max),
   tag: String(tag),
   noGym: Boolean(noGym),
   noSpecial: Boolean(noSpecial),
+  solvedBy: typeof solvedBy === "function" ? solvedBy : null,
 });
 
 // The search matches the name or the problem id, written either way the
@@ -175,6 +179,7 @@ export const matchesFilter = (row, filter) => {
   if (filter.tag && !row.tags.includes(filter.tag)) return false;
   if (filter.noGym && isGym(row.contestId)) return false;
   if (filter.noSpecial && row.tags.includes("*special")) return false;
+  if (filter.solvedBy && !filter.solvedBy(row, row.start)) return false;
   if (filter.min !== null || filter.max !== null) {
     // An unrated problem cannot be said to sit inside a range.
     if (row.rating === undefined) return false;
@@ -209,12 +214,14 @@ export const readParams = (search) => {
     tag: params.get("tag") ?? "",
     noGym: params.get("nogym") === "1",
     noSpecial: params.get("nospecial") === "1",
+    friend: (params.get("friend") ?? "").trim(),
     showTags: params.get("tags") === "1",
   };
 };
 
 export const writeParams = ({
-  lang, handle, sort, query = "", min = "", max = "", tag = "", noGym = false, noSpecial = false, showTags = false,
+  lang, handle, sort, query = "", min = "", max = "", tag = "", noGym = false, noSpecial = false, friend = "",
+  showTags = false,
 }) => {
   const params = new URLSearchParams();
   if (lang) params.set("lang", lang);
@@ -228,6 +235,7 @@ export const writeParams = ({
   if (tag) params.set("tag", tag);
   if (noGym) params.set("nogym", "1");
   if (noSpecial) params.set("nospecial", "1");
+  if (friend) params.set("friend", friend);
   if (showTags) params.set("tags", "1");
   return params.toString();
 };
@@ -236,6 +244,7 @@ export const writeParams = ({
 // the bytes, and the storage is shared with every other page on the origin.
 const PACKED_FIELDS = [
   "contestId", "index", "name", "rating", "tags", "verdict", "submissionId", "lastTime", "tries", "problemsetName",
+  "start",
 ];
 
 export const packRows = (rows) => rows.map((row) => PACKED_FIELDS.map((field) => row[field] ?? null));
@@ -273,45 +282,73 @@ export const ageParts = (ms) => {
 
 const UNRATED_SORTS_LAST = 1e6;
 
-// One row per unsolved problem: the problem, its newest attempt, and how many
-// attempts there were. user.status lists submissions newest first, so the
-// first one seen for a problem is the latest.
-//
-// A problem shared by a Div. 1 and a Div. 2 round is submitted to under either
-// contest, so one solved in one counts as solved in the other: same name and
-// rating, in a contest that started at the same second, or one numbered one or
-// two away (an online mirror of an onsite round starts later but sits next to
-// it). Only the user's own submissions are needed for that: each one made in
-// the contest or in practice after it carries the contest's start time, and a
-// virtual one its own. The gym has no parallel rounds, and its problems are
-// mostly unrated and often named after their letter, so neighbouring gym
-// contests would match by accident.
-export const findUnsolved = (submissions) => {
-  const solved = new Set();
-  const solvedByName = new Map();
+// Each contest's start time, as the submissions record it: one made in the
+// contest or in practice after it carries the contest's start, and a virtual
+// one its own, so virtual ones are left out.
+const contestStarts = (submissions) => {
   const startOf = new Map();
   for (const item of submissions) {
     const start = item.author?.startTimeSeconds;
     if (item.author?.participantType !== "VIRTUAL" && Number.isFinite(start)) {
       startOf.set(item.problem.contestId, start);
     }
-    if (item.verdict !== "OK") continue;
-    const { problem } = item;
-    solved.add(problemKey(problem));
-    if (!solvedByName.has(problem.name)) solvedByName.set(problem.name, []);
-    solvedByName.get(problem.name).push(problem);
   }
-  const solvedInTwin = (problem) => !isGym(problem.contestId) && solvedByName.get(problem.name)?.some((other) => {
-    if (other.contestId === problem.contestId || other.rating !== problem.rating) return false;
-    const start = startOf.get(problem.contestId);
-    return Math.abs(other.contestId - problem.contestId) <= 2
-      || (start !== undefined && start === startOf.get(other.contestId));
-  });
+  return startOf;
+};
+
+// What a handle has solved, small enough to keep: the key of every solved
+// problem, and for the parallel-round match in solvedCheck() the name, rating,
+// contest and contest start of each one outside the gym.
+export const summarizeSolved = (submissions, startOf = contestStarts(submissions)) => {
+  const solved = new Map();
+  for (const item of submissions) {
+    if (item.verdict === "OK") solved.set(problemKey(item.problem), item.problem);
+  }
+  const twins = [];
+  for (const problem of solved.values()) {
+    if (problem.contestId === undefined || isGym(problem.contestId)) continue;
+    twins.push([problem.name, problem.rating ?? null, problem.contestId, startOf.get(problem.contestId) ?? null]);
+  }
+  return { keys: [...solved.keys()], twins };
+};
+
+// Whether a summary has a problem solved, given when the problem's contest
+// started. A problem shared by a Div. 1 and a Div. 2 round is submitted to
+// under either contest, so one solved in one counts as solved in the other:
+// same name and rating, in a contest that started at the same second, or one
+// numbered one or two away (an online mirror of an onsite round starts later
+// but sits next to it). The gym has no parallel rounds, and its problems are
+// mostly unrated and often named after their letter, so neighbouring gym
+// contests would match by accident.
+export const solvedCheck = (summary) => {
+  const keys = new Set(summary.keys);
+  const byName = new Map();
+  for (const [name, rating, contestId, start] of summary.twins) {
+    if (!byName.has(name)) byName.set(name, []);
+    byName.get(name).push({ rating, contestId, start });
+  }
+  return (problem, start) => {
+    if (keys.has(problemKey(problem))) return true;
+    if (problem.contestId === undefined || isGym(problem.contestId)) return false;
+    return (byName.get(problem.name) ?? []).some((other) => other.contestId !== problem.contestId
+      && other.rating === (problem.rating ?? null)
+      && (Math.abs(other.contestId - problem.contestId) <= 2 || (Number.isFinite(start) && start === other.start)));
+  };
+};
+
+// One row per unsolved problem: the problem, its newest attempt, how many
+// attempts there were and when its contest started. user.status lists
+// submissions newest first, so the first one seen for a problem is the
+// latest. A problem solved in its parallel round is not unsolved, and the
+// user's own submissions are enough to tell.
+export const findUnsolved = (submissions) => {
+  const startOf = contestStarts(submissions);
+  const solved = solvedCheck(summarizeSolved(submissions, startOf));
 
   const unsolved = new Map();
   for (const item of submissions) {
     const key = problemKey(item.problem);
-    if (solved.has(key) || solvedInTwin(item.problem)) continue;
+    if (solved(item.problem, startOf.get(item.problem.contestId))) continue;
     const seen = unsolved.get(key);
     if (seen) {
       seen.tries += 1;
@@ -329,6 +366,7 @@ export const findUnsolved = (submissions) => {
       submissionId: item.id,
       lastTime: item.creationTimeSeconds,
       tries: 1,
+      start: startOf.get(problem.contestId),
     });
   }
 

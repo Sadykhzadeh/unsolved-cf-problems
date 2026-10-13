@@ -13,8 +13,10 @@ import {
   problemKey,
   problemLink,
   readParams,
+  solvedCheck,
   sortRows,
   submissionLink,
+  summarizeSolved,
   tagCounts,
   unpackRows,
   verdictLabel,
@@ -42,6 +44,7 @@ test("a problem accepted once is solved, however many attempts failed", () => {
 
 test("each unsolved problem appears once, with its newest attempt and the count", () => {
   const newest = submission(2, "B", "TIME_LIMIT_EXCEEDED", 1200);
+  newest.author = { participantType: "PRACTICE", startTimeSeconds: 1_266_000_000 };
   const rows = findUnsolved([
     newest,
     submission(2, "B", "WRONG_ANSWER", 1200),
@@ -58,6 +61,7 @@ test("each unsolved problem appears once, with its newest attempt and the count"
     submissionId: newest.id,
     lastTime: newest.creationTimeSeconds,
     tries: 3,
+    start: 1_266_000_000,
   }]);
 });
 
@@ -106,6 +110,43 @@ test("a problem solved in its parallel round is not unsolved", () => {
     return item;
   };
   assert.equal(findUnsolved([gym(100093, "TIME_LIMIT_EXCEEDED"), gym(100092, "OK")]).length, 1);
+});
+
+test("a friend's solved problems narrow the list, parallel rounds included", () => {
+  const solve = (contestId, index, name, rating, startTimeSeconds) => {
+    const item = submission(contestId, index, "OK", rating);
+    item.problem.name = name;
+    item.author = { participantType: "PRACTICE", startTimeSeconds };
+    return item;
+  };
+  const friend = [
+    solve(1967, "B1", "Reverse Card (Easy Version)", 1400, 1714487700),
+    solve(1500, "C", "Shared", 1900, 1614000000),
+    solve(4, "A", "Watermelon", 800, 1268000000),
+    solve(100092, "E", "E", undefined, 1340000000),
+  ];
+  // what is kept goes through JSON on its way to the cache and back
+  const solvedBy = solvedCheck(JSON.parse(JSON.stringify(summarizeSolved(friend))));
+  const row = (contestId, index, name, rating, start) => ({ contestId, index, name, rating, start, tags: [] });
+
+  assert.equal(solvedBy(row(4, "A", "Watermelon", 800)), true);
+  assert.equal(solvedBy(row(5, "A", "Watermelon", 800)), true, "one contest away, same name and rating");
+  assert.equal(solvedBy(row(1501, "E", "Shared", 1900)), true);
+  assert.equal(solvedBy(row(1972, "D1", "Reverse Card (Easy Version)", 1400), 1714487700), true);
+  assert.equal(solvedBy(row(1972, "D1", "Reverse Card (Easy Version)", 1400), 1714400000), false);
+  assert.equal(solvedBy(row(1503, "E", "Shared", 1900)), false);
+  assert.equal(solvedBy(row(1501, "E", "Shared", 2100)), false);
+  assert.equal(solvedBy(row(100092, "E", "E")), true);
+  assert.equal(solvedBy(row(100093, "E", "E")), false, "the gym has no parallel rounds");
+
+  const rows = [
+    row(1972, "D1", "Reverse Card (Easy Version)", 1400, 1714487700),
+    row(1520, "F2", "Guess the K-th Zero (Hard version)", 2200, 1620000000),
+  ];
+  // packed for storage, a row keeps its contest's start for the match
+  const [kept] = unpackRows(JSON.parse(JSON.stringify(packRows(rows))));
+  assert.deepEqual(rows.filter((r) => matchesFilter(r, makeFilter({ solvedBy }))), [rows[0]]);
+  assert.equal(matchesFilter(kept, makeFilter({ solvedBy })), true);
 });
 
 test("acmsguru problems, which have no contest, are listed, linked and kept", () => {
@@ -228,10 +269,11 @@ test("a link carries the handle, sort and filters, and nothing at their defaults
     tag: "dp",
     noGym: true,
     noSpecial: true,
+    friend: "jiangly",
     showTags: true,
   };
   const search = writeParams(state);
-  assert.equal(search, "handle=tourist&sort=-tries&q=bear&min=1200&tag=dp&nogym=1&nospecial=1&tags=1");
+  assert.equal(search, "handle=tourist&sort=-tries&q=bear&min=1200&tag=dp&nogym=1&nospecial=1&friend=jiangly&tags=1");
   assert.deepEqual(readParams(`?${search}`), { ...state, query: "bear" });
 
   assert.equal(writeParams({ handle: "a b&c", sort: { key: "rating", descending: false } }), "handle=a+b%26c");
@@ -248,6 +290,7 @@ test("unknown or broken parameters fall back to the defaults", () => {
     tag: "",
     noGym: false,
     noSpecial: false,
+    friend: "",
     showTags: false,
   });
   assert.deepEqual(readParams("?sort=name").sort, { key: "name", descending: false });

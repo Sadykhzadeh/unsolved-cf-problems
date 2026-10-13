@@ -12,8 +12,10 @@ import {
   problemLink,
   readParams,
   REQUEST_TIMEOUT_MS,
+  solvedCheck,
   sortRows,
   submissionLink,
+  summarizeSolved,
   tagCounts,
   unpackRows,
   verdictLabel,
@@ -51,6 +53,8 @@ const localize = [{
     noGymLabel: "Hide gym",
     noSpecialLabel: "Hide special rounds",
     noSpecialTitle: "April Fools, Kotlin Heroes, Q# and the rest tagged *special",
+    friendLabel: "Solved by",
+    friendPlaceholder: "a friend's handle",
     shownText: "Showing {shown} of {total}",
     updatedText: "Updated {ago}.",
     justNow: "just now",
@@ -88,6 +92,8 @@ const localize = [{
     noGymLabel: "Без тренировок",
     noSpecialLabel: "Без особых раундов",
     noSpecialTitle: "1 апреля, Kotlin Heroes, Q# и остальные задачи с тегом *special",
+    friendLabel: "Решил(а)",
+    friendPlaceholder: "хендл друга",
     shownText: "Показано {shown} из {total}",
     updatedText: "Обновлено {ago}.",
     justNow: "только что",
@@ -154,6 +160,8 @@ const onloadFunction = (lang) => {
   byId("noGymLabel").textContent = text.noGymLabel;
   byId("noSpecialLabel").textContent = text.noSpecialLabel;
   byId("noSpecialLabel").parentElement.title = text.noSpecialTitle;
+  byId("friendLabel").textContent = text.friendLabel;
+  byId("friend").placeholder = text.friendPlaceholder;
   byId("ratingLabel").textContent = text.ratingTD;
   byId("triesLabel").textContent = text.triesTD;
   byId("verdictTD").textContent = text.verdictTD;
@@ -173,6 +181,7 @@ const applyParams = () => {
   pendingTag = params.tag;
   byId("noGym").checked = params.noGym;
   byId("noSpecial").checked = params.noSpecial;
+  byId("friend").value = params.friend;
   byId("doNotShowTags").checked = params.showTags;
 };
 
@@ -185,6 +194,7 @@ const currentParams = () => ({
   tag: byId("tagFilter").value || pendingTag,
   noGym: byId("noGym").checked,
   noSpecial: byId("noSpecial").checked,
+  friend: friend.handle,
   showTags: byId("doNotShowTags").checked,
 });
 
@@ -212,6 +222,7 @@ document.addEventListener("DOMContentLoaded", () => {
   onloadFunction(lang);
   applyParams();
   byId("start").click();
+  chooseFriend();
 });
 
 byId("handle").addEventListener("keyup", (event) => {
@@ -309,6 +320,10 @@ const failureText = (error, handle) => {
 // instead of asking Codeforces for every submission again.
 const state = { handle: "", rows: [], savedAt: null, sort: { key: "rating", descending: false } };
 
+// The friend whose solved problems narrow the list, and once their
+// submissions are in, the check for what they solved.
+const friend = { handle: "", savedAt: null, solvedBy: null };
+
 // Each drawn <tr> with the row it shows, so filtering only flips `hidden`
 // instead of rebuilding the table.
 let drawn = [];
@@ -323,6 +338,7 @@ const applyFilters = () => {
     tag: byId("tagFilter").value,
     noGym: byId("noGym").checked,
     noSpecial: byId("noSpecial").checked,
+    solvedBy: friend.solvedBy,
   });
   let shown = 0;
   for (const [tr, row] of drawn) {
@@ -426,7 +442,7 @@ byId("doNotShowTags").addEventListener("change", () => {
 // while a fresh one loads. Only the last few handles are kept, because the
 // storage is shared with every other page on this origin.
 const SAVED_KEY = "unsolved-cf-problems:lookups";
-const SAVED_VERSION = 2;
+const SAVED_VERSION = 3;
 const FRESH_FOR = 10 * 60 * 1000;
 const KEEP_HANDLES = 3;
 
@@ -640,6 +656,105 @@ byId("start").addEventListener("click", () => {
 
 byId("refresh").addEventListener("click", () => {
   if (state.handle && !loadingHandle) lookup(state.handle, { force: true });
+});
+
+// A friend's submissions are boiled down to what they solved and kept in the
+// Cache API, which has room for them where localStorage does not: jiangly's
+// 6.3 MB come to 329 KB. Only the latest friend is kept. Problem names come in
+// the page's language and are matched by name, so the copy is per language.
+const CACHE_NAME = "unsolved-cf-problems";
+const friendCacheKey = (handle) =>
+  new URL(`friend.v1/${lang}/${encodeURIComponent(handle.toLowerCase())}`, window.location.href).href;
+
+const openCache = async () => {
+  try {
+    // Missing outside secure contexts, and throws when site data is blocked.
+    return await caches.open(CACHE_NAME);
+  } catch {
+    return null;
+  }
+};
+
+const readFriend = async (handle) => {
+  try {
+    const response = await (await openCache())?.match(friendCacheKey(handle));
+    const entry = await response?.json();
+    const valid = Number.isFinite(entry?.savedAt)
+      && Array.isArray(entry.summary?.keys) && Array.isArray(entry.summary.twins);
+    return valid ? entry : null;
+  } catch {
+    return null;
+  }
+};
+
+const saveFriend = async (handle, entry) => {
+  const cache = await openCache();
+  if (!cache) return;
+  try {
+    for (const request of await cache.keys()) await cache.delete(request);
+    await cache.put(friendCacheKey(handle), new Response(JSON.stringify(entry), {
+      headers: { "Content-Type": "application/json" },
+    }));
+  } catch {
+    // Not kept; the next visit downloads it again.
+  }
+};
+
+const useFriend = ({ savedAt, summary }) => {
+  friend.savedAt = savedAt;
+  friend.solvedBy = solvedCheck(summary);
+  applyFilters();
+};
+
+// A friend is loaded like a lookup: a saved copy at once, a fresh one when
+// it is older than FRESH_FOR, and a newer choice drops an older one's answer.
+// Entering the same friend again tries again after a failure.
+let friendNumber = 0;
+let friendLoading = "";
+
+const loadFriend = async (handle) => {
+  const key = handle.toLowerCase();
+  if (friendLoading && friendLoading === key) return;
+  const number = ++friendNumber;
+  friendLoading = key;
+  const status = byId("friendStatus");
+  try {
+    if (friend.handle.toLowerCase() !== key) {
+      Object.assign(friend, { handle, savedAt: null, solvedBy: null });
+      status.textContent = "";
+      applyFilters();
+      syncUrl();
+      const saved = handle ? await readFriend(handle) : null;
+      if (number !== friendNumber) return;
+      if (saved) useFriend(saved);
+    }
+    if (!handle || (friend.savedAt !== null && Date.now() - friend.savedAt < FRESH_FOR)) return;
+    if (friend.savedAt === null) status.textContent = fill(text.loadingText, { handle });
+    if (!await waitForTurn(() => number === friendNumber)) return;
+    const submissions = await loadSubmissions(handle);
+    if (number !== friendNumber) return;
+    const entry = { savedAt: Date.now(), summary: summarizeSolved(submissions) };
+    useFriend(entry);
+    status.textContent = "";
+    saveFriend(handle, entry);
+  } catch (error) {
+    if (number !== friendNumber) return;
+    console.error(error);
+    status.textContent = failureText(error, handle);
+  } finally {
+    if (number === friendNumber) friendLoading = "";
+  }
+};
+
+const chooseFriend = () => {
+  const handle = parseHandle(byId("friend").value);
+  byId("friend").value = handle;
+  loadFriend(handle);
+};
+
+byId("friend").addEventListener("change", chooseFriend);
+byId("friend").addEventListener("keydown", (event) => {
+  if (event.key === "Enter") chooseFriend();
 });
 
 byId("about").addEventListener("click", () => {
