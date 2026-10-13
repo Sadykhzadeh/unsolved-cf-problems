@@ -46,6 +46,12 @@ a:visited {
     outline-offset: 2px
 }
 
+/* The page's one heading, at the size browsers give an <h2>. */
+h1 {
+    font-size: 1.5em;
+    margin: 0.83em 0
+}
+
 #flags {
     text-align: right;
     text-decoration: none
@@ -185,7 +191,7 @@ td {
         font-size: 18px
     }
 
-    h2 {
+    h1 {
         font-size: 1.3em
     }
 
