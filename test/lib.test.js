@@ -246,7 +246,7 @@ test("verdicts get short labels; unknown and missing ones do not break", () => {
   assert.deepEqual(verdictLabel("WRONG_ANSWER"), ["WA", "WRONG_ANSWER"]);
   assert.deepEqual(verdictLabel("CHALLENGED"), ["CHL", "CHALLENGED / HACKED"]);
   assert.deepEqual(verdictLabel("SOMETHING_NEW"), ["SOMETHING_NEW", "SOMETHING_NEW"]);
-  assert.deepEqual(verdictLabel(undefined), ["?", "not judged yet"]);
+  assert.deepEqual(verdictLabel(undefined, "ещё не проверено"), ["?", "ещё не проверено"]);
 });
 
 test("failures say whether the handle, the limit or Codeforces is to blame", () => {

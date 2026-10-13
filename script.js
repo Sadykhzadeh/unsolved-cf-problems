@@ -31,6 +31,7 @@ const localize = [{
     ratingTD: "Rating",
     triesTD: "Tries",
     verdictTD: "Last verdict",
+    notJudgedText: "not judged yet",
     lastTriedTD: "Last attempt",
     congratsText: "Congratulations, You haven't got any unsolved tasks! 🥳",
     loadingText: "Loading the submissions of {handle}...",
@@ -64,6 +65,7 @@ const localize = [{
     ratingTD: "Рейтинг",
     triesTD: "Попытки",
     verdictTD: "Последний вердикт",
+    notJudgedText: "ещё не проверено",
     lastTriedTD: "Последняя попытка",
     congratsText: "Поздравляю, У тебя нет нерешённых задач! 🥳",
     loadingText: "Загружаю посылки {handle}...",
@@ -240,7 +242,7 @@ const buildRow = (problem, showTags) => {
   row.append(cell(problem.rating === undefined ? "-" : String(problem.rating), text.ratingTD));
   row.append(cell(String(problem.tries)));
 
-  const [short, full] = verdictLabel(problem.verdict);
+  const [short, full] = verdictLabel(problem.verdict, text.notJudgedText);
   row.append(cell(short, full));
 
   const when = anchor(submissionLink(problem), dateFormat.format(problem.lastTime * 1000));

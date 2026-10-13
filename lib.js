@@ -44,9 +44,10 @@ const verdicts = [{
 // another one onto the wrong row.
 const verdictsByName = new Map(verdicts.map((v) => [v.full, v]));
 
-// Returns [short label, full label].
-export const verdictLabel = (verdict) => {
-  if (!verdict) return ["?", "not judged yet"];
+// Returns [short label, full label]. A submission still in the queue has no
+// verdict, and is described by `pending`, in the page's language.
+export const verdictLabel = (verdict, pending) => {
+  if (!verdict) return ["?", pending];
   const known = verdictsByName.get(verdict);
   if (!known) return [verdict, verdict];
   return [known.short, known.label ?? known.full];
