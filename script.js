@@ -476,12 +476,11 @@ const showFreshness = (refreshing) => {
   byId("savedAgo").textContent = refreshing
     ? text.refreshingText
     : fill(text.updatedText, { ago: ago(state.savedAt) });
-  byId("refresh").disabled = refreshing;
 };
 
 // Keeps "updated 3 minutes ago" true while the page stays open.
 setInterval(() => {
-  if (!byId("freshness").hidden && !byId("refresh").disabled) showFreshness(false);
+  if (!byId("freshness").hidden && !loadingHandle) showFreshness(false);
 }, 30 * 1000);
 
 // Results that arrive while About is open wait until it is closed.
@@ -520,12 +519,14 @@ let lookupNumber = 0;
 
 // The handle the newest lookup is downloading, or "". Refresh waits for it,
 // and searching for it again does not ask Codeforces a second time; any
-// other handle can be searched for meanwhile.
+// other handle can be searched for meanwhile. Refresh is marked unavailable
+// rather than disabled, since disabling the focused button would drop the
+// keyboard focus to the page.
 let loadingHandle = "";
 
 const setLoading = (handle) => {
   loadingHandle = handle.toLowerCase();
-  byId("refresh").disabled = handle !== "";
+  byId("refresh").setAttribute("aria-disabled", String(handle !== ""));
 };
 
 // Codeforces asks for no more than one API call every two seconds, and
@@ -623,7 +624,7 @@ byId("start").addEventListener("click", () => {
 });
 
 byId("refresh").addEventListener("click", () => {
-  if (state.handle) lookup(state.handle, { force: true });
+  if (state.handle && !loadingHandle) lookup(state.handle, { force: true });
 });
 
 byId("about").addEventListener("click", () => {
