@@ -462,10 +462,14 @@ const ago = (savedAt) => {
   return value === 0 ? text.justNow : relativeTime.format(value, unit);
 };
 
+// The About panel takes the place of the results, the line saying how old
+// they are included.
+const aboutOpen = () => byId("table-list").dataset.showing === "about";
+
 const showFreshness = (refreshing) => {
   const line = byId("freshness");
-  line.hidden = !state.savedAt;
-  if (!state.savedAt) return;
+  line.hidden = !state.savedAt || aboutOpen();
+  if (line.hidden) return;
   byId("savedAgo").textContent = refreshing
     ? text.refreshingText
     : fill(text.updatedText, { ago: ago(state.savedAt) });
@@ -477,7 +481,9 @@ setInterval(() => {
   if (!byId("freshness").hidden && !byId("refresh").disabled) showFreshness(false);
 }, 30 * 1000);
 
+// Results that arrive while About is open wait until it is closed.
 const showResults = () => {
+  if (aboutOpen()) return;
   const counter = byId("counter");
   showFreshness(false);
   if (!state.rows.length) {
@@ -597,10 +603,11 @@ byId("about").addEventListener("click", () => {
   const tableList = byId("table-list");
   byId("table-main").hidden = true;
   byId("filters").hidden = true;
+  byId("freshness").hidden = true;
   byId("counter").textContent = "";
 
   // Closing the about panel brings the last results back.
-  if (tableList.dataset.showing === "about") {
+  if (aboutOpen()) {
     tableList.replaceChildren();
     delete tableList.dataset.showing;
     showResults();
