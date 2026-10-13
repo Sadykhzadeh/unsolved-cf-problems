@@ -9,6 +9,8 @@ Every problem a Codeforces user has tried and not solved, in one table.
 - Lists each unsolved problem once, with its rating, how many times it was
   tried, the last verdict and the date of the last attempt (linking to that
   submission).
+- Takes a handle, or a link to a profile pasted from the address bar
+  (`https://codeforces.com/profile/tourist`).
 - Sorts by problem, name, rating, tries or last attempt: click a header,
   click again to reverse.
 - Filters by name or problem id (`1520F2` or `1520|F2`), by a rating range

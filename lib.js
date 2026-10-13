@@ -86,6 +86,15 @@ export const submissionLink = (row) => {
     : `https://codeforces.com/contest/${row.contestId}/submission/${row.submissionId}`;
 };
 
+// What was typed into the handle field. A link to a profile or to someone's
+// submissions, as copied from the address bar on any Codeforces host, stands
+// for the handle in it.
+export const parseHandle = (input) => {
+  const value = String(input).trim();
+  const link = /^(?:https?:\/\/)?(?:[\w-]+\.)*codeforces\.[a-z]+\/(?:profile|submissions)\/([^/?#\s]+)/i.exec(value);
+  return link ? link[1] : value;
+};
+
 // Sorts a failed user.status call into something a person can act on, so
 // that Codeforces being down is not reported as a wrong handle.
 export const describeFailure = (httpStatus, payload) => {

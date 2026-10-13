@@ -7,6 +7,7 @@ import {
   makeFilter,
   matchesFilter,
   packRows,
+  parseHandle,
   problemKey,
   problemLink,
   readParams,
@@ -592,7 +593,8 @@ const lookup = async (handle, { force = false } = {}) => {
 // skips the saved copy; any other handle starts from its saved copy if there
 // is one.
 byId("start").addEventListener("click", () => {
-  const handle = byId("handle").value.trim();
+  const handle = parseHandle(byId("handle").value);
+  byId("handle").value = handle;
   const again = state.savedAt !== null && state.handle.toLowerCase() === handle.toLowerCase();
   lookup(handle, { force: again });
 });

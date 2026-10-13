@@ -9,6 +9,7 @@ import {
   makeFilter,
   matchesFilter,
   packRows,
+  parseHandle,
   problemKey,
   problemLink,
   readParams,
@@ -247,6 +248,17 @@ test("verdicts get short labels; unknown and missing ones do not break", () => {
   assert.deepEqual(verdictLabel("CHALLENGED"), ["CHL", "CHALLENGED / HACKED"]);
   assert.deepEqual(verdictLabel("SOMETHING_NEW"), ["SOMETHING_NEW", "SOMETHING_NEW"]);
   assert.deepEqual(verdictLabel(undefined, "ещё не проверено"), ["?", "ещё не проверено"]);
+});
+
+test("a pasted profile or submissions link stands for its handle", () => {
+  assert.equal(parseHandle("  tourist "), "tourist");
+  assert.equal(parseHandle("https://codeforces.com/profile/tourist"), "tourist");
+  assert.equal(parseHandle("codeforces.com/profile/Um_nik/"), "Um_nik");
+  assert.equal(parseHandle("https://m1.codeforces.com/submissions/jiangly/page/2"), "jiangly");
+  assert.equal(parseHandle("http://codeforces.com/profile/-is-this-fft-?locale=ru"), "-is-this-fft-");
+  // anything else is left for Codeforces to judge
+  assert.equal(parseHandle("https://example.com/profile/tourist"), "https://example.com/profile/tourist");
+  assert.equal(parseHandle("https://codeforces.com/blog/entry/79960"), "https://codeforces.com/blog/entry/79960");
 });
 
 test("failures say whether the handle, the limit or Codeforces is to blame", () => {
