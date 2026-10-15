@@ -9,6 +9,7 @@ import {
   matchesFilter,
   packRows,
   parseHandle,
+  pickOne,
   problemKey,
   problemLink,
   readParams,
@@ -57,6 +58,7 @@ const localize = [{
     friendLabel: "Solved by",
     friendPlaceholder: "a friend's handle",
     shownText: "Showing {shown} of {total}",
+    pickButton: "Pick one at random",
     updatedText: "Updated {ago}.",
     justNow: "just now",
     refreshingText: "Checking Codeforces for changes...",
@@ -96,6 +98,7 @@ const localize = [{
     friendLabel: "Решил(а)",
     friendPlaceholder: "хендл друга",
     shownText: "Показано {shown} из {total}",
+    pickButton: "Выбрать наугад",
     updatedText: "Обновлено {ago}.",
     justNow: "только что",
     refreshingText: "Проверяю, что изменилось на Codeforces...",
@@ -152,6 +155,7 @@ const onloadFunction = (lang) => {
   byId("doNotShowTags-label").textContent = text.showTagsChexBox;
   byId("about").textContent = text.aboutButton;
   byId("refresh").textContent = text.refreshButton;
+  byId("pick").textContent = text.pickButton;
   byId("nameLabel").textContent = text.nameTD;
   byId("searchTask").placeholder = text.searchPlaceholder;
   byId("searchTask").setAttribute("aria-label", text.searchPlaceholder);
@@ -330,6 +334,8 @@ const friend = { handle: "", savedAt: null, solvedBy: null };
 let drawn = [];
 let built = new WeakMap();
 let builtWithTags = false;
+// The row last picked at random.
+let picked = null;
 
 const applyFilters = () => {
   const filter = makeFilter({
@@ -383,6 +389,7 @@ const render = () => {
     let tr = built.get(problem);
     if (!tr) {
       tr = buildRow(problem, showTags);
+      tr.classList.toggle("picked", problem === picked);
       built.set(problem, tr);
     }
     return [tr, problem];
@@ -417,6 +424,18 @@ for (const id of ["searchTask", "minRating", "maxRating", "tagFilter", "noGym", 
     syncUrl();
   });
 }
+
+// Picks one of the rows on screen and moves the focus to its name, so Enter
+// opens it. The pick is outlined, since focus moved by a click is not.
+byId("pick").addEventListener("click", () => {
+  const problem = pickOne(drawn.filter(([tr]) => !tr.hidden).map(([, row]) => row), picked);
+  if (!problem) return;
+  picked = problem;
+  for (const [tr, row] of drawn) tr.classList.toggle("picked", row === problem);
+  const link = built.get(problem).querySelector(".problemName");
+  link.focus({ preventScroll: true });
+  link.scrollIntoView({ block: "center" });
+});
 
 // "/" jumps to the search box from anywhere but another field, as on most
 // sites with a search.
