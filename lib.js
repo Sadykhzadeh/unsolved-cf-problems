@@ -95,6 +95,11 @@ export const parseHandle = (input) => {
   return link ? link[1] : value;
 };
 
+// Whether a key press is the "/" that jumps to the search box. A Russian (or
+// other Cyrillic) layout types a full stop on the key where "/" sits, so that
+// key counts too; "/" typed some other way, as Shift+\ there, still does.
+export const isSearchKey = (key, code) => key === "/" || (code === "Slash" && key === ".");
+
 // Sorts a failed user.status call into something a person can act on, so
 // that Codeforces being down is not reported as a wrong handle.
 export const describeFailure = (httpStatus, payload) => {

@@ -3,6 +3,7 @@ import {
   defaultDescending,
   describeFailure,
   findUnsolved,
+  isSearchKey,
   isTimeout,
   makeFilter,
   matchesFilter,
@@ -420,7 +421,7 @@ for (const id of ["searchTask", "minRating", "maxRating", "tagFilter", "noGym", 
 // "/" jumps to the search box from anywhere but another field, as on most
 // sites with a search.
 document.addEventListener("keydown", (event) => {
-  if (event.key !== "/" || event.ctrlKey || event.metaKey || event.altKey) return;
+  if (!isSearchKey(event.key, event.code) || event.ctrlKey || event.metaKey || event.altKey) return;
   const target = event.target;
   if (target instanceof HTMLInputElement || target instanceof HTMLSelectElement
     || target instanceof HTMLTextAreaElement || target.isContentEditable) return;

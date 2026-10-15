@@ -5,6 +5,7 @@ import {
   ageParts,
   describeFailure,
   findUnsolved,
+  isSearchKey,
   isTimeout,
   makeFilter,
   matchesFilter,
@@ -312,6 +313,16 @@ test("a pasted profile or submissions link stands for its handle", () => {
   // anything else is left for Codeforces to judge
   assert.equal(parseHandle("https://example.com/profile/tourist"), "https://example.com/profile/tourist");
   assert.equal(parseHandle("https://codeforces.com/blog/entry/79960"), "https://codeforces.com/blog/entry/79960");
+});
+
+test("the search shortcut is / on any layout, or the key in its place on a Russian one", () => {
+  assert.equal(isSearchKey("/", "Slash"), true);
+  assert.equal(isSearchKey(".", "Slash"), true, "Russian layout");
+  assert.equal(isSearchKey("/", "Backslash"), true, "Shift+\\ on a Russian layout");
+  assert.equal(isSearchKey("/", "Digit7"), true, "Shift+7 on a German layout");
+  assert.equal(isSearchKey("-", "Slash"), false, "German layout: that key is a hyphen");
+  assert.equal(isSearchKey("?", "Slash"), false);
+  assert.equal(isSearchKey(".", "Period"), false);
 });
 
 test("failures say whether the handle, the limit or Codeforces is to blame", () => {
