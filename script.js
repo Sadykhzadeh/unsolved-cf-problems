@@ -59,6 +59,10 @@ const localize = [{
     friendPlaceholder: "a friend's handle",
     shownText: "Showing {shown} of {total}",
     pickButton: "Pick one at random",
+    hideTD: "Hide",
+    hideButton: "Hide {problem}",
+    unhideButton: "Show {problem} again",
+    showHiddenLabel: "Show hidden ({count})",
     updatedText: "Updated {ago}.",
     justNow: "just now",
     refreshingText: "Checking Codeforces for changes...",
@@ -99,6 +103,10 @@ const localize = [{
     friendPlaceholder: "хендл друга",
     shownText: "Показано {shown} из {total}",
     pickButton: "Выбрать наугад",
+    hideTD: "Скрыть",
+    hideButton: "Скрыть {problem}",
+    unhideButton: "Вернуть {problem}",
+    showHiddenLabel: "Показать скрытые ({count})",
     updatedText: "Обновлено {ago}.",
     justNow: "только что",
     refreshingText: "Проверяю, что изменилось на Codeforces...",
@@ -172,6 +180,7 @@ const onloadFunction = (lang) => {
   byId("verdictTD").textContent = text.verdictTD;
   byId("lastTriedLabel").textContent = text.lastTriedTD;
   byId("tagsTD").textContent = text.tagsTD;
+  byId("hideLabel").textContent = text.hideTD;
 };
 
 // A link can name the handle, the sort and the filters; anything it leaves
@@ -255,7 +264,18 @@ const cell = (content, title) => {
 
 const dateFormat = new Intl.DateTimeFormat(lang, { dateStyle: "medium" });
 
-const buildRow = (problem, showTags) => {
+// A hidden row only shows with "Show hidden" ticked, struck through and with
+// a button to bring it back.
+const markHidden = (tr, problem, isHidden) => {
+  tr.classList.toggle("dismissed", isHidden);
+  const button = tr.querySelector("button.hide");
+  const label = fill(isHidden ? text.unhideButton : text.hideButton, { problem: problemKey(problem) });
+  button.title = label;
+  button.setAttribute("aria-label", label);
+  button.textContent = isHidden ? "\u21A9" : "\u00D7";
+};
+
+const buildRow = (problem, showTags, isHidden) => {
   const href = problemLink(problem);
   const row = document.createElement("tr");
 
@@ -280,6 +300,12 @@ const buildRow = (problem, showTags) => {
   const whenCell = cell(when);
   whenCell.className = "when";
   row.append(whenCell);
+
+  const hide = document.createElement("button");
+  hide.type = "button";
+  hide.className = "hide";
+  row.append(cell(hide));
+  markHidden(row, problem, isHidden);
 
   return row;
 };
@@ -337,6 +363,40 @@ let builtWithTags = false;
 // The row last picked at random.
 let picked = null;
 
+// Problems put out of sight, as a Set of problem keys per handle, kept in
+// localStorage until they are shown again. They are one person's choice, so
+// they stay out of links. A problem that gets solved leaves the list anyway.
+const HIDDEN_KEY = "unsolved-cf-problems:hidden";
+const hiddenSets = new Map();
+
+const readHiddenStore = () => {
+  try {
+    const store = JSON.parse(localStorage.getItem(HIDDEN_KEY));
+    if (store && typeof store === "object" && !Array.isArray(store)) return store;
+  } catch {
+    // Unreadable or blocked storage hides nothing.
+  }
+  return {};
+};
+
+const hiddenFor = (handle) => {
+  const id = handle.toLowerCase();
+  if (!hiddenSets.has(id)) {
+    const keys = readHiddenStore()[id];
+    hiddenSets.set(id, new Set(Array.isArray(keys) ? keys.filter((key) => typeof key === "string") : []));
+  }
+  return hiddenSets.get(id);
+};
+
+const saveHidden = (handle) => {
+  const store = readHiddenStore();
+  const id = handle.toLowerCase();
+  const keys = [...hiddenFor(handle)];
+  if (keys.length) store[id] = keys;
+  else delete store[id];
+  remember(HIDDEN_KEY, JSON.stringify(store));
+};
+
 const applyFilters = () => {
   const filter = makeFilter({
     query: byId("searchTask").value,
@@ -346,6 +406,7 @@ const applyFilters = () => {
     noGym: byId("noGym").checked,
     noSpecial: byId("noSpecial").checked,
     solvedBy: friend.solvedBy,
+    hidden: byId("showHidden").checked ? null : hiddenFor(state.handle),
   });
   let shown = 0;
   for (const [tr, row] of drawn) {
@@ -353,6 +414,12 @@ const applyFilters = () => {
     tr.hidden = !keep;
     if (keep) shown += 1;
   }
+  // The box to show hidden problems is there only while there are some.
+  const hidden = hiddenFor(state.handle);
+  const hiddenCount = drawn.filter(([, row]) => hidden.has(problemKey(row))).length;
+  if (!hiddenCount) byId("showHidden").checked = false;
+  byId("showHiddenBox").hidden = !hiddenCount;
+  byId("showHiddenLabel").textContent = fill(text.showHiddenLabel, { count: hiddenCount });
   byId("shown").textContent = shown === drawn.length
     ? ""
     : fill(text.shownText, { shown, total: drawn.length });
@@ -388,7 +455,7 @@ const render = () => {
   drawn = sortRows(state.rows, key, descending).map((problem) => {
     let tr = built.get(problem);
     if (!tr) {
-      tr = buildRow(problem, showTags);
+      tr = buildRow(problem, showTags, hiddenFor(state.handle).has(problemKey(problem)));
       tr.classList.toggle("picked", problem === picked);
       built.set(problem, tr);
     }
@@ -418,12 +485,34 @@ for (const button of document.querySelectorAll("button.sort")) {
 }
 
 // The filters exist once in the page, so their listeners are attached once.
-for (const id of ["searchTask", "minRating", "maxRating", "tagFilter", "noGym", "noSpecial"]) {
+for (const id of ["searchTask", "minRating", "maxRating", "tagFilter", "noGym", "noSpecial", "showHidden"]) {
   byId(id).addEventListener("input", () => {
     applyFilters();
     syncUrl();
   });
 }
+
+// Hiding a row moves the focus to the next row still showing, or the one
+// before it, rather than dropping it to the page with the row.
+byId("table-list").addEventListener("click", (event) => {
+  const button = event.target.closest("button.hide");
+  if (!button) return;
+  const at = drawn.findIndex(([tr]) => tr.contains(button));
+  if (at === -1) return;
+  const [tr, problem] = drawn[at];
+  const hidden = hiddenFor(state.handle);
+  const key = problemKey(problem);
+  const isHidden = !hidden.has(key);
+  if (isHidden) hidden.add(key);
+  else hidden.delete(key);
+  saveHidden(state.handle);
+  markHidden(tr, problem, isHidden);
+  applyFilters();
+  if (!tr.hidden) return;
+  const next = drawn.slice(at + 1).find(([other]) => !other.hidden)
+    ?? drawn.slice(0, at).reverse().find(([other]) => !other.hidden);
+  (next ? next[0].querySelector("button.hide") : byId("searchTask")).focus();
+});
 
 // Picks one of the rows on screen and moves the focus to its name, so Enter
 // opens it. The pick is outlined, since focus moved by a click is not.
@@ -795,7 +884,7 @@ byId("about").addEventListener("click", () => {
 
   const row = document.createElement("tr");
   const td = document.createElement("td");
-  td.colSpan = 7;
+  td.colSpan = 8;
   td.append(anchor(
     `https://codeforces.com/blog/entry/79960?locale=${encodeURIComponent(lang)}`,
     text.aboutProject,

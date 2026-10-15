@@ -316,3 +316,18 @@ tr.picked {
     outline: 2px solid var(--fg);
     outline-offset: -2px
 }
+
+/* The button that hides a row, or brings a hidden one back. */
+.hide {
+    background: none;
+    border: 0;
+    padding: 0 0.3em;
+    font: inherit;
+    color: inherit;
+    cursor: pointer
+}
+
+/* A hidden row, on screen while "Show hidden" is ticked. */
+tr.dismissed .problemName {
+    text-decoration-line: underline line-through
+}

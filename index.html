@@ -63,6 +63,7 @@
         <select id="tagFilter"></select>
         <label class="check"><input type="checkbox" id="noGym"> <span id="noGymLabel"></span></label>
         <label class="check"><input type="checkbox" id="noSpecial"> <span id="noSpecialLabel"></span></label>
+        <label class="check" id="showHiddenBox" hidden><input type="checkbox" id="showHidden"> <span id="showHiddenLabel"></span></label>
         <span class="friend">
             <label for="friend" id="friendLabel"></label>
             <input type="text" id="friend" autocomplete="off" autocapitalize="off" spellcheck="false">
@@ -82,6 +83,7 @@
                 <th id="triesTD" scope="col"><button type="button" class="sort" data-sort="tries" id="triesLabel"></button></th>
                 <th id="verdictTD" scope="col"></th>
                 <th id="lastTriedTD" scope="col"><button type="button" class="sort" data-sort="last" id="lastTriedLabel"></button></th>
+                <th id="hideTD" scope="col"><span class="visually-hidden" id="hideLabel"></span></th>
             </tr>
         </thead>
         <tbody id="table-list">
