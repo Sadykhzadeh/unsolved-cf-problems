@@ -160,9 +160,10 @@ const bound = (value) => {
 // bound, and the search is case-insensitive. `noGym` leaves out the gym, and
 // `noSpecial` the problems Codeforces tags *special: April Fools jokes,
 // rounds in Q#, Kotlin or an unknown language, olympiad mirrors. `solvedBy`,
-// a check from solvedCheck(), keeps only what someone else has solved.
+// a check from solvedCheck(), keeps only what someone else has solved, and
+// `hidden`, a Set of problem keys, leaves out the problems put out of sight.
 export const makeFilter = ({
-  query = "", min = "", max = "", tag = "", noGym = false, noSpecial = false, solvedBy = null,
+  query = "", min = "", max = "", tag = "", noGym = false, noSpecial = false, solvedBy = null, hidden = null,
 } = {}) => ({
   query: String(query).trim().toLowerCase(),
   min: bound(min),
@@ -171,11 +172,13 @@ export const makeFilter = ({
   noGym: Boolean(noGym),
   noSpecial: Boolean(noSpecial),
   solvedBy: typeof solvedBy === "function" ? solvedBy : null,
+  hidden: hidden instanceof Set && hidden.size ? hidden : null,
 });
 
 // The search matches the name or the problem id, written either way the
 // table shows it ("1520F2" or "1520|F2").
 export const matchesFilter = (row, filter) => {
+  if (filter.hidden?.has(problemKey(row))) return false;
   if (filter.query) {
     const id = problemKey(row).toLowerCase();
     const haystack = `${row.name.toLowerCase()}\n${id.replace("|", "")}\n${id}`;

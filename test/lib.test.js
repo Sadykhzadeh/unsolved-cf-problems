@@ -204,7 +204,7 @@ test("rows sort by any column either way, unrated staying last", () => {
   assert.equal(rows[0].name, "Beta", "the input is left alone");
 });
 
-test("the filter narrows by name or id, tag, rating range and kind of contest", () => {
+test("the filter narrows by name or id, tag, rating range, kind of contest and what is hidden", () => {
   const row = (contestId, index, name, rating, tags) => ({ contestId, index, name, rating, tags });
   const rows = [
     row(1520, "F2", "Guess the K-th Zero (Hard version)", 2200, ["binary search", "interactive"]),
@@ -228,6 +228,9 @@ test("the filter narrows by name or id, tag, rating range and kind of contest", 
   assert.deepEqual(pick({ noGym: true }), all.filter((name) => name !== "E"));
   assert.deepEqual(pick({ noSpecial: true }), all.filter((name) => name !== "Ordinary Problem"));
   assert.deepEqual(pick({ noGym: true, noSpecial: true, tag: "dp" }), ["Fresh One"]);
+  assert.deepEqual(pick({ hidden: new Set(["4|A", "100092|E"]) }), all.filter((name) => name !== "Watermelon" && name !== "E"));
+  assert.equal(pick({ hidden: new Set() }).length, 5, "nothing hidden");
+  assert.equal(pick({ hidden: ["4|A"] }).length, 5, "only a Set of keys counts");
 });
 
 test("a pick at random moves on from the last one when it can", () => {

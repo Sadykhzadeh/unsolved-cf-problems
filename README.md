@@ -17,6 +17,10 @@ Every problem a Codeforces user has tried and not solved, in one table.
   and by tag, and can leave out the gym and the problems tagged `*special`
   (April Fools, Kotlin Heroes, Q# rounds and such). Press `/` (or the key in
   its place on a Russian layout) to jump to the search box.
+- Hides a problem you do not mean to come back to (a submission to the
+  wrong problem, a marathon round) with the button at the end of its row;
+  "Show hidden" brings them back. Hidden problems are remembered per handle
+  in this browser and are not part of links.
 - Picks one of the problems on screen at random, for when the list is too
   long to choose from; filter first to pick among, say, the 1800-2000 dp
   problems.
@@ -55,8 +59,9 @@ a contest that started at the same moment or is numbered one or two away), and
 lists what is left - sorted by rating,
 with unrated problems last. Everything runs
 in the browser; there is no backend and nothing is stored outside it:
-`localStorage` keeps the last handle, the chosen language and the
-results of the last three lookups. A lookup younger than ten minutes is
+`localStorage` keeps the last handle, the chosen language, the problems
+hidden for each handle and the results of the last three lookups. A lookup
+younger than ten minutes is
 shown without asking Codeforces again; an older one is shown at once while a
 fresh copy loads, and "Refresh" (or searching for the same handle) always
 asks again. A friend's submissions are boiled down to the problems they
