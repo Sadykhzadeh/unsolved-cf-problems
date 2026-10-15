@@ -430,9 +430,10 @@ document.addEventListener("keydown", (event) => {
   byId("searchTask").select();
 });
 
-// Showing tags redraws from memory; it does not ask Codeforces again.
+// Showing tags redraws from memory; it does not ask Codeforces again. With
+// About open the rows wait, and are drawn with or without tags on closing.
 byId("doNotShowTags").addEventListener("change", () => {
-  if (state.rows.length) render();
+  if (state.rows.length && !aboutOpen()) render();
   syncUrl();
 });
 
