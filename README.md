@@ -13,10 +13,11 @@ Every problem a Codeforces user has tried and not solved, in one table.
   (`https://codeforces.com/profile/tourist`).
 - Sorts by problem, name, rating, tries or last attempt: click a header,
   click again to reverse.
-- Filters by name or problem id (`1520F2` or `1520|F2`), by a rating range
-  and by tag, and can leave out the gym and the problems tagged `*special`
-  (April Fools, Kotlin Heroes, Q# rounds and such). Press `/` (or the key in
-  its place on a Russian layout) to jump to the search box.
+- Filters by name or problem id (`1520F2`, `1520|F2` or a link to the
+  problem), by a rating range and by tag, and can leave out the gym and the
+  problems tagged `*special` (April Fools, Kotlin Heroes, Q# rounds and
+  such). Press `/` (or the key in its place on a Russian layout) to jump to
+  the search box.
 - Hides a problem you do not mean to come back to (a submission to the
   wrong problem, a marathon round) with the button at the end of its row;
   "Show hidden" brings them back. Hidden problems are remembered per handle
