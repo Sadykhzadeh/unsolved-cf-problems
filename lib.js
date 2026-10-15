@@ -150,6 +150,25 @@ export const sortRows = (rows, key, descending) => {
   });
 };
 
+// A link to a problem, as copied from the address bar on any Codeforces host,
+// stands for the problem's id: contest, gym, problemset and acmsguru links.
+const PROBLEM_LINKS = [
+  /\/(?:contest|gym)\/(\d+)\/problem\/(\w+)/i,
+  /\/problemset\/(?:problem|gymProblem)\/(\d+)\/(\w+)/i,
+  /\/problemsets\/(acmsguru)\/problem\/\d+\/(\w+)/i,
+];
+
+const searchText = (query) => {
+  const value = String(query).trim();
+  if (/^(?:https?:\/\/)?(?:[\w-]+\.)*codeforces\.[a-z]+\//i.test(value)) {
+    for (const pattern of PROBLEM_LINKS) {
+      const match = pattern.exec(value);
+      if (match) return `${match[1]}|${match[2]}`.toLowerCase();
+    }
+  }
+  return value.toLowerCase();
+};
+
 const bound = (value) => {
   if (value === "" || value === null || value === undefined) return null;
   const number = Number(value);
@@ -165,7 +184,7 @@ const bound = (value) => {
 export const makeFilter = ({
   query = "", min = "", max = "", tag = "", noGym = false, noSpecial = false, solvedBy = null, hidden = null,
 } = {}) => ({
-  query: String(query).trim().toLowerCase(),
+  query: searchText(query),
   min: bound(min),
   max: bound(max),
   tag: String(tag),

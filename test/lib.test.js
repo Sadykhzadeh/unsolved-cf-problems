@@ -171,6 +171,7 @@ test("acmsguru problems, which have no contest, are listed, linked and kept", ()
   assert.deepEqual(sortRows(rows, "problem", false).map(problemKey), ["4|A", "acmsguru|112"]);
   assert.deepEqual(sortRows(rows, "problem", true).map(problemKey), ["acmsguru|112", "4|A"]);
   assert.equal(matchesFilter(row, makeFilter({ query: "acmsguru112" })), true);
+  assert.equal(matchesFilter(row, makeFilter({ query: "https://codeforces.com/problemsets/acmsguru/problem/99999/112" })), true);
   assert.deepEqual(unpackRows(JSON.parse(JSON.stringify(packRows(rows)))), JSON.parse(JSON.stringify(rows)));
 });
 
@@ -221,6 +222,11 @@ test("the filter narrows by name or id, tag, rating range, kind of contest and w
   assert.deepEqual(pick({ query: "1520|F" }), ["Guess the K-th Zero (Hard version)"]);
   assert.deepEqual(pick({ query: "1520" }), ["Guess the K-th Zero (Hard version)"]);
   assert.deepEqual(pick({ query: "20F2" }), [], "an id matches from its start");
+  assert.deepEqual(pick({ query: "https://codeforces.com/contest/1520/problem/F2" }), ["Guess the K-th Zero (Hard version)"]);
+  assert.deepEqual(pick({ query: "codeforces.com/problemset/problem/4/A?locale=ru" }), ["Watermelon"]);
+  assert.deepEqual(pick({ query: "https://m1.codeforces.com/gym/100092/problem/E" }), ["E"]);
+  assert.deepEqual(pick({ query: "https://codeforces.com/problemset/gymProblem/100092/E" }), ["E"]);
+  assert.deepEqual(pick({ query: "https://codeforces.com/contest/1520/problem/A" }), [], "another problem of the contest");
   // tourist's list: 3C is one problem, not 23C, 273C and 573C as well
   const ids = [row(3, "C", "Tic-tac-toe"), row(23, "C", "Oranges and Apples"), row(273, "C", "Dima and Horses")];
   assert.deepEqual(ids.filter((r) => matchesFilter(r, makeFilter({ query: "3c" }))).map(problemKey), ["3|C"]);
