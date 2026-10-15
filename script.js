@@ -49,6 +49,7 @@ const localize = [{
     timeoutText: ":( Codeforces did not answer within 30 seconds. Try again in a moment.",
     aboutButton: "About",
     aboutProject: "More about the Project",
+    sourceLink: "Source",
     searchPlaceholder: "Search by name or id",
     maxRating: "Maximum rating",
     anyTag: "Any tag",
@@ -93,6 +94,7 @@ const localize = [{
     timeoutText: ":( Codeforces не ответил за 30 секунд. Попробуйте ещё раз чуть позже.",
     aboutButton: "О проекте",
     aboutProject: "Подробнее о проекте",
+    sourceLink: "Исходный код",
     searchPlaceholder: "Поиск по названию или номеру",
     maxRating: "Максимальный рейтинг",
     anyTag: "Любой тег",
@@ -891,7 +893,7 @@ byId("about").addEventListener("click", () => {
   ));
   td.append(document.createElement("br"));
   const credits = document.createElement("small");
-  credits.append(anchor("https://got.az/azer/unsolved-cf-problems", "Source"));
+  credits.append(anchor("https://got.az/azer/unsolved-cf-problems", text.sourceLink));
   credits.append(document.createTextNode(" | "));
   credits.append(anchor("https://azer.one", "Azer Sadykhzadeh"));
   td.append(credits);
