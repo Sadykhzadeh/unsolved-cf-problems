@@ -194,6 +194,13 @@ export const matchesFilter = (row, filter) => {
   return true;
 };
 
+// One of the rows at random, other than `previous` when there is a choice,
+// so asking again always moves on. Undefined for no rows.
+export const pickOne = (rows, previous, random = Math.random) => {
+  const choices = rows.length > 1 ? rows.filter((row) => row !== previous) : rows;
+  return choices[Math.floor(random() * choices.length)];
+};
+
 // Every tag among the rows with how many rows carry it, commonest first.
 export const tagCounts = (rows) => {
   const counts = new Map();

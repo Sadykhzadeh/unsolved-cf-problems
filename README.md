@@ -17,6 +17,9 @@ Every problem a Codeforces user has tried and not solved, in one table.
   and by tag, and can leave out the gym and the problems tagged `*special`
   (April Fools, Kotlin Heroes, Q# rounds and such). Press `/` (or the key in
   its place on a Russian layout) to jump to the search box.
+- Picks one of the problems on screen at random, for when the list is too
+  long to choose from; filter first to pick among, say, the 1800-2000 dp
+  problems.
 - Narrows the list to the problems a friend has solved, their parallel
   rounds included: the ones worth asking them about.
 - Shows or hides the problem tags without reloading anything.

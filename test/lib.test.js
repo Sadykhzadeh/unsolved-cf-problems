@@ -11,6 +11,7 @@ import {
   matchesFilter,
   packRows,
   parseHandle,
+  pickOne,
   problemKey,
   problemLink,
   readParams,
@@ -227,6 +228,25 @@ test("the filter narrows by name or id, tag, rating range and kind of contest", 
   assert.deepEqual(pick({ noGym: true }), all.filter((name) => name !== "E"));
   assert.deepEqual(pick({ noSpecial: true }), all.filter((name) => name !== "Ordinary Problem"));
   assert.deepEqual(pick({ noGym: true, noSpecial: true, tag: "dp" }), ["Fresh One"]);
+});
+
+test("a pick at random moves on from the last one when it can", () => {
+  const rows = [{ name: "a" }, { name: "b" }, { name: "c" }];
+  assert.equal(pickOne(rows, null, () => 0), rows[0]);
+  assert.equal(pickOne(rows, null, () => 0.99), rows[2]);
+  assert.equal(pickOne(rows, rows[0], () => 0), rows[1]);
+  assert.equal(pickOne(rows, rows[2], () => 0.99), rows[1]);
+  const seen = new Set();
+  let last = null;
+  for (let i = 0; i < 200; i += 1) {
+    const next = pickOne(rows, last);
+    assert.notEqual(next, last);
+    seen.add(next);
+    last = next;
+  }
+  assert.equal(seen.size, 3);
+  assert.equal(pickOne([rows[1]], rows[1]), rows[1], "the only row is picked again");
+  assert.equal(pickOne([], null), undefined);
 });
 
 test("tags are counted, commonest first", () => {

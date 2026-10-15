@@ -295,7 +295,8 @@ th[aria-sort="descending"] .sort::after {
     opacity: 0.85
 }
 
-#refresh {
+#refresh,
+#pick {
     background: none;
     border: 0;
     padding: 0;
@@ -308,4 +309,10 @@ th[aria-sort="descending"] .sort::after {
 #refresh[aria-disabled="true"] {
     cursor: progress;
     opacity: 0.6
+}
+
+/* The row "Pick one at random" chose. */
+tr.picked {
+    outline: 2px solid var(--fg);
+    outline-offset: -2px
 }
