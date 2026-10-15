@@ -41,7 +41,7 @@ Every problem a Codeforces user has tried and not solved, in one table.
 | --- | --- | --- |
 | `handle` | `handle=tourist` | whose problems to list |
 | `sort` | `sort=-tries` | `problem`, `name`, `rating`, `tries` or `last`; a leading `-` sorts descending |
-| `q` | `q=tree` | name or problem id contains this |
+| `q` | `q=tree` | name contains this, or problem id starts with it |
 | `min`, `max` | `min=1600&max=2000` | rating range, inclusive |
 | `tag` | `tag=dp` | has this tag |
 | `nogym` | `nogym=1` | leave out the gym |

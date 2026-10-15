@@ -219,6 +219,12 @@ test("the filter narrows by name or id, tag, rating range, kind of contest and w
   assert.deepEqual(pick({ query: "  WATER " }), ["Watermelon"]);
   assert.deepEqual(pick({ query: "1520f2" }), ["Guess the K-th Zero (Hard version)"]);
   assert.deepEqual(pick({ query: "1520|F" }), ["Guess the K-th Zero (Hard version)"]);
+  assert.deepEqual(pick({ query: "1520" }), ["Guess the K-th Zero (Hard version)"]);
+  assert.deepEqual(pick({ query: "20F2" }), [], "an id matches from its start");
+  // tourist's list: 3C is one problem, not 23C, 273C and 573C as well
+  const ids = [row(3, "C", "Tic-tac-toe"), row(23, "C", "Oranges and Apples"), row(273, "C", "Dima and Horses")];
+  assert.deepEqual(ids.filter((r) => matchesFilter(r, makeFilter({ query: "3c" }))).map(problemKey), ["3|C"]);
+  assert.deepEqual(ids.filter((r) => matchesFilter(r, makeFilter({ query: "3|C" }))).map(problemKey), ["3|C"]);
   assert.deepEqual(pick({ tag: "math" }), ["Watermelon"]);
   assert.deepEqual(pick({ min: "1000" }), ["Guess the K-th Zero (Hard version)"]);
   assert.deepEqual(pick({ max: 800 }), ["Watermelon"]);
