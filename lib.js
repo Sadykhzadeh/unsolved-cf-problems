@@ -175,14 +175,15 @@ export const makeFilter = ({
   hidden: hidden instanceof Set && hidden.size ? hidden : null,
 });
 
-// The search matches the name or the problem id, written either way the
-// table shows it ("1520F2" or "1520|F2").
+// The search matches anywhere in the name, or the problem id from its start,
+// written either way the table shows it ("1520F2" or "1520|F2"): "3C" is 3C
+// and not 273C, and "1520" is every problem of contest 1520.
 export const matchesFilter = (row, filter) => {
   if (filter.hidden?.has(problemKey(row))) return false;
   if (filter.query) {
     const id = problemKey(row).toLowerCase();
-    const haystack = `${row.name.toLowerCase()}\n${id.replace("|", "")}\n${id}`;
-    if (!haystack.includes(filter.query)) return false;
+    const byId = id.startsWith(filter.query) || id.replace("|", "").startsWith(filter.query);
+    if (!byId && !row.name.toLowerCase().includes(filter.query)) return false;
   }
   if (filter.tag && !row.tags.includes(filter.tag)) return false;
   if (filter.noGym && isGym(row.contestId)) return false;
