@@ -15,8 +15,8 @@ Every problem a Codeforces user has tried and not solved, in one table.
   click again to reverse.
 - Filters by name or problem id (`1520F2` or `1520|F2`), by a rating range
   and by tag, and can leave out the gym and the problems tagged `*special`
-  (April Fools, Kotlin Heroes, Q# rounds and such). Press `/` to jump to the
-  search box.
+  (April Fools, Kotlin Heroes, Q# rounds and such). Press `/` (or the key in
+  its place on a Russian layout) to jump to the search box.
 - Narrows the list to the problems a friend has solved, their parallel
   rounds included: the ones worth asking them about.
 - Shows or hides the problem tags without reloading anything.
