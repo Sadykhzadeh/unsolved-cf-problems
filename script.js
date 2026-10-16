@@ -190,10 +190,11 @@ const onloadFunction = (lang) => {
 const applyParams = () => {
   const params = readParams(window.location.search);
   if (params.handle) byId("handle").value = params.handle;
-  if (params.sort) state.sort = params.sort;
+  state.sort = params.sort ?? { key: "rating", descending: false };
   byId("searchTask").value = params.query;
   byId("minRating").value = params.min;
   byId("maxRating").value = params.max;
+  byId("tagFilter").value = params.tag;
   pendingTag = params.tag;
   byId("noGym").checked = params.noGym;
   byId("noSpecial").checked = params.noSpecial;
@@ -220,13 +221,23 @@ const pageTitle = document.title;
 // pointing at the same view in the other language. Typing is debounced:
 // browsers throttle pages that rewrite history on every keystroke. The tab
 // title names the handle, so tabs, bookmarks and history tell lists apart.
+// Looking up another handle is a new history entry, so Back returns to the
+// list before it; sorting and filtering only rewrite the current one.
 let urlTimer = 0;
-const syncUrl = () => {
+let urlNewEntry = false;
+const syncUrl = ({ newEntry = false } = {}) => {
   clearTimeout(urlTimer);
+  urlNewEntry ||= newEntry;
   urlTimer = setTimeout(() => {
     const params = currentParams();
     const search = writeParams(params);
-    history.replaceState(history.state, "", `${window.location.pathname}${search ? `?${search}` : ""}`);
+    const shown = readParams(window.location.search).handle;
+    const another = urlNewEntry && shown !== "" && params.handle !== ""
+      && shown.toLowerCase() !== params.handle.toLowerCase();
+    urlNewEntry = false;
+    const url = `${window.location.pathname}${search ? `?${search}` : ""}`;
+    if (another) history.pushState(null, "", url);
+    else history.replaceState(history.state, "", url);
     document.title = params.handle ? `${params.handle} - ${pageTitle}` : pageTitle;
     for (const link of document.querySelectorAll("#flags a[data-lang]")) {
       link.href = `?${writeParams({ ...params, lang: link.dataset.lang })}`;
@@ -715,7 +726,7 @@ const lookup = async (handle, { force = false } = {}) => {
   }
 
   remember("handle", handle);
-  syncUrl();
+  syncUrl({ newEntry: true });
   if (!force && state.savedAt !== null && Date.now() - state.savedAt < FRESH_FOR) return;
 
   setLoading(handle);
@@ -773,6 +784,20 @@ byId("start").addEventListener("click", () => {
 
 byId("refresh").addEventListener("click", () => {
   if (state.handle && !loadingHandle) lookup(state.handle, { force: true });
+});
+
+// Back and Forward bring back the handle, sort and filters of that entry,
+// from the saved copy when there is one, as a new visit would.
+window.addEventListener("popstate", () => {
+  applyParams();
+  const handle = parseHandle(byId("handle").value);
+  if (state.savedAt !== null && state.handle.toLowerCase() === handle.toLowerCase()) {
+    fillTagFilter();
+    showResults();
+  } else if (!(loadingHandle && handle.toLowerCase() === loadingHandle)) {
+    lookup(handle);
+  }
+  chooseFriend();
 });
 
 // A friend's submissions are boiled down to what they solved and kept in the
