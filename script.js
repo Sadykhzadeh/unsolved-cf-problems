@@ -2,6 +2,7 @@ import {
   ageParts,
   defaultDescending,
   describeFailure,
+  failedTest,
   findUnsolved,
   isSearchKey,
   isTimeout,
@@ -37,6 +38,8 @@ const localize = [{
     triesTD: "Tries",
     verdictTD: "Last verdict",
     notJudgedText: "not judged yet",
+    onTestText: "{verdict} on test {test}",
+    onPretestText: "{verdict} on pretest {test}",
     lastTriedTD: "Last attempt",
     congratsText: "Congratulations, You haven't got any unsolved tasks! 🥳",
     loadingText: "Loading the submissions of {handle}...",
@@ -84,6 +87,8 @@ const localize = [{
     triesTD: "Попытки",
     verdictTD: "Последний вердикт",
     notJudgedText: "ещё не проверено",
+    onTestText: "{verdict} на тесте {test}",
+    onPretestText: "{verdict} на претесте {test}",
     lastTriedTD: "Последняя попытка",
     congratsText: "Поздравляю, У тебя нет нерешённых задач! 🥳",
     loadingText: "Загружаю посылки {handle}...",
@@ -313,8 +318,14 @@ const buildRow = (problem, showTags, isHidden) => {
   row.append(cell(problem.rating === undefined ? "-" : String(problem.rating), text.ratingTD));
   row.append(cell(String(problem.tries)));
 
+  // "WA 37" for a wrong answer on test 37: how close the attempt came.
   const [short, full] = verdictLabel(problem.verdict, text.notJudgedText);
-  row.append(cell(short, full));
+  const test = failedTest(problem);
+  row.append(test
+    ? cell(`${short} ${test.number}`, fill(test.pretest ? text.onPretestText : text.onTestText, {
+      verdict: full, test: test.number,
+    }))
+    : cell(short, full));
 
   const when = anchor(submissionLink(problem), dateFormat.format(problem.lastTime * 1000));
   when.title = `#${problem.submissionId}`;
@@ -579,7 +590,7 @@ byId("doNotShowTags").addEventListener("change", () => {
 // while a fresh one loads. Only the last few handles are kept, because the
 // storage is shared with every other page on this origin.
 const SAVED_KEY = "unsolved-cf-problems:lookups";
-const SAVED_VERSION = 4;
+const SAVED_VERSION = 5;
 const FRESH_FOR = 10 * 60 * 1000;
 const KEEP_HANDLES = 3;
 
