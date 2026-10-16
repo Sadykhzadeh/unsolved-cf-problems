@@ -529,12 +529,14 @@ byId("pick").addEventListener("click", () => {
 });
 
 // "/" jumps to the search box from anywhere but another field, as on most
-// sites with a search.
+// sites with a search. A ticked box keeps the focus but takes no typing, so
+// it does not count as a field.
+const takesTyping = (target) => (target instanceof HTMLInputElement && target.type !== "checkbox")
+  || target instanceof HTMLSelectElement || target instanceof HTMLTextAreaElement || target.isContentEditable;
+
 document.addEventListener("keydown", (event) => {
   if (!isSearchKey(event.key, event.code) || event.ctrlKey || event.metaKey || event.altKey) return;
-  const target = event.target;
-  if (target instanceof HTMLInputElement || target instanceof HTMLSelectElement
-    || target instanceof HTMLTextAreaElement || target.isContentEditable) return;
+  if (takesTyping(event.target)) return;
   if (byId("filters").hidden) return;
   event.preventDefault();
   byId("searchTask").focus();
