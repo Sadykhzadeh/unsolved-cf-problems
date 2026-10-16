@@ -547,6 +547,16 @@ byId("table-list").addEventListener("click", (event) => {
   (next ? next[0].querySelector("button.hide") : byId("searchTask")).focus();
 });
 
+// A problem hidden or brought back in another tab is hidden or brought back
+// here too, so that the next change here does not write over it.
+window.addEventListener("storage", (event) => {
+  if (event.key !== HIDDEN_KEY && event.key !== null) return;
+  hiddenSets.clear();
+  const hidden = hiddenFor(state.handle);
+  for (const [tr, row] of drawn) markHidden(tr, row, hidden.has(problemKey(row)));
+  applyFilters();
+});
+
 // Picks one of the rows on screen and moves the focus to its name, so Enter
 // opens it. The pick is outlined, since focus moved by a click is not. Hidden
 // problems are not picked even while "Show hidden" has them on screen.
