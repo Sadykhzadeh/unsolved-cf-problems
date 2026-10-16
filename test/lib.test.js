@@ -64,7 +64,30 @@ test("each unsolved problem appears once, with its newest attempt and the count"
     lastTime: newest.creationTimeSeconds,
     tries: 3,
     start: 1_266_000_000,
+    inRound: false,
   }]);
+});
+
+test("a problem tried during a round, live or virtual, can be kept apart from practice", () => {
+  const by = (contestId, index, participantType) => {
+    const item = submission(contestId, index, "WRONG_ANSWER", 1500);
+    item.author = { participantType, startTimeSeconds: 1_600_000_000 };
+    return item;
+  };
+  const rows = findUnsolved([
+    by(1, "A", "PRACTICE"),
+    by(1, "A", "CONTESTANT"),
+    by(2, "A", "PRACTICE"),
+    by(3, "A", "OUT_OF_COMPETITION"),
+    by(4, "A", "VIRTUAL"),
+    submission(5, "A", "WRONG_ANSWER", 1500),
+  ]);
+  assert.deepEqual(rows.map((r) => [r.contestId, r.inRound]), [[1, true], [2, false], [3, true], [4, true], [5, false]]);
+  const kept = rows.filter((r) => matchesFilter(r, makeFilter({ inRound: true })));
+  assert.deepEqual(kept.map((r) => r.contestId), [1, 3, 4]);
+  assert.equal(rows.filter((r) => matchesFilter(r, makeFilter({ inRound: false }))).length, 5);
+  const stored = unpackRows(JSON.parse(JSON.stringify(packRows(rows))));
+  assert.deepEqual(stored.map((r) => r.inRound), [true, false, true, true, false]);
 });
 
 test("the same index in two contests is two problems", () => {
@@ -306,10 +329,11 @@ test("a link carries the handle, sort and filters, and nothing at their defaults
     noGym: true,
     noSpecial: true,
     friend: "jiangly",
+    inRound: true,
     showTags: true,
   };
   const search = writeParams(state);
-  assert.equal(search, "handle=tourist&sort=-tries&q=bear&min=1200&tag=dp&nogym=1&nospecial=1&friend=jiangly&tags=1");
+  assert.equal(search, "handle=tourist&sort=-tries&q=bear&min=1200&tag=dp&nogym=1&nospecial=1&friend=jiangly&round=1&tags=1");
   assert.deepEqual(readParams(`?${search}`), { ...state, query: "bear" });
 
   assert.equal(writeParams({ handle: "a b&c", sort: { key: "rating", descending: false } }), "handle=a+b%26c");
@@ -327,6 +351,7 @@ test("unknown or broken parameters fall back to the defaults", () => {
     noGym: false,
     noSpecial: false,
     friend: "",
+    inRound: false,
     showTags: false,
   });
   assert.deepEqual(readParams("?sort=name").sort, { key: "name", descending: false });

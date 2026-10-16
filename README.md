@@ -16,8 +16,10 @@ Every problem a Codeforces user has tried and not solved, in one table.
 - Filters by name or problem id (`1520F2`, `1520|F2` or a link to the
   problem), by a rating range and by tag, and can leave out the gym and the
   problems tagged `*special` (April Fools, Kotlin Heroes, Q# rounds and
-  such). Press `/` (or the key in its place on a Russian layout) to jump to
-  the search box.
+  such), and can keep just the problems tried during a round, live or
+  virtual, rather than only in practice: the ones left to upsolve. Press
+  `/` (or the key in its place on a Russian layout) to jump to the search
+  box.
 - Hides a problem you do not mean to come back to (a submission to the
   wrong problem, a marathon round) with the button at the end of its row;
   "Show hidden" brings them back. Hidden problems are remembered per handle
@@ -48,6 +50,7 @@ Every problem a Codeforces user has tried and not solved, in one table.
 | `nogym` | `nogym=1` | leave out the gym |
 | `nospecial` | `nospecial=1` | leave out problems tagged `*special` |
 | `friend` | `friend=jiangly` | only problems this handle has solved |
+| `round` | `round=1` | only problems tried during a round, live or virtual |
 | `tags` | `tags=1` | show the tags column |
 | `lang` | `lang=ru` | `en` or `ru`; remembered |
 

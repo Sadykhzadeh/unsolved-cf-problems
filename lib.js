@@ -179,10 +179,12 @@ const bound = (value) => {
 // bound, and the search is case-insensitive. `noGym` leaves out the gym, and
 // `noSpecial` the problems Codeforces tags *special: April Fools jokes,
 // rounds in Q#, Kotlin or an unknown language, olympiad mirrors. `solvedBy`,
-// a check from solvedCheck(), keeps only what someone else has solved, and
+// a check from solvedCheck(), keeps only what someone else has solved,
+// `inRound` only the problems tried during a round, live or virtual, and
 // `hidden`, a Set of problem keys, leaves out the problems put out of sight.
 export const makeFilter = ({
-  query = "", min = "", max = "", tag = "", noGym = false, noSpecial = false, solvedBy = null, hidden = null,
+  query = "", min = "", max = "", tag = "", noGym = false, noSpecial = false, solvedBy = null, inRound = false,
+  hidden = null,
 } = {}) => ({
   query: searchText(query),
   min: bound(min),
@@ -191,6 +193,7 @@ export const makeFilter = ({
   noGym: Boolean(noGym),
   noSpecial: Boolean(noSpecial),
   solvedBy: typeof solvedBy === "function" ? solvedBy : null,
+  inRound: Boolean(inRound),
   hidden: hidden instanceof Set && hidden.size ? hidden : null,
 });
 
@@ -208,6 +211,7 @@ export const matchesFilter = (row, filter) => {
   if (filter.noGym && isGym(row.contestId)) return false;
   if (filter.noSpecial && row.tags.includes("*special")) return false;
   if (filter.solvedBy && !filter.solvedBy(row, row.start)) return false;
+  if (filter.inRound && !row.inRound) return false;
   if (filter.min !== null || filter.max !== null) {
     // An unrated problem cannot be said to sit inside a range.
     if (row.rating === undefined) return false;
@@ -250,13 +254,14 @@ export const readParams = (search) => {
     noGym: params.get("nogym") === "1",
     noSpecial: params.get("nospecial") === "1",
     friend: (params.get("friend") ?? "").trim(),
+    inRound: params.get("round") === "1",
     showTags: params.get("tags") === "1",
   };
 };
 
 export const writeParams = ({
   lang, handle, sort, query = "", min = "", max = "", tag = "", noGym = false, noSpecial = false, friend = "",
-  showTags = false,
+  inRound = false, showTags = false,
 }) => {
   const params = new URLSearchParams();
   if (lang) params.set("lang", lang);
@@ -271,6 +276,7 @@ export const writeParams = ({
   if (noGym) params.set("nogym", "1");
   if (noSpecial) params.set("nospecial", "1");
   if (friend) params.set("friend", friend);
+  if (inRound) params.set("round", "1");
   if (showTags) params.set("tags", "1");
   return params.toString();
 };
@@ -279,7 +285,7 @@ export const writeParams = ({
 // the bytes, and the storage is shared with every other page on the origin.
 const PACKED_FIELDS = [
   "contestId", "index", "name", "rating", "tags", "verdict", "submissionId", "lastTime", "tries", "problemsetName",
-  "start",
+  "start", "inRound",
 ];
 
 export const packRows = (rows) => rows.map((row) => PACKED_FIELDS.map((field) => row[field] ?? null));
@@ -371,11 +377,15 @@ export const solvedCheck = (summary) => {
   };
 };
 
+// Taking part in the round, officially or not, or in a virtual run of it, as
+// opposed to practice afterwards.
+const ROUND_PARTICIPATION = new Set(["CONTESTANT", "OUT_OF_COMPETITION", "VIRTUAL"]);
+
 // One row per unsolved problem: the problem, its newest attempt, how many
-// attempts there were and when its contest started. user.status lists
-// submissions newest first, so the first one seen for a problem is the
-// latest. A problem solved in its parallel round is not unsolved, and the
-// user's own submissions are enough to tell.
+// attempts there were, whether any was made during a round and when its
+// contest started. user.status lists submissions newest first, so the first
+// one seen for a problem is the latest. A problem solved in its parallel
+// round is not unsolved, and the user's own submissions are enough to tell.
 export const findUnsolved = (submissions) => {
   const startOf = contestStarts(submissions);
   const solved = solvedCheck(summarizeSolved(submissions, startOf));
@@ -384,9 +394,11 @@ export const findUnsolved = (submissions) => {
   for (const item of submissions) {
     const key = problemKey(item.problem);
     if (solved(item.problem, startOf.get(item.problem.contestId))) continue;
+    const inRound = ROUND_PARTICIPATION.has(item.author?.participantType);
     const seen = unsolved.get(key);
     if (seen) {
       seen.tries += 1;
+      seen.inRound ||= inRound;
       continue;
     }
     const { problem } = item;
@@ -402,6 +414,7 @@ export const findUnsolved = (submissions) => {
       lastTime: item.creationTimeSeconds,
       tries: 1,
       start: startOf.get(problem.contestId),
+      inRound,
     });
   }
 
