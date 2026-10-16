@@ -517,9 +517,12 @@ byId("table-list").addEventListener("click", (event) => {
 });
 
 // Picks one of the rows on screen and moves the focus to its name, so Enter
-// opens it. The pick is outlined, since focus moved by a click is not.
+// opens it. The pick is outlined, since focus moved by a click is not. Hidden
+// problems are not picked even while "Show hidden" has them on screen.
 byId("pick").addEventListener("click", () => {
-  const problem = pickOne(drawn.filter(([tr]) => !tr.hidden).map(([, row]) => row), picked);
+  const hidden = hiddenFor(state.handle);
+  const choices = drawn.filter(([tr, row]) => !tr.hidden && !hidden.has(problemKey(row)));
+  const problem = pickOne(choices.map(([, row]) => row), picked);
   if (!problem) return;
   picked = problem;
   for (const [tr, row] of drawn) tr.classList.toggle("picked", row === problem);
