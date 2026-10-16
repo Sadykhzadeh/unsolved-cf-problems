@@ -4,15 +4,18 @@
 const verdicts = [{
   full: "WRONG_ANSWER",
   short: "WA",
+  onTest: true,
 }, {
   full: "TIME_LIMIT_EXCEEDED",
   short: "TLE",
+  onTest: true,
 }, {
   full: "COMPILATION_ERROR",
   short: "CE",
 }, {
   full: "RUNTIME_ERROR",
   short: "RE",
+  onTest: true,
 }, {
   full: "CHALLENGED",
   short: "CHL",
@@ -20,12 +23,15 @@ const verdicts = [{
 }, {
   full: "MEMORY_LIMIT_EXCEEDED",
   short: "MLE",
+  onTest: true,
 }, {
   full: "IDLENESS_LIMIT_EXCEEDED",
   short: "ILE",
+  onTest: true,
 }, {
   full: "PRESENTATION_ERROR",
   short: "PE",
+  onTest: true,
 }, {
   full: "SKIPPED",
   short: "SKIPPED",
@@ -51,6 +57,16 @@ export const verdictLabel = (verdict, pending) => {
   const known = verdictsByName.get(verdict);
   if (!known) return [verdict, verdict];
   return [known.short, known.label ?? known.full];
+};
+
+// The test a submission failed on, counted from 1 as Codeforces does, and
+// whether it was a pretest, for the verdicts that stop on a test; null for
+// the rest, and for a submission judged on hacks.
+export const failedTest = ({ verdict, passedTestCount, testset }) => {
+  if (!verdictsByName.get(verdict)?.onTest || !Number.isInteger(passedTestCount)) return null;
+  if (testset === "PRETESTS") return { number: passedTestCount + 1, pretest: true };
+  if (/^TESTS\d*$/.test(testset ?? "")) return { number: passedTestCount + 1, pretest: false };
+  return null;
 };
 
 // How long a Codeforces call may take. Without a limit a connection that
@@ -285,7 +301,7 @@ export const writeParams = ({
 // the bytes, and the storage is shared with every other page on the origin.
 const PACKED_FIELDS = [
   "contestId", "index", "name", "rating", "tags", "verdict", "submissionId", "lastTime", "tries", "problemsetName",
-  "start", "inRound",
+  "start", "inRound", "passedTestCount", "testset",
 ];
 
 export const packRows = (rows) => rows.map((row) => PACKED_FIELDS.map((field) => row[field] ?? null));
@@ -381,11 +397,12 @@ export const solvedCheck = (summary) => {
 // opposed to practice afterwards.
 const ROUND_PARTICIPATION = new Set(["CONTESTANT", "OUT_OF_COMPETITION", "VIRTUAL"]);
 
-// One row per unsolved problem: the problem, its newest attempt, how many
-// attempts there were, whether any was made during a round and when its
-// contest started. user.status lists submissions newest first, so the first
-// one seen for a problem is the latest. A problem solved in its parallel
-// round is not unsolved, and the user's own submissions are enough to tell.
+// One row per unsolved problem: the problem, its newest attempt and how far
+// that got through the tests, how many attempts there were, whether any was
+// made during a round and when its contest started. user.status lists
+// submissions newest first, so the first one seen for a problem is the
+// latest. A problem solved in its parallel round is not unsolved, and the
+// user's own submissions are enough to tell.
 export const findUnsolved = (submissions) => {
   const startOf = contestStarts(submissions);
   const solved = solvedCheck(summarizeSolved(submissions, startOf));
@@ -410,6 +427,8 @@ export const findUnsolved = (submissions) => {
       rating: problem.rating,
       tags: problem.tags ?? [],
       verdict: item.verdict,
+      passedTestCount: item.passedTestCount,
+      testset: item.testset,
       submissionId: item.id,
       lastTime: item.creationTimeSeconds,
       tries: 1,

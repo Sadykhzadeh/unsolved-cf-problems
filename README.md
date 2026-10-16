@@ -7,8 +7,8 @@ Every problem a Codeforces user has tried and not solved, in one table.
 ## What it does
 
 - Lists each unsolved problem once, with its rating, how many times it was
-  tried, the last verdict and the date of the last attempt (linking to that
-  submission).
+  tried, the last verdict and the test it failed on (`WA 37`), and the date
+  of the last attempt (linking to that submission).
 - Takes a handle, or a link to a profile pasted from the address bar
   (`https://codeforces.com/profile/tourist`).
 - Sorts by problem, name, rating, tries or last attempt: click a header,

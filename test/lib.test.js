@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {
   ageParts,
   describeFailure,
+  failedTest,
   findUnsolved,
   isSearchKey,
   isTimeout,
@@ -47,6 +48,8 @@ test("a problem accepted once is solved, however many attempts failed", () => {
 test("each unsolved problem appears once, with its newest attempt and the count", () => {
   const newest = submission(2, "B", "TIME_LIMIT_EXCEEDED", 1200);
   newest.author = { participantType: "PRACTICE", startTimeSeconds: 1_266_000_000 };
+  newest.passedTestCount = 36;
+  newest.testset = "TESTS";
   const rows = findUnsolved([
     newest,
     submission(2, "B", "WRONG_ANSWER", 1200),
@@ -60,6 +63,8 @@ test("each unsolved problem appears once, with its newest attempt and the count"
     rating: 1200,
     tags: [],
     verdict: "TIME_LIMIT_EXCEEDED",
+    passedTestCount: 36,
+    testset: "TESTS",
     submissionId: newest.id,
     lastTime: newest.creationTimeSeconds,
     tries: 3,
@@ -362,6 +367,18 @@ test("verdicts get short labels; unknown and missing ones do not break", () => {
   assert.deepEqual(verdictLabel("CHALLENGED"), ["CHL", "CHALLENGED / HACKED"]);
   assert.deepEqual(verdictLabel("SOMETHING_NEW"), ["SOMETHING_NEW", "SOMETHING_NEW"]);
   assert.deepEqual(verdictLabel(undefined, "ещё не проверено"), ["?", "ещё не проверено"]);
+});
+
+test("a verdict that stops on a test names it, counted from 1", () => {
+  const run = (verdict, passedTestCount, testset) => failedTest({ verdict, passedTestCount, testset });
+  assert.deepEqual(run("WRONG_ANSWER", 36, "TESTS"), { number: 37, pretest: false });
+  assert.deepEqual(run("TIME_LIMIT_EXCEEDED", 0, "PRETESTS"), { number: 1, pretest: true });
+  assert.deepEqual(run("RUNTIME_ERROR", 4, "TESTS3"), { number: 5, pretest: false });
+  assert.equal(run("WRONG_ANSWER", 2, "CHALLENGES"), null, "judged on a hack");
+  assert.equal(run("COMPILATION_ERROR", 0, "TESTS"), null);
+  assert.equal(run("PARTIAL", 16, "TESTS"), null);
+  assert.equal(run("SKIPPED", 0, "TESTS"), null);
+  assert.equal(run("WRONG_ANSWER", undefined, undefined), null, "a row saved without it");
 });
 
 test("a pasted profile or submissions link stands for its handle", () => {
