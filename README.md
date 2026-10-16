@@ -29,7 +29,7 @@ Every problem a Codeforces user has tried and not solved, in one table.
   rounds included: the ones worth asking them about.
 - Shows or hides the problem tags without reloading anything.
 - Keeps the view in the address bar, so a link opens the same list, sorted
-  and filtered the same way.
+  and filtered the same way, and Back returns to the handle looked up before.
 - Shows the last lookup instantly on the next visit (see below).
 - Says why a lookup failed: no such user, an invalid handle, the API rate
   limit, Codeforces being down, or no connection.
