@@ -56,6 +56,8 @@ const localize = [{
     noGymLabel: "Hide gym",
     noSpecialLabel: "Hide special rounds",
     noSpecialTitle: "April Fools, Kotlin Heroes, Q# and the rest tagged *special",
+    inRoundLabel: "Tried in a round",
+    inRoundTitle: "Submitted during the round or a virtual participation, not just in practice",
     friendLabel: "Solved by",
     friendPlaceholder: "a friend's handle",
     shownText: "Showing {shown} of {total}",
@@ -101,6 +103,8 @@ const localize = [{
     noGymLabel: "Без тренировок",
     noSpecialLabel: "Без особых раундов",
     noSpecialTitle: "1 апреля, Kotlin Heroes, Q# и остальные задачи с тегом *special",
+    inRoundLabel: "Пробовал(а) на раунде",
+    inRoundTitle: "Отправлял(а) решение во время раунда или виртуального участия, а не только в дорешивании",
     friendLabel: "Решил(а)",
     friendPlaceholder: "хендл друга",
     shownText: "Показано {shown} из {total}",
@@ -175,6 +179,8 @@ const onloadFunction = (lang) => {
   byId("noGymLabel").textContent = text.noGymLabel;
   byId("noSpecialLabel").textContent = text.noSpecialLabel;
   byId("noSpecialLabel").parentElement.title = text.noSpecialTitle;
+  byId("inRoundLabel").textContent = text.inRoundLabel;
+  byId("inRoundLabel").parentElement.title = text.inRoundTitle;
   byId("friendLabel").textContent = text.friendLabel;
   byId("friend").placeholder = text.friendPlaceholder;
   byId("ratingLabel").textContent = text.ratingTD;
@@ -198,6 +204,7 @@ const applyParams = () => {
   pendingTag = params.tag;
   byId("noGym").checked = params.noGym;
   byId("noSpecial").checked = params.noSpecial;
+  byId("inRound").checked = params.inRound;
   byId("friend").value = params.friend;
   byId("doNotShowTags").checked = params.showTags;
 };
@@ -212,6 +219,7 @@ const currentParams = () => ({
   noGym: byId("noGym").checked,
   noSpecial: byId("noSpecial").checked,
   friend: friend.handle,
+  inRound: byId("inRound").checked,
   showTags: byId("doNotShowTags").checked,
 });
 
@@ -419,6 +427,7 @@ const applyFilters = () => {
     noGym: byId("noGym").checked,
     noSpecial: byId("noSpecial").checked,
     solvedBy: friend.solvedBy,
+    inRound: byId("inRound").checked,
     hidden: byId("showHidden").checked ? null : hiddenFor(state.handle),
   });
   let shown = 0;
@@ -498,7 +507,7 @@ for (const button of document.querySelectorAll("button.sort")) {
 }
 
 // The filters exist once in the page, so their listeners are attached once.
-for (const id of ["searchTask", "minRating", "maxRating", "tagFilter", "noGym", "noSpecial", "showHidden"]) {
+for (const id of ["searchTask", "minRating", "maxRating", "tagFilter", "noGym", "noSpecial", "inRound", "showHidden"]) {
   byId(id).addEventListener("input", () => {
     applyFilters();
     syncUrl();
@@ -570,7 +579,7 @@ byId("doNotShowTags").addEventListener("change", () => {
 // while a fresh one loads. Only the last few handles are kept, because the
 // storage is shared with every other page on this origin.
 const SAVED_KEY = "unsolved-cf-problems:lookups";
-const SAVED_VERSION = 3;
+const SAVED_VERSION = 4;
 const FRESH_FOR = 10 * 60 * 1000;
 const KEEP_HANDLES = 3;
 
