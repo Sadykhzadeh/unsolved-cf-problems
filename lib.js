@@ -69,13 +69,55 @@ export const failedTest = ({ verdict, passedTestCount, testset }) => {
   return null;
 };
 
-// How long a Codeforces call may take. Without a limit a connection that
-// stalls leaves the page on "Loading..." for as long as the tab is open.
+// How long a Codeforces call may go without delivering anything. Without a
+// limit a connection that stalls leaves the page on "Loading..." for as long
+// as the tab is open.
 export const REQUEST_TIMEOUT_MS = 30000;
 
 // AbortSignal.timeout() aborts with a TimeoutError, which is what a stalled
 // call looks like to the code that catches it.
 export const isTimeout = (error) => Boolean(error) && error.name === "TimeoutError";
+
+// Fetches a JSON answer and parses it. The limit applies to silence, not to
+// the whole call: a history of tens of thousands of submissions can take
+// longer than the limit to arrive in full, while a connection that stops
+// delivering must still give up. Resolves with the response and the parsed
+// body, which is null when the body is not JSON, as an HTML error page is.
+// A stall throws a TimeoutError, wherever in the call it happens.
+export const fetchJson = async (url, { idleMs = REQUEST_TIMEOUT_MS, fetchFn = fetch } = {}) => {
+  const controller = new AbortController();
+  let timer = 0;
+  const arm = () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      controller.abort(new DOMException("No data for too long.", "TimeoutError"));
+    }, idleMs);
+  };
+  arm();
+  try {
+    const response = await fetchFn(url, { signal: controller.signal });
+    let text = "";
+    if (response.body) {
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      const parts = [];
+      for (let chunk = await reader.read(); !chunk.done; chunk = await reader.read()) {
+        arm();
+        parts.push(decoder.decode(chunk.value, { stream: true }));
+      }
+      text = parts.join("") + decoder.decode();
+    }
+    let payload = null;
+    try {
+      payload = JSON.parse(text);
+    } catch {
+      // Not JSON: the caller judges the status instead.
+    }
+    return { response, payload };
+  } finally {
+    clearTimeout(timer);
+  }
+};
 
 // acmsguru problems belong to no contest: they come with a problemsetName
 // instead of a contestId, and Codeforces files them under contest 99999.

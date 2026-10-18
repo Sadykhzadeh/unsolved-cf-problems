@@ -3,6 +3,7 @@ import {
   defaultDescending,
   describeFailure,
   failedTest,
+  fetchJson,
   findUnsolved,
   isSearchKey,
   isTimeout,
@@ -14,7 +15,6 @@ import {
   problemKey,
   problemLink,
   readParams,
-  REQUEST_TIMEOUT_MS,
   solvedCheck,
   sortRows,
   submissionLink,
@@ -49,7 +49,7 @@ const localize = [{
     unavailableText: ":( Codeforces is not answering ({detail}). It may be down for maintenance; try again later.",
     otherErrorText: ":( Codeforces returned an error: {detail}",
     networkErrorText: ":( Could not reach Codeforces. Check your connection and try again.",
-    timeoutText: ":( Codeforces did not answer within 30 seconds. Try again in a moment.",
+    timeoutText: ":( Codeforces stopped answering for 30 seconds. Try again in a moment.",
     aboutButton: "About",
     aboutProject: "More about the Project",
     sourceLink: "Source",
@@ -98,7 +98,7 @@ const localize = [{
     unavailableText: ":( Codeforces не отвечает ({detail}). Возможно, идут технические работы; попробуйте позже.",
     otherErrorText: ":( Codeforces вернул ошибку: {detail}",
     networkErrorText: ":( Не удалось связаться с Codeforces. Проверьте соединение и попробуйте снова.",
-    timeoutText: ":( Codeforces не ответил за 30 секунд. Попробуйте ещё раз чуть позже.",
+    timeoutText: ":( Codeforces перестал отвечать на 30 секунд. Попробуйте ещё раз чуть позже.",
     aboutButton: "О проекте",
     aboutProject: "Подробнее о проекте",
     sourceLink: "Исходный код",
@@ -347,10 +347,9 @@ const loadSubmissions = async (handle) => {
   const url = `https://codeforces.com/api/user.status?handle=${
     encodeURIComponent(handle)
   }&lang=${encodeURIComponent(lang)}`;
-  const response = await fetch(url, { signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
   // Errors come back as JSON with a comment saying what went wrong, except
   // when Codeforces itself is down and an HTML page answers instead.
-  const payload = await response.json().catch(() => null);
+  const { response, payload } = await fetchJson(url);
   // A failed call can still answer 200, with {status: "FAILED"} and no
   // result, so only an OK status with an array counts as submissions.
   if (response.ok && payload?.status === "OK" && Array.isArray(payload.result)) {
