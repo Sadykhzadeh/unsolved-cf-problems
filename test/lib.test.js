@@ -103,6 +103,20 @@ test("the same index in two contests is two problems", () => {
   assert.deepEqual(rows.map((r) => r.contestId), [4]);
 });
 
+test("a problem failed in both copies of a shared round is listed once", () => {
+  const copy = (contestId, index, verdict) => {
+    const item = submission(contestId, index, verdict, 1500);
+    item.problem.name = "Shared Sum";
+    return item;
+  };
+  const rows = findUnsolved([
+    copy(1521, "C", "WRONG_ANSWER"),
+    copy(1520, "A", "TIME_LIMIT_EXCEEDED"),
+    submission(1600, "A", "WRONG_ANSWER", 1500),
+  ]);
+  assert.deepEqual(rows.map((r) => [r.contestId, r.index, r.tries]), [[1521, "C", 2], [1600, "A", 1]]);
+});
+
 test("a problem solved in its parallel round is not unsolved", () => {
   const twin = (contestId, index, verdict, rating = 1900) => {
     const item = submission(contestId, index, verdict, rating);

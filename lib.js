@@ -377,6 +377,15 @@ export const summarizeSolved = (submissions, startOf = contestStarts(submissions
 // but sits next to it). The gym has no parallel rounds, and its problems are
 // mostly unrated and often named after their letter, so neighbouring gym
 // contests would match by accident.
+// Whether a problem can have a parallel copy at all: the gym and acmsguru have none.
+const hasParallel = (problem) => problem.contestId !== undefined && !isGym(problem.contestId);
+
+// Whether `copy`, a {contestId, rating, start} seen elsewhere under the same
+// name, is the same problem as `problem`, which started at `start`.
+const isParallel = (copy, problem, start) => copy.contestId !== problem.contestId
+  && (copy.rating ?? null) === (problem.rating ?? null)
+  && (Math.abs(copy.contestId - problem.contestId) <= 2 || (Number.isFinite(start) && start === copy.start));
+
 export const solvedCheck = (summary) => {
   const keys = new Set(summary.keys);
   const byName = new Map();
@@ -386,10 +395,8 @@ export const solvedCheck = (summary) => {
   }
   return (problem, start) => {
     if (keys.has(problemKey(problem))) return true;
-    if (problem.contestId === undefined || isGym(problem.contestId)) return false;
-    return (byName.get(problem.name) ?? []).some((other) => other.contestId !== problem.contestId
-      && other.rating === (problem.rating ?? null)
-      && (Math.abs(other.contestId - problem.contestId) <= 2 || (Number.isFinite(start) && start === other.start)));
+    if (!hasParallel(problem)) return false;
+    return (byName.get(problem.name) ?? []).some((other) => isParallel(other, problem, start));
   };
 };
 
@@ -402,24 +409,30 @@ const ROUND_PARTICIPATION = new Set(["CONTESTANT", "OUT_OF_COMPETITION", "VIRTUA
 // made during a round and when its contest started. user.status lists
 // submissions newest first, so the first one seen for a problem is the
 // latest. A problem solved in its parallel round is not unsolved, and the
-// user's own submissions are enough to tell.
+// user's own submissions are enough to tell. Nor is a problem failed in both
+// copies of a shared round two problems: the copies are one row, with the
+// attempts of both counted.
 export const findUnsolved = (submissions) => {
   const startOf = contestStarts(submissions);
   const solved = solvedCheck(summarizeSolved(submissions, startOf));
 
   const unsolved = new Map();
+  const rowsByName = new Map();
   for (const item of submissions) {
-    const key = problemKey(item.problem);
-    if (solved(item.problem, startOf.get(item.problem.contestId))) continue;
+    const { problem } = item;
+    const start = startOf.get(problem.contestId);
+    if (solved(problem, start)) continue;
     const inRound = ROUND_PARTICIPATION.has(item.author?.participantType);
-    const seen = unsolved.get(key);
+    let seen = unsolved.get(problemKey(problem));
+    if (!seen && hasParallel(problem)) {
+      seen = (rowsByName.get(problem.name) ?? []).find((row) => isParallel(row, problem, start));
+    }
     if (seen) {
       seen.tries += 1;
       seen.inRound ||= inRound;
       continue;
     }
-    const { problem } = item;
-    unsolved.set(key, {
+    const row = {
       contestId: problem.contestId,
       problemsetName: problem.problemsetName,
       index: problem.index,
@@ -432,9 +445,14 @@ export const findUnsolved = (submissions) => {
       submissionId: item.id,
       lastTime: item.creationTimeSeconds,
       tries: 1,
-      start: startOf.get(problem.contestId),
+      start,
       inRound,
-    });
+    };
+    unsolved.set(problemKey(problem), row);
+    if (hasParallel(problem)) {
+      if (!rowsByName.has(problem.name)) rowsByName.set(problem.name, []);
+      rowsByName.get(problem.name).push(row);
+    }
   }
 
   return [...unsolved.values()].sort((left, right) => {
