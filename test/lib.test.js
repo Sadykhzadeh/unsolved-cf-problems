@@ -233,6 +233,15 @@ test("rows sort by any column either way, unrated staying last", () => {
   assert.equal(rows[0].name, "Beta", "the input is left alone");
 });
 
+test("a blank bound in a link is no bound, rather than zero", () => {
+  const row = { contestId: 1, index: "A", name: "x", tags: [], rating: 1500 };
+  const filter = makeFilter({ min: " ", max: "\t" });
+  assert.equal(filter.min, null);
+  assert.equal(filter.max, null);
+  assert.equal(matchesFilter(row, filter), true);
+  assert.equal(matchesFilter(row, makeFilter({ max: "1000" })), false);
+});
+
 test("the filter narrows by name or id, tag, rating range, kind of contest and what is hidden", () => {
   const row = (contestId, index, name, rating, tags) => ({ contestId, index, name, rating, tags });
   const rows = [
