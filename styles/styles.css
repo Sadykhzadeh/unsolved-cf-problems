@@ -321,14 +321,30 @@ tr.picked {
     outline-offset: -2px
 }
 
-/* The button that hides a row, or brings a hidden one back. */
+/* The button that hides a row, or brings a hidden one back. Its two glyphs lie
+   on the same grid cell, so the button is as wide as the wider one and
+   switching between them only changes visibility. */
 .hide {
+    display: inline-grid;
     background: none;
     border: 0;
     padding: 0 0.3em;
     font: inherit;
     color: inherit;
     cursor: pointer
+}
+
+.hide > span {
+    grid-area: 1 / 1
+}
+
+.hide .glyph-back,
+tr.dismissed .hide .glyph-keep {
+    visibility: hidden
+}
+
+tr.dismissed .hide .glyph-back {
+    visibility: visible
 }
 
 /* A hidden row, on screen while "Show hidden" is ticked. */
