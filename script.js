@@ -871,6 +871,14 @@ const saveFriend = async (handle, entry) => {
   }
 };
 
+const forgetFriend = async (handle) => {
+  try {
+    await (await openCache())?.delete(friendCacheKey(handle));
+  } catch {
+    // Nothing kept, or no cache to forget it from.
+  }
+};
+
 const useFriend = ({ savedAt, summary }) => {
   friend.savedAt = savedAt;
   friend.solvedBy = solvedCheck(summary);
@@ -911,6 +919,13 @@ const loadFriend = async (handle) => {
   } catch (error) {
     if (number !== friendNumber) return;
     console.error(error);
+    // A friend who no longer exists narrows nothing, and their copy is not
+    // kept: the same as a handle that is not found.
+    if (error.failure?.kind === "notFound" || error.failure?.kind === "badHandle") {
+      Object.assign(friend, { savedAt: null, solvedBy: null });
+      applyFilters();
+      forgetFriend(handle);
+    }
     status.textContent = failureText(error, handle);
   } finally {
     if (number === friendNumber) friendLoading = "";
