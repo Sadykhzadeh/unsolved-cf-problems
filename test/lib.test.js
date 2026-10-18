@@ -5,6 +5,7 @@ import {
   ageParts,
   describeFailure,
   failedTest,
+  fetchJson,
   findUnsolved,
   isSearchKey,
   isTimeout,
@@ -465,6 +466,59 @@ test("submission links point at the submission", () => {
     submissionLink({ contestId: 103104, index: "J", submissionId: 42 }),
     "https://codeforces.com/gym/103104/submission/42",
   );
+});
+
+// A stand-in for fetch whose body arrives in `parts`, `gap` milliseconds apart,
+// and fails as a real body does when the signal aborts.
+const trickle = (parts, gap) => (url, { signal }) => {
+  let timer = 0;
+  const body = new ReadableStream({
+    start(controller) {
+      let next = 0;
+      const send = () => {
+        if (next === parts.length) return controller.close();
+        timer = setTimeout(() => {
+          controller.enqueue(new TextEncoder().encode(parts[next++]));
+          send();
+        }, gap);
+      };
+      signal.addEventListener("abort", () => {
+        clearTimeout(timer);
+        controller.error(signal.reason);
+      });
+      send();
+    },
+  });
+  return Promise.resolve(new Response(body, { status: 200 }));
+};
+
+test("a slow download of a large history is kept, a stalled one is cut off", async () => {
+  const parts = Array.from({ length: 12 }, (_, i) => {
+    if (i === 0) return '{"status":"OK","result":[';
+    if (i === 10) return "1";
+    return i === 11 ? "]}" : "1,";
+  });
+  // Twelve chunks 20 ms apart take far longer than the 60 ms limit, yet nothing goes quiet that long.
+  const { response, payload } = await fetchJson("x", { idleMs: 60, fetchFn: trickle(parts, 20) });
+  assert.equal(response.status, 200);
+  assert.equal(payload.status, "OK");
+  assert.equal(payload.result.length, 10);
+
+  const keepAlive = setTimeout(() => {}, 1000);
+  await assert.rejects(
+    fetchJson("x", { idleMs: 40, fetchFn: trickle(['{"status":"OK"', "}"], 400) }),
+    isTimeout,
+  );
+  clearTimeout(keepAlive);
+});
+
+test("an error answer keeps its status and comment, and an HTML page parses as nothing", async () => {
+  const json = async () => new Response('{"status":"FAILED","comment":"Call limit exceeded"}', { status: 503 });
+  const { response, payload } = await fetchJson("x", { fetchFn: json });
+  assert.equal(response.status, 503);
+  assert.equal(payload.comment, "Call limit exceeded");
+  const html = async () => new Response("<html>down</html>", { status: 502 });
+  assert.equal((await fetchJson("x", { fetchFn: html })).payload, null);
 });
 
 test("a call that never answers is cut off and recognised as a timeout", async () => {
