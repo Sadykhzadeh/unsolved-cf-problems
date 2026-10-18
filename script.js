@@ -298,7 +298,6 @@ const markHidden = (tr, problem, isHidden) => {
   const label = fill(isHidden ? text.unhideButton : text.hideButton, { problem: problemKey(problem) });
   button.title = label;
   button.setAttribute("aria-label", label);
-  button.textContent = isHidden ? "\u21A9" : "\u00D7";
 };
 
 const buildRow = (problem, isHidden) => {
@@ -335,9 +334,19 @@ const buildRow = (problem, isHidden) => {
   whenCell.className = "when";
   row.append(whenCell);
 
+  // Both glyphs are in the button, one of them hidden by CSS: changing the
+  // text would change the width of the column, and with it the layout of
+  // every row.
   const hide = document.createElement("button");
   hide.type = "button";
   hide.className = "hide";
+  const keep = document.createElement("span");
+  keep.className = "glyph-keep";
+  keep.textContent = "×";
+  const back = document.createElement("span");
+  back.className = "glyph-back";
+  back.textContent = "↩";
+  hide.append(keep, back);
   row.append(cell(hide));
   markHidden(row, problem, isHidden);
 
