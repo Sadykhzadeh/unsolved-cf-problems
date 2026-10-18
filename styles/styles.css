@@ -218,6 +218,10 @@ td {
     width: 40%
 }
 
+#table-list.no-tags .tags {
+    display: none
+}
+
 #numberOfTask {
     width: 6%
 }

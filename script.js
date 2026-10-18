@@ -301,7 +301,7 @@ const markHidden = (tr, problem, isHidden) => {
   button.textContent = isHidden ? "\u21A9" : "\u00D7";
 };
 
-const buildRow = (problem, showTags, isHidden) => {
+const buildRow = (problem, isHidden) => {
   const href = problemLink(problem);
   const row = document.createElement("tr");
 
@@ -311,9 +311,11 @@ const buildRow = (problem, showTags, isHidden) => {
   name.className = "problemName";
   row.append(cell(name));
 
-  if (showTags) {
-    row.append(cell(problem.tags.length ? problem.tags.join(", ") : "-"));
-  }
+  // Always built, and hidden by a class on the table body, so showing the
+  // tags does not build every row again.
+  const tags = cell(problem.tags.length ? problem.tags.join(", ") : "-");
+  tags.className = "tags";
+  row.append(tags);
 
   row.append(cell(problem.rating === undefined ? "-" : String(problem.rating), text.ratingTD));
   row.append(cell(String(problem.tries)));
@@ -390,7 +392,6 @@ const friend = { handle: "", savedAt: null, solvedBy: null };
 // instead of rebuilding the table.
 let drawn = [];
 let built = new WeakMap();
-let builtWithTags = false;
 // The row last picked at random.
 let picked = null;
 
@@ -474,20 +475,17 @@ const fillTagFilter = () => {
 const render = () => {
   const showTags = byId("doNotShowTags").checked;
   byId("tagsTD").hidden = !showTags;
+  byId("table-list").classList.toggle("no-tags", !showTags);
   // Build into one fragment and insert once; names are set as text, never
   // as markup.
   const fragment = document.createDocumentFragment();
   const { key, descending } = state.sort;
   // A re-sort moves the rows already built rather than building them again:
   // 2500 rows took 64 ms to rebuild.
-  if (builtWithTags !== showTags) {
-    built = new WeakMap();
-    builtWithTags = showTags;
-  }
   drawn = sortRows(state.rows, key, descending).map((problem) => {
     let tr = built.get(problem);
     if (!tr) {
-      tr = buildRow(problem, showTags, hiddenFor(state.handle).has(problemKey(problem)));
+      tr = buildRow(problem, hiddenFor(state.handle).has(problemKey(problem)));
       tr.classList.toggle("picked", problem === picked);
       built.set(problem, tr);
     }
