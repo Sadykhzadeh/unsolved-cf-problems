@@ -186,7 +186,7 @@ const searchText = (query) => {
 };
 
 const bound = (value) => {
-  if (value === "" || value === null || value === undefined) return null;
+  if (value === null || value === undefined || String(value).trim() === "") return null;
   const number = Number(value);
   return Number.isFinite(number) ? number : null;
 };
