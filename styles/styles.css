@@ -178,8 +178,10 @@ td {
 
 /* Seven columns do not fit a phone. The table scrolls sideways inside its
    own box rather than widening the whole page, which would make phones zoom
-   the page out until the text is unreadable. */
+   the page out until the text is unreadable. It is positioned so the hidden
+   label of the last header, placed absolutely, stays inside it. */
 .table-scroll {
+    position: relative;
     overflow-x: auto
 }
 
