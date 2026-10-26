@@ -506,8 +506,9 @@ test("a slow download of a large history is kept, a stalled one is cut off", asy
     if (i === 10) return "1";
     return i === 11 ? "]}" : "1,";
   });
-  // Twelve chunks 20 ms apart take far longer than the 60 ms limit, yet nothing goes quiet that long.
-  const { response, payload } = await fetchJson("x", { idleMs: 60, fetchFn: trickle(parts, 20) });
+  // Twelve chunks 30 ms apart take longer than the 200 ms limit, yet nothing goes quiet for anything
+  // like that long; the wide margin keeps a busy machine's late timers from tripping it.
+  const { response, payload } = await fetchJson("x", { idleMs: 200, fetchFn: trickle(parts, 30) });
   assert.equal(response.status, 200);
   assert.equal(payload.status, "OK");
   assert.equal(payload.result.length, 10);
