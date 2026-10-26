@@ -33,7 +33,7 @@ const localize = [{
     handleLabel: "Codeforces handle",
     handlePlaceholder: "Input your handle here.",
     showTagsChexBox: " Show problem's tags",
-    counterOfProblems: `😱 Count of problems: `,
+    counterOfProblems: "Count of problems:",
     nameTD: "Name ",
     tagsTD: "Tags",
     ratingTD: "Rating",
@@ -84,7 +84,7 @@ const localize = [{
     handleLabel: "Хендл на Codeforces",
     handlePlaceholder: "Введите свой хендл.",
     showTagsChexBox: " Показывать теги задач",
-    counterOfProblems: `😱 Количество задач: `,
+    counterOfProblems: "Количество задач:",
     nameTD: "Название ",
     tagsTD: "Теги",
     ratingTD: "Рейтинг",
@@ -703,7 +703,11 @@ const showResults = () => {
   }
   byId("table-main").hidden = false;
   byId("filters").hidden = false;
-  counter.textContent = `${text.counterOfProblems} ${state.rows.length}`;
+  // The face is for the eye; a screen reader would announce it by name.
+  const face = document.createElement("span");
+  face.setAttribute("aria-hidden", "true");
+  face.textContent = "😱 ";
+  counter.replaceChildren(face, `${text.counterOfProblems} ${state.rows.length}`);
   render();
 };
 
