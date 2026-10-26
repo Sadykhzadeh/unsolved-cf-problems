@@ -423,18 +423,25 @@ export const summarizeSolved = (submissions, startOf = contestStarts(submissions
 // started. A problem shared by a Div. 1 and a Div. 2 round is submitted to
 // under either contest, so one solved in one counts as solved in the other:
 // same name and rating, in a contest that started at the same second, or one
-// numbered one or two away (an online mirror of an onsite round starts later
-// but sits next to it). The gym has no parallel rounds, and its problems are
+// numbered up to PARALLEL_GAP away (an online mirror of an onsite round starts
+// later but sits close to it). The gym has no parallel rounds, and its problems are
 // mostly unrated and often named after their letter, so neighbouring gym
 // contests would match by accident.
 // Whether a problem can have a parallel copy at all: the gym and acmsguru have none.
 const hasParallel = (problem) => problem.contestId !== undefined && !isGym(problem.contestId);
 
+// How far apart two contests can be numbered and still hold the same problem
+// without starting together: the finals of a cup and its online mirror run on
+// other days (VK Cup 2015 Finals 562 and 566, ABBYY Cup 3.0 Finals 324 and
+// 331). Of all the problems Codeforces lists, the closest two contests
+// holding different problems of one name and rating are nine apart.
+const PARALLEL_GAP = 7;
+
 // Whether `copy`, a {contestId, rating, start} seen elsewhere under the same
 // name, is the same problem as `problem`, which started at `start`.
 const isParallel = (copy, problem, start) => copy.contestId !== problem.contestId
   && (copy.rating ?? null) === (problem.rating ?? null)
-  && (Math.abs(copy.contestId - problem.contestId) <= 2 || (Number.isFinite(start) && start === copy.start));
+  && (Math.abs(copy.contestId - problem.contestId) <= PARALLEL_GAP || (Number.isFinite(start) && start === copy.start));
 
 export const solvedCheck = (summary) => {
   const keys = new Set(summary.keys);

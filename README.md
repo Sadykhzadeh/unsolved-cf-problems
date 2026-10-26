@@ -59,7 +59,7 @@ Every problem a Codeforces user has tried and not solved, in one table.
 It asks the Codeforces API for every submission a handle has made
 (`user.status`), sets aside the problems that were ever accepted, including
 ones accepted in the parallel Div. 1 or Div. 2 round (same name and rating, in
-a contest that started at the same moment or is numbered one or two away), and
+a contest that started at the same moment or is numbered up to seven away), and
 lists what is left - sorted by rating,
 with unrated problems last. Everything runs
 in the browser; there is no backend and nothing is stored outside it:
