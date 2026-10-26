@@ -128,9 +128,16 @@ test("a problem solved in its parallel round is not unsolved", () => {
   assert.deepEqual(findUnsolved([twin(1500, "C", "WRONG_ANSWER"), twin(1501, "E", "OK")]), []);
   assert.deepEqual(findUnsolved([twin(1501, "E", "OK"), twin(1500, "C", "WRONG_ANSWER")]), []);
   // too far apart, or another rating: a different problem with the same name
-  assert.equal(findUnsolved([twin(1500, "C", "WRONG_ANSWER"), twin(1503, "E", "OK")]).length, 1);
+  assert.equal(findUnsolved([twin(1500, "C", "WRONG_ANSWER"), twin(1508, "E", "OK")]).length, 1);
   assert.equal(findUnsolved([twin(1500, "C", "WRONG_ANSWER"), twin(1501, "E", "OK", 1200)]).length, 1);
-  // Round 942: Div. 2 is contest 1972 and Div. 1 is 1967, started together
+  // The finals of a cup and its online mirror run days apart, a few contests
+  // apart: VK Cup 2015 Finals is 562 and the mirror 566, the ABBYY Cup 3.0
+  // finals 324 and 331. Matching Names was failed in one and accepted in the other.
+  assert.deepEqual(findUnsolved([twin(562, "F", "MEMORY_LIMIT_EXCEEDED", 2300), twin(566, "A", "OK", 2300)]), []);
+  assert.deepEqual(findUnsolved([twin(331, "D", "OK", 2400), twin(324, "D", "WRONG_ANSWER", 2400)]), []);
+  assert.equal(findUnsolved([twin(324, "D", "WRONG_ANSWER", 2400), twin(331, "D", "WRONG_ANSWER", 2400)]).length, 1);
+  // Two rounds that started together but are numbered too far apart for the
+  // numbers to say so (the halves of Round 942, 1967 and 1972, are close enough)
   const inRound = (contestId, index, verdict, participantType, startTimeSeconds) => {
     const item = twin(contestId, index, verdict, 1400);
     item.author = { participantType, startTimeSeconds };
@@ -138,16 +145,16 @@ test("a problem solved in its parallel round is not unsolved", () => {
   };
   assert.deepEqual(findUnsolved([
     inRound(1972, "D1", "WRONG_ANSWER", "PRACTICE", 1714487700),
-    inRound(1967, "B1", "OK", "PRACTICE", 1714487700),
+    inRound(1950, "B1", "OK", "PRACTICE", 1714487700),
   ]), []);
   // a virtual run of the Div. 2 round says nothing about when it started
   assert.equal(findUnsolved([
     inRound(1972, "D1", "WRONG_ANSWER", "VIRTUAL", 1714487700),
-    inRound(1967, "B1", "OK", "VIRTUAL", 1714487700),
+    inRound(1950, "B1", "OK", "VIRTUAL", 1714487700),
   ]).length, 1);
   assert.equal(findUnsolved([
     inRound(1972, "D1", "WRONG_ANSWER", "CONTESTANT", 1714487700),
-    inRound(1967, "B1", "OK", "PRACTICE", 1714400000),
+    inRound(1950, "B1", "OK", "PRACTICE", 1714400000),
   ]).length, 1);
   // neighbouring gym contests, both unrated, each with a problem called "E"
   const gym = (contestId, verdict) => {
@@ -166,7 +173,7 @@ test("a friend's solved problems narrow the list, parallel rounds included", () 
     return item;
   };
   const friend = [
-    solve(1967, "B1", "Reverse Card (Easy Version)", 1400, 1714487700),
+    solve(1950, "B1", "Reverse Card (Easy Version)", 1400, 1714487700),
     solve(1500, "C", "Shared", 1900, 1614000000),
     solve(4, "A", "Watermelon", 800, 1268000000),
     solve(100092, "E", "E", undefined, 1340000000),
@@ -180,7 +187,7 @@ test("a friend's solved problems narrow the list, parallel rounds included", () 
   assert.equal(solvedBy(row(1501, "E", "Shared", 1900)), true);
   assert.equal(solvedBy(row(1972, "D1", "Reverse Card (Easy Version)", 1400), 1714487700), true);
   assert.equal(solvedBy(row(1972, "D1", "Reverse Card (Easy Version)", 1400), 1714400000), false);
-  assert.equal(solvedBy(row(1503, "E", "Shared", 1900)), false);
+  assert.equal(solvedBy(row(1509, "E", "Shared", 1900)), false);
   assert.equal(solvedBy(row(1501, "E", "Shared", 2100)), false);
   assert.equal(solvedBy(row(100092, "E", "E")), true);
   assert.equal(solvedBy(row(100093, "E", "E")), false, "the gym has no parallel rounds");
