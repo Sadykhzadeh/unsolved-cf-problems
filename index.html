@@ -27,6 +27,11 @@
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://azer.is-a.dev/unsolved-cf-problems/" />
     <meta property="og:description" content="Every Codeforces problem a handle has tried and not solved, in one table to sort, filter and pick from." />
+    <!-- The first API call waits for script.js to load and run; opening the
+         connection meanwhile takes its setup off that path. crossorigin,
+         because fetch() asks for it without credentials, and a connection
+         made with them is not reused for such a request. -->
+    <link rel="preconnect" href="https://codeforces.com" crossorigin>
     <link rel="stylesheet" href="styles/styles.css">
     <!-- script.js imports lib.js; without this the browser only finds out
          after script.js has arrived, a whole extra round trip. -->
