@@ -383,6 +383,10 @@ export const ageParts = (ms) => {
   return [-Math.floor(seconds / 86400), "day"];
 };
 
+// Why a list has no rows: the handle has not submitted anything, or has
+// solved everything it tried. The two want different words.
+export const emptyKind = (submissionCount) => (submissionCount === 0 ? "noSubmissions" : "allSolved");
+
 const UNRATED_SORTS_LAST = 1e6;
 
 // Each contest's start time, as the submissions record it: one made in the

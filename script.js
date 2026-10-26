@@ -2,6 +2,7 @@ import {
   ageParts,
   defaultDescending,
   describeFailure,
+  emptyKind,
   failedTest,
   fetchJson,
   findUnsolved,
@@ -43,6 +44,7 @@ const localize = [{
     onPretestText: "{verdict} on pretest {test}",
     lastTriedTD: "Last attempt",
     congratsText: "Congratulations, You haven't got any unsolved tasks! 🥳",
+    noSubmissionsText: "There are no submissions from this user yet.",
     loadingText: "Loading the submissions of {handle}...",
     notFoundText: ":( There is no Codeforces user called \"{handle}\".",
     badHandleText: ":( Codeforces did not accept this handle: {detail}",
@@ -93,6 +95,7 @@ const localize = [{
     onPretestText: "{verdict} на претесте {test}",
     lastTriedTD: "Последняя попытка",
     congratsText: "Поздравляю, У тебя нет нерешённых задач! 🥳",
+    noSubmissionsText: "У этого пользователя пока нет посылок.",
     loadingText: "Загружаю посылки {handle}...",
     notFoundText: ":( На Codeforces нет пользователя «{handle}».",
     badHandleText: ":( Codeforces не принял этот хендл: {detail}",
@@ -395,7 +398,7 @@ const failureText = (error, handle) => {
 
 // The last lookup, kept so that showing tags or filtering redraws from memory
 // instead of asking Codeforces for every submission again.
-const state = { handle: "", rows: [], savedAt: null, sort: { key: "rating", descending: false } };
+const state = { handle: "", rows: [], submissions: 0, savedAt: null, sort: { key: "rating", descending: false } };
 
 // The friend whose solved problems narrow the list, and once their
 // submissions are in, the check for what they solved.
@@ -610,7 +613,7 @@ byId("doNotShowTags").addEventListener("change", () => {
 // while a fresh one loads. Only the last few handles are kept, because the
 // storage is shared with every other page on this origin.
 const SAVED_KEY = "unsolved-cf-problems:lookups";
-const SAVED_VERSION = 5;
+const SAVED_VERSION = 6;
 const FRESH_FOR = 10 * 60 * 1000;
 const KEEP_HANDLES = 3;
 
@@ -629,7 +632,8 @@ const readStore = () => {
 const readSaved = (handle) => {
   const entry = readStore().entries[savedId(handle)];
   const rows = entry && Number.isFinite(entry.savedAt) ? unpackRows(entry.rows) : null;
-  return rows ? { handle: entry.handle ?? handle, savedAt: entry.savedAt, rows } : null;
+  if (!rows || !Number.isInteger(entry.submissions)) return null;
+  return { handle: entry.handle ?? handle, savedAt: entry.savedAt, rows, submissions: entry.submissions };
 };
 
 const writeStore = (store) => {
@@ -641,10 +645,10 @@ const writeStore = (store) => {
   }
 };
 
-const save = (handle, rows, savedAt) => {
+const save = (handle, rows, submissions, savedAt) => {
   const store = readStore();
   const id = savedId(handle);
-  store.entries[id] = { handle, savedAt, rows: packRows(rows) };
+  store.entries[id] = { handle, savedAt, rows: packRows(rows), submissions };
   const newestFirst = Object.keys(store.entries)
     .sort((a, b) => store.entries[b].savedAt - store.entries[a].savedAt);
   for (const old of newestFirst.slice(KEEP_HANDLES)) delete store.entries[old];
@@ -692,7 +696,8 @@ const showResults = () => {
     byId("filters").hidden = true;
     byId("table-list").replaceChildren();
     drawn = [];
-    counter.textContent = state.handle ? text.congratsText : "";
+    counter.textContent = !state.handle ? ""
+      : emptyKind(state.submissions) === "noSubmissions" ? text.noSubmissionsText : text.congratsText;
     return;
   }
   byId("table-main").hidden = false;
@@ -704,6 +709,7 @@ const showResults = () => {
 const clearResults = () => {
   state.handle = "";
   state.rows = [];
+  state.submissions = 0;
   state.savedAt = null;
   drawn = [];
   byId("table-main").hidden = true;
@@ -779,8 +785,9 @@ const lookup = async (handle, { force = false } = {}) => {
     if (number !== lookupNumber) return;
     state.handle = handle;
     state.rows = findUnsolved(submissions);
+    state.submissions = submissions.length;
     state.savedAt = Date.now();
-    save(handle, state.rows, state.savedAt);
+    save(handle, state.rows, state.submissions, state.savedAt);
     fillTagFilter();
     showResults();
   } catch (error) {
