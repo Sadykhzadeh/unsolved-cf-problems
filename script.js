@@ -27,6 +27,7 @@ import {
 
 const localize = [{
   "en": {
+    pageTitle: "Unsolved Codeforces Problems",
     searchHandleButton: "Search unsolved tasks",
     handleLabel: "Codeforces handle",
     handlePlaceholder: "Input your handle here.",
@@ -76,6 +77,7 @@ const localize = [{
     showingSavedText: "Showing what was saved {ago}.",
   },
   "ru": {
+    pageTitle: "Нерешённые задачи Codeforces",
     searchHandleButton: "Поиск нерешённых задач",
     handleLabel: "Хендл на Codeforces",
     handlePlaceholder: "Введите свой хендл.",
@@ -166,6 +168,8 @@ const onloadFunction = (lang) => {
   remember("lang", lang);
   // The page is bilingual, so the document has to say which one it is in.
   document.documentElement.lang = lang;
+  byId("heading").textContent = text.pageTitle;
+  document.title = text.pageTitle;
   byId("handle").value = recall("handle") ?? "";
   byId("handleLabel").textContent = text.handleLabel;
   byId("handle").placeholder = text.handlePlaceholder;
@@ -228,7 +232,7 @@ const currentParams = () => ({
   showTags: byId("doNotShowTags").checked,
 });
 
-const pageTitle = document.title;
+const pageTitle = text.pageTitle;
 
 // Keeps the address bar a link to what is on screen, and the language flags
 // pointing at the same view in the other language. Typing is debounced:
