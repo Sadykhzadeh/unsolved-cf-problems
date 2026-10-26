@@ -541,3 +541,37 @@ test("an empty list is told apart: nothing submitted yet, or everything solved",
   assert.equal(emptyKind(5513), "allSolved");
   assert.deepEqual(findUnsolved([]), []);
 });
+
+test("only an accepted submission solves a problem: partial, skipped, hacked and queued ones do not", () => {
+  const rows = findUnsolved([
+    submission(10, "A", "PARTIAL", 1200),
+    submission(10, "B", "SKIPPED", 1300),
+    submission(10, "C", "CHALLENGED", 1400),
+    submission(10, "D", "COMPILATION_ERROR", 1500),
+    submission(10, "E", undefined, 1600),
+    submission(10, "F", "OK", 1700),
+  ]);
+  assert.deepEqual(rows.map((row) => row.index), ["A", "B", "C", "D", "E"]);
+  assert.equal(rows[2].verdict, "CHALLENGED");
+  assert.equal(rows[4].verdict, undefined);
+});
+
+test("a hacked solution does not count once the problem is accepted later", () => {
+  // newest first: accepted after having been hacked
+  const rows = findUnsolved([submission(20, "A", "OK", 900), submission(20, "A", "CHALLENGED", 900)]);
+  assert.deepEqual(rows, []);
+  // a hacked solution is a failed attempt like any other: the problem stays open and the attempt is counted
+  const hacked = findUnsolved([submission(20, "B", "CHALLENGED", 900), submission(20, "B", "WRONG_ANSWER", 900)]);
+  assert.equal(hacked.length, 1);
+  assert.equal(hacked[0].tries, 2);
+});
+
+test("handles are taken as typed, apart from the whitespace around them", () => {
+  assert.equal(parseHandle("\t Tourist\n"), "Tourist");
+  assert.equal(parseHandle("  HTTPS://CODEFORCES.COM/profile/Tourist  "), "Tourist");
+  assert.equal(parseHandle("https://www.codeforces.com/profile/Um_nik#tab"), "Um_nik");
+  assert.equal(parseHandle(""), "");
+  assert.equal(readParams("?handle=%20Tourist%20&friend=%20Jiangly%20").handle, "Tourist");
+  assert.equal(readParams("?handle=%20Tourist%20&friend=%20Jiangly%20").friend, "Jiangly");
+  assert.equal(readParams("?handle=").handle, "");
+});
