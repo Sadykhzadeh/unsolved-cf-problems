@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {
   ageParts,
   describeFailure,
+  emptyKind,
   failedTest,
   fetchJson,
   findUnsolved,
@@ -532,4 +533,11 @@ test("a call that never answers is cut off and recognised as a timeout", async (
   clearTimeout(keepAlive);
   assert.equal(isTimeout(new TypeError("Failed to fetch")), false);
   assert.equal(isTimeout(undefined), false);
+});
+
+test("an empty list is told apart: nothing submitted yet, or everything solved", () => {
+  assert.equal(emptyKind(0), "noSubmissions");
+  assert.equal(emptyKind(1), "allSolved");
+  assert.equal(emptyKind(5513), "allSolved");
+  assert.deepEqual(findUnsolved([]), []);
 });
