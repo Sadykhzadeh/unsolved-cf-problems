@@ -222,6 +222,7 @@ const applyParams = () => {
 };
 
 const currentParams = () => ({
+  lang: lang === "en" ? "" : lang,
   handle: state.handle || byId("handle").value.trim(),
   sort: state.sort,
   query: byId("searchTask").value,

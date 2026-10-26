@@ -52,7 +52,7 @@ Every problem a Codeforces user has tried and not solved, in one table.
 | `friend` | `friend=jiangly` | only problems this handle has solved |
 | `round` | `round=1` | only problems tried during a round, live or virtual |
 | `tags` | `tags=1` | show the tags column |
-| `lang` | `lang=ru` | `en` or `ru`; remembered |
+| `lang` | `lang=ru` | `en` or `ru`; left out of the link for English, remembered |
 
 ## How it works
 
