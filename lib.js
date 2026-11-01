@@ -253,6 +253,9 @@ const bound = (value) => {
   return Number.isFinite(number) ? number : null;
 };
 
+// Each tag once, in the order given, and none blank.
+const uniqueTags = (tags) => [...new Set([...tags].map(String).filter(Boolean))];
+
 // Normalises what the filter fields hold: an empty or unreadable bound is no
 // bound, and the search is case-insensitive. `noGym` leaves out the gym, and
 // `noSpecial` the problems Codeforces tags *special: April Fools jokes,
@@ -260,14 +263,17 @@ const bound = (value) => {
 // a check from solvedCheck(), keeps only what someone else has solved,
 // `inRound` only the problems tried during a round, live or virtual, and
 // `hidden`, a Set of problem keys, leaves out the problems put out of sight.
+// `tags` keeps the problems that have all of them, or any of them with
+// `tagAny`, as the problemset on Codeforces does.
 export const makeFilter = ({
-  query = "", min = "", max = "", tag = "", noGym = false, noSpecial = false, solvedBy = null, inRound = false,
-  hidden = null,
+  query = "", min = "", max = "", tags = [], tagAny = false, noGym = false, noSpecial = false, solvedBy = null,
+  inRound = false, hidden = null,
 } = {}) => ({
   query: searchText(query),
   min: bound(min),
   max: bound(max),
-  tag: String(tag),
+  tags: uniqueTags(tags),
+  tagAny: Boolean(tagAny),
   noGym: Boolean(noGym),
   noSpecial: Boolean(noSpecial),
   solvedBy: typeof solvedBy === "function" ? solvedBy : null,
@@ -285,7 +291,8 @@ export const matchesFilter = (row, filter) => {
     const byId = id.startsWith(filter.query) || id.replace("|", "").startsWith(filter.query);
     if (!byId && !row.name.toLowerCase().includes(filter.query)) return false;
   }
-  if (filter.tag && !row.tags.includes(filter.tag)) return false;
+  if (filter.tags.length && !(filter.tagAny ? filter.tags.some((tag) => row.tags.includes(tag))
+    : filter.tags.every((tag) => row.tags.includes(tag)))) return false;
   if (filter.noGym && isGym(row.contestId)) return false;
   if (filter.noSpecial && row.tags.includes("*special")) return false;
   if (filter.solvedBy && !filter.solvedBy(row, row.start)) return false;
@@ -328,7 +335,8 @@ export const readParams = (search) => {
     query: params.get("q") ?? "",
     min: params.get("min") ?? "",
     max: params.get("max") ?? "",
-    tag: params.get("tag") ?? "",
+    tags: uniqueTags(params.getAll("tag")),
+    tagAny: params.get("tagany") === "1",
     noGym: params.get("nogym") === "1",
     noSpecial: params.get("nospecial") === "1",
     friend: (params.get("friend") ?? "").trim(),
@@ -338,8 +346,8 @@ export const readParams = (search) => {
 };
 
 export const writeParams = ({
-  lang, handle, sort, query = "", min = "", max = "", tag = "", noGym = false, noSpecial = false, friend = "",
-  inRound = false, showTags = false,
+  lang, handle, sort, query = "", min = "", max = "", tags = [], tagAny = false, noGym = false, noSpecial = false,
+  friend = "", inRound = false, showTags = false,
 }) => {
   const params = new URLSearchParams();
   if (lang) params.set("lang", lang);
@@ -350,7 +358,9 @@ export const writeParams = ({
   if (query.trim()) params.set("q", query.trim());
   if (bound(min) !== null) params.set("min", String(bound(min)));
   if (bound(max) !== null) params.set("max", String(bound(max)));
-  if (tag) params.set("tag", tag);
+  const chosen = uniqueTags(tags);
+  for (const tag of chosen) params.append("tag", tag);
+  if (tagAny && chosen.length > 1) params.set("tagany", "1");
   if (noGym) params.set("nogym", "1");
   if (noSpecial) params.set("nospecial", "1");
   if (friend) params.set("friend", friend);

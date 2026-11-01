@@ -312,6 +312,36 @@ th[aria-sort="descending"] .sort::after {
     cursor: pointer
 }
 
+/* The tags chosen to narrow the list, each one a button that takes it away.
+   Their box leaves them to wrap among the other filters. */
+#chosenTags {
+    display: contents
+}
+
+.tag-chip {
+    background: none;
+    border: 1px solid var(--edge);
+    border-radius: 5px;
+    padding: 2px 6px;
+    font: inherit;
+    color: inherit;
+    cursor: pointer
+}
+
+#tagMode {
+    background: none;
+    border: 0;
+    padding: 0;
+    font: inherit;
+    color: inherit;
+    text-decoration: underline;
+    cursor: pointer
+}
+
+#tagMode[hidden] {
+    display: none
+}
+
 #refresh[aria-disabled="true"] {
     cursor: progress;
     opacity: 0.6

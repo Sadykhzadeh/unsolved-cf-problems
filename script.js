@@ -60,6 +60,11 @@ const localize = [{
     minRating: "Minimum rating",
     maxRating: "Maximum rating",
     anyTag: "Any tag",
+    addTag: "Add a tag",
+    removeTag: "Stop requiring {tag}",
+    tagsAll: "Has all of them",
+    tagsAny: "Has any of them",
+    tagModeTitle: "Switch between problems that have all of the tags and those that have any of them",
     noGymLabel: "Hide gym",
     noSpecialLabel: "Hide special rounds",
     noSpecialTitle: "April Fools, Kotlin Heroes, Q# and the rest tagged *special",
@@ -112,6 +117,11 @@ const localize = [{
     minRating: "Минимальный рейтинг",
     maxRating: "Максимальный рейтинг",
     anyTag: "Любой тег",
+    addTag: "Добавить тег",
+    removeTag: "Убрать тег {tag}",
+    tagsAll: "Все сразу",
+    tagsAny: "Любой из них",
+    tagModeTitle: "Переключить: задачи со всеми выбранными тегами или с любым из них",
     noGymLabel: "Без тренировок",
     noSpecialLabel: "Без особых раундов",
     noSpecialTitle: "1 апреля, Kotlin Heroes, Q# и остальные задачи с тегом *special",
@@ -215,8 +225,9 @@ const applyParams = () => {
   byId("searchTask").value = params.query;
   byId("minRating").value = params.min;
   byId("maxRating").value = params.max;
-  byId("tagFilter").value = params.tag;
-  pendingTag = params.tag;
+  chosenTags = params.tags;
+  tagAny = params.tagAny;
+  showTagChoice();
   byId("noGym").checked = params.noGym;
   byId("noSpecial").checked = params.noSpecial;
   byId("inRound").checked = params.inRound;
@@ -231,7 +242,8 @@ const currentParams = () => ({
   query: byId("searchTask").value,
   min: byId("minRating").value,
   max: byId("maxRating").value,
-  tag: byId("tagFilter").value || pendingTag,
+  tags: chosenTags,
+  tagAny,
   noGym: byId("noGym").checked,
   noSpecial: byId("noSpecial").checked,
   friend: friend.handle,
@@ -454,7 +466,8 @@ const applyFilters = () => {
     query: byId("searchTask").value,
     min: byId("minRating").value,
     max: byId("maxRating").value,
-    tag: byId("tagFilter").value,
+    tags: chosenTags,
+    tagAny,
     noGym: byId("noGym").checked,
     noSpecial: byId("noSpecial").checked,
     solvedBy: friend.solvedBy,
@@ -478,19 +491,68 @@ const applyFilters = () => {
     : fill(text.shownText, { shown, total: drawn.length });
 };
 
-// The tag list offers only tags that occur among the rows, with counts.
-// A tag named by the link waits here until the list has tags to pick from.
-let pendingTag = "";
+// The tags the list is narrowed to, and whether a problem needs all of them
+// or any. The list offers the tags that occur among the rows, with counts, and
+// not the ones already chosen. Tags named by the link wait in chosenTags until
+// the rows are in and show which of them occur.
+let chosenTags = [];
+let tagAny = false;
+
+const showTagChoice = () => {
+  const select = byId("tagFilter");
+  const options = tagCounts(state.rows)
+    .filter(([tag]) => !chosenTags.includes(tag))
+    .map(([tag, count]) => new Option(`${tag} (${count})`, tag));
+  select.replaceChildren(new Option(chosenTags.length ? text.addTag : text.anyTag, ""), ...options);
+  const chips = chosenTags.map((tag) => {
+    const chip = document.createElement("button");
+    chip.type = "button";
+    chip.className = "tag-chip";
+    chip.dataset.tag = tag;
+    chip.textContent = `${tag} ×`;
+    chip.setAttribute("aria-label", fill(text.removeTag, { tag }));
+    return chip;
+  });
+  byId("chosenTags").replaceChildren(...chips);
+  const mode = byId("tagMode");
+  mode.hidden = chosenTags.length < 2;
+  mode.textContent = tagAny ? text.tagsAny : text.tagsAll;
+  mode.title = text.tagModeTitle;
+};
 
 const fillTagFilter = () => {
-  const select = byId("tagFilter");
-  const chosen = pendingTag || select.value;
-  pendingTag = "";
-  const any = new Option(text.anyTag, "");
-  const options = tagCounts(state.rows).map(([tag, count]) => new Option(`${tag} (${count})`, tag));
-  select.replaceChildren(any, ...options);
-  select.value = options.some((option) => option.value === chosen) ? chosen : "";
+  const present = new Set(state.rows.flatMap((row) => row.tags));
+  chosenTags = chosenTags.filter((tag) => present.has(tag));
+  showTagChoice();
 };
+
+byId("tagFilter").addEventListener("input", (event) => {
+  const tag = event.target.value;
+  if (!tag) return;
+  chosenTags = [...chosenTags, tag];
+  showTagChoice();
+  applyFilters();
+  syncUrl();
+});
+
+// A removed tag leaves the focus on the list to add one from, rather than
+// dropping it to the page with the button.
+byId("chosenTags").addEventListener("click", (event) => {
+  const chip = event.target.closest("button.tag-chip");
+  if (!chip) return;
+  chosenTags = chosenTags.filter((tag) => tag !== chip.dataset.tag);
+  showTagChoice();
+  applyFilters();
+  syncUrl();
+  byId("tagFilter").focus();
+});
+
+byId("tagMode").addEventListener("click", () => {
+  tagAny = !tagAny;
+  showTagChoice();
+  applyFilters();
+  syncUrl();
+});
 
 const render = () => {
   const showTags = byId("doNotShowTags").checked;
@@ -535,7 +597,7 @@ for (const button of document.querySelectorAll("button.sort")) {
 }
 
 // The filters exist once in the page, so their listeners are attached once.
-for (const id of ["searchTask", "minRating", "maxRating", "tagFilter", "noGym", "noSpecial", "inRound", "showHidden"]) {
+for (const id of ["searchTask", "minRating", "maxRating", "noGym", "noSpecial", "inRound", "showHidden"]) {
   byId(id).addEventListener("input", () => {
     applyFilters();
     syncUrl();

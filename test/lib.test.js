@@ -293,7 +293,11 @@ test("the filter narrows by name or id, tag, rating range, kind of contest and w
   const ids = [row(3, "C", "Tic-tac-toe"), row(23, "C", "Oranges and Apples"), row(273, "C", "Dima and Horses")];
   assert.deepEqual(ids.filter((r) => matchesFilter(r, makeFilter({ query: "3c" }))).map(problemKey), ["3|C"]);
   assert.deepEqual(ids.filter((r) => matchesFilter(r, makeFilter({ query: "3|C" }))).map(problemKey), ["3|C"]);
-  assert.deepEqual(pick({ tag: "math" }), ["Watermelon"]);
+  assert.deepEqual(pick({ tags: ["math"] }), ["Watermelon"]);
+  assert.deepEqual(pick({ tags: ["math", "brute force"] }), ["Watermelon"], "all of the tags");
+  assert.deepEqual(pick({ tags: ["math", "dp"] }), [], "no problem has both");
+  assert.deepEqual(pick({ tags: ["math", "dp"], tagAny: true }), ["Watermelon", "Fresh One"], "any of the tags");
+  assert.equal(pick({ tags: [], tagAny: true }).length, 5, "no tags is no filter, whichever the mode");
   assert.deepEqual(pick({ min: "1000" }), ["Guess the K-th Zero (Hard version)"]);
   assert.deepEqual(pick({ max: 800 }), ["Watermelon"]);
   assert.deepEqual(pick({ min: "800", max: "2200" }).length, 2, "bounds are inclusive; unrated is out");
@@ -301,7 +305,7 @@ test("the filter narrows by name or id, tag, rating range, kind of contest and w
   const all = pick({});
   assert.deepEqual(pick({ noGym: true }), all.filter((name) => name !== "E"));
   assert.deepEqual(pick({ noSpecial: true }), all.filter((name) => name !== "Ordinary Problem"));
-  assert.deepEqual(pick({ noGym: true, noSpecial: true, tag: "dp" }), ["Fresh One"]);
+  assert.deepEqual(pick({ noGym: true, noSpecial: true, tags: ["dp"] }), ["Fresh One"]);
   assert.deepEqual(pick({ hidden: new Set(["4|A", "100092|E"]) }), all.filter((name) => name !== "Watermelon" && name !== "E"));
   assert.equal(pick({ hidden: new Set() }).length, 5, "nothing hidden");
   assert.equal(pick({ hidden: ["4|A"] }).length, 5, "only a Set of keys counts");
@@ -364,7 +368,8 @@ test("a link carries the handle, sort and filters, and nothing at their defaults
     query: " bear ",
     min: "1200",
     max: "",
-    tag: "dp",
+    tags: ["dp"],
+    tagAny: false,
     noGym: true,
     noSpecial: true,
     friend: "jiangly",
@@ -374,6 +379,15 @@ test("a link carries the handle, sort and filters, and nothing at their defaults
   const search = writeParams(state);
   assert.equal(search, "handle=tourist&sort=-tries&q=bear&min=1200&tag=dp&nogym=1&nospecial=1&friend=jiangly&round=1&tags=1");
   assert.deepEqual(readParams(`?${search}`), { ...state, query: "bear" });
+
+  // Several tags are repeated tag= parameters, and the mode is only written when it matters.
+  const several = writeParams({ tags: ["dp", "graphs"], tagAny: true });
+  assert.equal(several, "tag=dp&tag=graphs&tagany=1");
+  assert.deepEqual(readParams(`?${several}`).tags, ["dp", "graphs"]);
+  assert.equal(readParams(`?${several}`).tagAny, true);
+  assert.equal(writeParams({ tags: ["dp"], tagAny: true }), "tag=dp");
+  assert.equal(writeParams({ tags: ["dp", "dp", ""] }), "tag=dp", "each tag once, none blank");
+  assert.deepEqual(readParams("?tag=dp&tag=dp&tag=").tags, ["dp"]);
 
   assert.equal(writeParams({ handle: "a b&c", sort: { key: "rating", descending: false } }), "handle=a+b%26c");
   assert.equal(writeParams({ lang: "ru", handle: "x", min: "abc" }), "lang=ru&handle=x");
@@ -386,7 +400,8 @@ test("unknown or broken parameters fall back to the defaults", () => {
     query: "",
     min: "",
     max: "",
-    tag: "",
+    tags: [],
+    tagAny: false,
     noGym: false,
     noSpecial: false,
     friend: "",
