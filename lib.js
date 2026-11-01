@@ -165,7 +165,7 @@ export const submissionLink = (row) => {
 // for the handle in it.
 export const parseHandle = (input) => {
   const value = String(input).trim();
-  const link = /^(?:https?:\/\/)?(?:[\w-]+\.)*codeforces\.[a-z]+\/(?:profile|submissions)\/([^/?#\s]+)/i.exec(value);
+  const link = /^(?:https?:\/\/)?(?:[\w-]+\.)*(?:codeforces\.[a-z]+|codeforc\.es)\/(?:profile|submissions)\/([^/?#\s]+)/i.exec(value);
   return link ? link[1] : value;
 };
 
@@ -238,7 +238,7 @@ const PROBLEM_LINKS = [
 
 const searchText = (query) => {
   const value = String(query).trim();
-  if (/^(?:https?:\/\/)?(?:[\w-]+\.)*codeforces\.[a-z]+\//i.test(value)) {
+  if (/^(?:https?:\/\/)?(?:[\w-]+\.)*(?:codeforces\.[a-z]+|codeforc\.es)\//i.test(value)) {
     for (const pattern of PROBLEM_LINKS) {
       const match = pattern.exec(value);
       if (match) return `${match[1]}|${match[2]}`.toLowerCase();

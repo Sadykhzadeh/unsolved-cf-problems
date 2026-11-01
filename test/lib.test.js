@@ -286,6 +286,7 @@ test("the filter narrows by name or id, tag, rating range, kind of contest and w
   assert.deepEqual(pick({ query: "https://codeforces.com/contest/1520/problem/F2" }), ["Guess the K-th Zero (Hard version)"]);
   assert.deepEqual(pick({ query: "codeforces.com/problemset/problem/4/A?locale=ru" }), ["Watermelon"]);
   assert.deepEqual(pick({ query: "https://m1.codeforces.com/gym/100092/problem/E" }), ["E"]);
+  assert.deepEqual(pick({ query: "https://codeforc.es/contest/1520/problem/F2" }), ["Guess the K-th Zero (Hard version)"]);
   assert.deepEqual(pick({ query: "https://codeforces.com/problemset/gymProblem/100092/E" }), ["E"]);
   assert.deepEqual(pick({ query: "https://codeforces.com/contest/1520/problem/A" }), [], "another problem of the contest");
   // tourist's list: 3C is one problem, not 23C, 273C and 573C as well
@@ -420,6 +421,9 @@ test("a pasted profile or submissions link stands for its handle", () => {
   assert.equal(parseHandle("codeforces.com/profile/Um_nik/"), "Um_nik");
   assert.equal(parseHandle("https://m1.codeforces.com/submissions/jiangly/page/2"), "jiangly");
   assert.equal(parseHandle("http://codeforces.com/profile/-is-this-fft-?locale=ru"), "-is-this-fft-");
+  // the short address Codeforces keeps for itself
+  assert.equal(parseHandle("https://codeforc.es/profile/tourist"), "tourist");
+  assert.equal(parseHandle("https://m.codeforc.es/submissions/jiangly/page/2"), "jiangly");
   // anything else is left for Codeforces to judge
   assert.equal(parseHandle("https://example.com/profile/tourist"), "https://example.com/profile/tourist");
   assert.equal(parseHandle("https://codeforces.com/blog/entry/79960"), "https://codeforces.com/blog/entry/79960");
