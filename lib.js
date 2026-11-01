@@ -119,6 +119,22 @@ export const fetchJson = async (url, { idleMs = REQUEST_TIMEOUT_MS, fetchFn = fe
   }
 };
 
+// An answer that is not about the question and may be a different one in a
+// few seconds: the call limit, or a gateway that is busy.
+const isTransient = (httpStatus, payload) => httpStatus === 429 || [502, 503, 504].includes(httpStatus)
+  || /call limit/i.test(typeof payload?.comment === "string" ? payload.comment : "");
+
+// fetchJson, made a second time when the first answer was transient. Another
+// tab or another person behind the same address spends the call limit too,
+// and it passes within the two seconds Codeforces asks for. `again` is the
+// caller's way of waiting for its turn; it resolves false when the answer is
+// no longer wanted, and without it nothing is repeated.
+export const fetchApi = async (url, { again, ...options } = {}) => {
+  const first = await fetchJson(url, options);
+  if (!again || !isTransient(first.response.status, first.payload) || !await again()) return first;
+  return fetchJson(url, options);
+};
+
 // acmsguru problems belong to no contest: they come with a problemsetName
 // instead of a contestId, and Codeforces files them under contest 99999.
 export const problemKey = (problem) => `${problem.contestId ?? problem.problemsetName}|${problem.index}`;

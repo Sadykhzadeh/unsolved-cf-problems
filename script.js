@@ -4,7 +4,7 @@ import {
   describeFailure,
   emptyKind,
   failedTest,
-  fetchJson,
+  fetchApi,
   findUnsolved,
   isSearchKey,
   isTimeout,
@@ -361,14 +361,14 @@ const buildRow = (problem, isHidden) => {
   return row;
 };
 
-const loadSubmissions = async (handle) => {
+const loadSubmissions = async (handle, wanted) => {
   // Escaped, so a handle containing & or # cannot change the request.
   const url = `https://codeforces.com/api/user.status?handle=${
     encodeURIComponent(handle)
   }&lang=${encodeURIComponent(lang)}`;
   // Errors come back as JSON with a comment saying what went wrong, except
   // when Codeforces itself is down and an HTML page answers instead.
-  const { response, payload } = await fetchJson(url);
+  const { response, payload } = await fetchApi(url, { again: () => waitForTurn(wanted) });
   // A failed call can still answer 200, with {status: "FAILED"} and no
   // result, so only an OK status with an array counts as submissions.
   if (response.ok && payload?.status === "OK" && Array.isArray(payload.result)) {
@@ -786,7 +786,7 @@ const lookup = async (handle, { force = false } = {}) => {
 
   try {
     if (!await waitForTurn(() => number === lookupNumber)) return;
-    const submissions = await loadSubmissions(handle);
+    const submissions = await loadSubmissions(handle, () => number === lookupNumber);
     if (number !== lookupNumber) return;
     state.handle = handle;
     state.rows = findUnsolved(submissions);
@@ -933,7 +933,7 @@ const loadFriend = async (handle) => {
     if (!handle || (friend.savedAt !== null && Date.now() - friend.savedAt < FRESH_FOR)) return;
     if (friend.savedAt === null) status.textContent = fill(text.loadingText, { handle });
     if (!await waitForTurn(() => number === friendNumber)) return;
-    const submissions = await loadSubmissions(handle);
+    const submissions = await loadSubmissions(handle, () => number === friendNumber);
     if (number !== friendNumber) return;
     const entry = { savedAt: Date.now(), summary: summarizeSolved(submissions) };
     useFriend(entry);

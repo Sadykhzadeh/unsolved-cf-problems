@@ -70,7 +70,8 @@ shown without asking Codeforces again; an older one is shown at once while a
 fresh copy loads, and "Refresh" (or searching for the same handle) always
 asks again. A friend's submissions are boiled down to the problems they
 solved and kept the same way, the latest friend only, in Cache Storage,
-which has room for them. Calls to the API are spaced two seconds apart, as Codeforces asks.
+which has room for them. Calls to the API are spaced two seconds apart, as Codeforces asks. A call refused for the rate limit,
+or by a busy gateway, is made once more after the next two seconds.
 
 ## Running it locally
 
