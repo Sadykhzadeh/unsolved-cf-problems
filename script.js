@@ -57,6 +57,7 @@ const localize = [{
     aboutProject: "More about the Project",
     sourceLink: "Source",
     searchPlaceholder: "Search by name or id",
+    minRating: "Minimum rating",
     maxRating: "Maximum rating",
     anyTag: "Any tag",
     noGymLabel: "Hide gym",
@@ -108,6 +109,7 @@ const localize = [{
     aboutProject: "Подробнее о проекте",
     sourceLink: "Исходный код",
     searchPlaceholder: "Поиск по названию или номеру",
+    minRating: "Минимальный рейтинг",
     maxRating: "Максимальный рейтинг",
     anyTag: "Любой тег",
     noGymLabel: "Без тренировок",
@@ -186,6 +188,7 @@ const onloadFunction = (lang) => {
   byId("searchTask").placeholder = text.searchPlaceholder;
   byId("searchTask").setAttribute("aria-label", text.searchPlaceholder);
   byId("ratingFilterLabel").textContent = text.ratingTD;
+  byId("minRating").setAttribute("aria-label", text.minRating);
   byId("maxRating").setAttribute("aria-label", text.maxRating);
   byId("tagFilter").setAttribute("aria-label", text.tagsTD);
   byId("noGymLabel").textContent = text.noGymLabel;
