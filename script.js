@@ -18,6 +18,7 @@ import {
   pickOne,
   problemKey,
   problemLink,
+  rankClass,
   readParams,
   reachesDigest,
   solvedCheck,
@@ -343,7 +344,9 @@ const buildRow = (problem, isHidden) => {
   tags.className = "tags";
   row.append(tags);
 
-  row.append(cell(problem.rating === undefined ? "-" : String(problem.rating), text.ratingTD));
+  const rating = cell(problem.rating === undefined ? "-" : String(problem.rating), text.ratingTD);
+  rating.className = rankClass(problem.rating);
+  row.append(rating);
   row.append(cell(String(problem.tries)));
 
   // "WA 37" for a wrong answer on test 37: how close the attempt came.

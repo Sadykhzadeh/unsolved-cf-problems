@@ -26,6 +26,7 @@ import {
   pickOne,
   problemKey,
   problemLink,
+  rankClass,
   readParams,
   solvedCheck,
   solvedSummary,
@@ -459,6 +460,14 @@ test("a pick at random moves on from the last one when it can", () => {
   assert.equal(seen.size, 3);
   assert.equal(pickOne([rows[1]], rows[1]), rows[1], "the only row is picked again");
   assert.equal(pickOne([], null), undefined);
+});
+
+test("a rating is shown in the colour of its Codeforces rank, an unrated one in none", () => {
+  assert.deepEqual([800, 1199, 1200, 1399, 1400, 1600, 1900, 2100, 2400, 3500].map(rankClass), [
+    "rank-newbie", "rank-newbie", "rank-pupil", "rank-pupil", "rank-specialist", "rank-expert", "rank-cm",
+    "rank-master", "rank-gm", "rank-gm",
+  ]);
+  assert.equal(rankClass(undefined), "");
 });
 
 test("tags are counted, commonest first", () => {

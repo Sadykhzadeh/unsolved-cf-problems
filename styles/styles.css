@@ -7,6 +7,14 @@
     --visited: #8f8f8f;
     --edge: #707078;
     --rule: rgba(80, 80, 80, 0.5);
+    /* Codeforces' own rank colours, tuned to read on this background. */
+    --rank-newbie: #a3a3a3;
+    --rank-pupil: #5ccf5c;
+    --rank-specialist: #3cc7bd;
+    --rank-expert: #8a9bff;
+    --rank-cm: #d77ad7;
+    --rank-master: #ffa53d;
+    --rank-gm: #ff6161;
 }
 
 @media (prefers-color-scheme: light) {
@@ -18,6 +26,13 @@
         --visited: #5d5d68;
         --edge: #8a8a93;
         --rule: rgba(28, 28, 33, 0.25);
+        --rank-newbie: #707070;
+        --rank-pupil: #007a00;
+        --rank-specialist: #02776f;
+        --rank-expert: #0000e0;
+        --rank-cm: #a000a0;
+        --rank-master: #a65800;
+        --rank-gm: #cc0000;
     }
 }
 
@@ -239,6 +254,14 @@ td {
 .when {
     white-space: nowrap
 }
+
+.rank-newbie { color: var(--rank-newbie) }
+.rank-pupil { color: var(--rank-pupil) }
+.rank-specialist { color: var(--rank-specialist) }
+.rank-expert { color: var(--rank-expert) }
+.rank-cm { color: var(--rank-cm) }
+.rank-master { color: var(--rank-master) }
+.rank-gm { color: var(--rank-gm) }
 
 /* The handle input has a visible placeholder but no visible label, so the
    label is placed where a screen reader can reach it and the eye cannot. */

@@ -313,6 +313,18 @@ export const pickOne = (rows, previous, random = Math.random) => {
   return choices[Math.floor(random() * choices.length)];
 };
 
+// Which Codeforces rank colour a rating is shown in; none for an unrated problem.
+export const rankClass = (rating) => {
+  if (typeof rating !== "number") return "";
+  if (rating < 1200) return "rank-newbie";
+  if (rating < 1400) return "rank-pupil";
+  if (rating < 1600) return "rank-specialist";
+  if (rating < 1900) return "rank-expert";
+  if (rating < 2100) return "rank-cm";
+  if (rating < 2400) return "rank-master";
+  return "rank-gm";
+};
+
 // Every tag among the rows with how many rows carry it, commonest first.
 export const tagCounts = (rows) => {
   const counts = new Map();
