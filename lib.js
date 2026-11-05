@@ -631,7 +631,8 @@ export const reachesDigest = (digest, newest, asked) => newest.length < asked
 // the digest already holds are skipped, those old enough to have settled go
 // into the new digest, and the rest are only read for the rows, so that what
 // they change shows once and is read again next time. Also returns the rows
-// and how many submissions there are in all.
+// and how many submissions there are in all, and the state with the recent
+// ones in it.
 export const advance = (digest, submissions, now) => {
   const cutoff = Math.max(digest.cutoff, now - SETTLE_SECONDS);
   const settled = submissions.filter((item) => item.creationTimeSeconds > digest.cutoff
@@ -639,9 +640,20 @@ export const advance = (digest, submissions, now) => {
   const recent = submissions.filter((item) => item.creationTimeSeconds > cutoff);
   const state = foldSubmissions(digest.state, settled);
   const count = digest.count + settled.length;
+  const all = foldSubmissions(state, recent);
   return {
     digest: { cutoff, count, builtAt: digest.builtAt, state },
-    rows: unsolvedRows(foldSubmissions(state, recent)),
+    state: all,
+    rows: unsolvedRows(all),
     submissions: count + recent.length,
+  };
+};
+
+// What a state says about the problems solved, in the shape solvedCheck() takes.
+export const solvedSummary = (state) => {
+  const startOf = new Map(state.starts);
+  return {
+    keys: state.keys,
+    twins: state.twins.map(([name, rating, contestId]) => [name, rating, contestId, startOf.get(contestId) ?? null]),
   };
 };

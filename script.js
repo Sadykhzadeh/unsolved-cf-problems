@@ -21,9 +21,9 @@ import {
   readParams,
   reachesDigest,
   solvedCheck,
+  solvedSummary,
   sortRows,
   submissionLink,
-  summarizeSolved,
   tagCounts,
   unpackRows,
   verdictLabel,
@@ -1079,9 +1079,9 @@ const loadFriend = async (handle) => {
     if (!handle || (friend.savedAt !== null && Date.now() - friend.savedAt < FRESH_FOR)) return;
     if (friend.savedAt === null) status.textContent = fill(text.loadingText, { handle });
     if (!await waitForTurn(() => number === friendNumber)) return;
-    const submissions = await loadSubmissions(handle, () => number === friendNumber);
-    if (number !== friendNumber) return;
-    const entry = { savedAt: Date.now(), summary: summarizeSolved(submissions) };
+    const history = await loadHistory(handle, () => number === friendNumber);
+    if (number !== friendNumber || !history) return;
+    const entry = { savedAt: Date.now(), summary: solvedSummary(history.state) };
     useFriend(entry);
     status.textContent = "";
     saveFriend(handle, entry);
@@ -1094,6 +1094,7 @@ const loadFriend = async (handle) => {
       Object.assign(friend, { savedAt: null, solvedBy: null });
       applyFilters();
       forgetFriend(handle);
+      forgetHistory(handle);
     }
     status.textContent = failureText(error, handle);
   } finally {

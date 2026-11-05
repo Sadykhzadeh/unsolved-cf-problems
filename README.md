@@ -71,7 +71,12 @@ shown without asking Codeforces again; an older one is shown at once while a
 fresh copy loads, and "Refresh" (or searching for the same handle) always
 asks again. A friend's submissions are boiled down to the problems they
 solved and kept the same way, the latest friend only, in Cache Storage,
-which has room for them. Calls to the API are spaced two seconds apart, as Codeforces asks. A call refused for the rate limit,
+which has room for them. What the submissions older than a day add up to is
+kept there too, for the latest three handles, so asking again takes the 300
+newest submissions only (about 15 KB instead of 240 to 500 KB) and adds them;
+the whole history is read again when nothing is kept, when the newest 300 do
+not reach back to the part that was, and every three days. Calls to the API
+are spaced two seconds apart, as Codeforces asks. A call refused for the rate limit,
 or by a busy gateway, is made once more after the next two seconds.
 
 ## Running it locally

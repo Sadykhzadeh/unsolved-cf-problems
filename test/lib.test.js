@@ -28,6 +28,7 @@ import {
   problemLink,
   readParams,
   solvedCheck,
+  solvedSummary,
   sortRows,
   submissionLink,
   summarizeSolved,
@@ -245,6 +246,28 @@ test("a refresh from the newest submissions gives the list a full read gives", (
   const third = advance(second.digest, newest, later + 60);
   assert.deepEqual(third.rows, second.rows);
   assert.equal(third.submissions, 8);
+});
+
+test("the solved problems of a refreshed state are those of a full read", () => {
+  const solve = (id, ageDays, contestId, index, startTimeSeconds, participantType = "PRACTICE") => ({
+    ...aged(id, ageDays, contestId, index, "OK"),
+    author: { participantType, startTimeSeconds },
+  });
+  // Ages are from NOW + 2 days, when the second read is made.
+  const history = [
+    solve(6, 0.5, 1972, "D1", 1714487700),
+    solve(5, 1.5, 1950, "B1", 1714487700),
+    solve(4, 4, 20, "A", 1_000_000, "VIRTUAL"),
+    solve(3, 5, 20, "A", 1_000_000),
+    aged(2, 6, 7, "C", "WRONG_ANSWER"),
+    solve(1, 7, 100093, "E", 1_100_000),
+  ].map((item) => ({ ...item, creationTimeSeconds: item.creationTimeSeconds + 2 * DAY }));
+  const first = advance(emptyDigest(NOW), history.slice(2), NOW);
+  const second = advance(first.digest, history, NOW + 2 * DAY);
+  // The order they are listed in does not matter, what is in them does.
+  const ordered = ({ keys, twins }) => ({ keys: [...keys].sort(), twins: twins.map(String).sort() });
+  assert.deepEqual(ordered(solvedSummary(second.state)), ordered(summarizeSolved(history)));
+  assert.deepEqual(ordered(solvedSummary(advance(emptyDigest(NOW), history, NOW).state)), ordered(summarizeSolved(history)));
 });
 
 test("a submission still inside the settling window is read again on the next refresh", () => {
