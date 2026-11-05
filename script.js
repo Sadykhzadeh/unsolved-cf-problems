@@ -21,6 +21,7 @@ import {
   rankClass,
   readParams,
   reachesDigest,
+  rememberedView,
   solvedCheck,
   solvedSummary,
   sortRows,
@@ -28,6 +29,7 @@ import {
   tagCounts,
   unpackRows,
   verdictLabel,
+  viewOf,
   writeParams,
 } from "./lib.js";
 
@@ -223,8 +225,10 @@ const onloadFunction = (lang) => {
 
 // A link can name the handle, the sort and the filters; anything it leaves
 // out falls back to the remembered handle and the defaults.
+const VIEW_KEY = "unsolved-cf-problems:view";
+
 const applyParams = () => {
-  const params = readParams(window.location.search);
+  const params = { ...readParams(window.location.search), ...rememberedView(recall(VIEW_KEY), window.location.search) };
   if (params.handle) byId("handle").value = params.handle;
   state.sort = params.sort ?? { key: "rating", descending: false };
   byId("searchTask").value = params.query;
@@ -271,6 +275,7 @@ const syncUrl = ({ newEntry = false } = {}) => {
   urlNewEntry ||= newEntry;
   urlTimer = setTimeout(() => {
     const params = currentParams();
+    remember(VIEW_KEY, JSON.stringify(viewOf(params)));
     const search = writeParams(params);
     const shown = readParams(window.location.search).handle;
     const another = urlNewEntry && shown !== "" && params.handle !== ""

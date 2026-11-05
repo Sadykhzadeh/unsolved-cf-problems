@@ -381,6 +381,38 @@ export const writeParams = ({
   return params.toString();
 };
 
+// How the list is shown, as far as a person sets it once and keeps it that
+// way: the sort, the tags column and leaving out the gym and special rounds.
+// It is remembered between visits, and a link that says anything about these
+// is the view it names, with the rest at their defaults.
+export const viewOf = ({ sort, showTags, noGym, noSpecial }) => ({ sort, showTags, noGym, noSpecial });
+
+const VIEW_PARAMS = ["sort", "tags", "nogym", "nospecial"];
+
+// What `stored`, the text kept by an earlier visit, says about the view, for a
+// link with query `search` that does not say it itself; nothing otherwise, and
+// nothing for what is unreadable.
+export const rememberedView = (stored, search) => {
+  const params = new URLSearchParams(search);
+  if (VIEW_PARAMS.some((name) => params.has(name))) return {};
+  let saved;
+  try {
+    saved = JSON.parse(stored);
+  } catch {
+    return {};
+  }
+  if (!saved || typeof saved !== "object") return {};
+  const view = {};
+  const { sort } = saved;
+  if (Object.hasOwn(SORTS, sort?.key) && typeof sort.descending === "boolean") {
+    view.sort = { key: sort.key, descending: sort.descending };
+  }
+  for (const name of ["showTags", "noGym", "noSpecial"]) {
+    if (typeof saved[name] === "boolean") view[name] = saved[name];
+  }
+  return view;
+};
+
 // Rows as arrays for localStorage: the field names would otherwise be most of
 // the bytes, and the storage is shared with every other page on the origin.
 const PACKED_FIELDS = [

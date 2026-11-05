@@ -32,6 +32,9 @@ Every problem a Codeforces user has tried and not solved, in one table.
 - Shows or hides the problem tags without reloading anything.
 - Keeps the view in the address bar, so a link opens the same list, sorted
   and filtered the same way, and Back returns to the handle looked up before.
+- Remembers the sort, the tags column and the gym and special-round switches
+  for the next visit, for a link that says nothing about them; a link that does
+  is that view, with the rest at their defaults.
 - Shows the last lookup instantly on the next visit (see below).
 - Says why a lookup failed: no such user, an invalid handle, the API rate
   limit, Codeforces being down, or no connection.

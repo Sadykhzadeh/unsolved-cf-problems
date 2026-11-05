@@ -18,6 +18,7 @@ import {
   isSearchKey,
   isUsableDigest,
   reachesDigest,
+  rememberedView,
   isTimeout,
   makeFilter,
   matchesFilter,
@@ -37,6 +38,7 @@ import {
   unpackRows,
   unsolvedRows,
   verdictLabel,
+  viewOf,
   writeParams,
 } from "../lib.js";
 
@@ -531,6 +533,24 @@ test("a link carries the handle, sort and filters, and nothing at their defaults
 
   assert.equal(writeParams({ handle: "a b&c", sort: { key: "rating", descending: false } }), "handle=a+b%26c");
   assert.equal(writeParams({ lang: "ru", handle: "x", min: "abc" }), "lang=ru&handle=x");
+});
+
+test("the view is remembered for a link that does not set it, and only then", () => {
+  const stored = JSON.stringify(viewOf({
+    sort: { key: "tries", descending: true }, showTags: true, noGym: true, noSpecial: false, query: "dp",
+  }));
+  assert.deepEqual(rememberedView(stored, "?handle=tourist"), {
+    sort: { key: "tries", descending: true }, showTags: true, noGym: true, noSpecial: false,
+  });
+  assert.deepEqual(rememberedView(stored, ""), rememberedView(stored, "?lang=ru&q=tree&min=1600"));
+  // a link that says anything about the view is that view, the rest at their defaults
+  for (const search of ["?sort=name", "?tags=1", "?nogym=1", "?nospecial=1"]) {
+    assert.deepEqual(rememberedView(stored, search), {}, search);
+  }
+  // nothing kept, unreadable, or not what was written
+  assert.deepEqual(rememberedView(null, "?handle=x"), {});
+  assert.deepEqual(rememberedView("{oops", "?handle=x"), {});
+  assert.deepEqual(rememberedView(JSON.stringify({ sort: { key: "nope", descending: true }, noGym: "yes" }), ""), {});
 });
 
 test("unknown or broken parameters fall back to the defaults", () => {
