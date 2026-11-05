@@ -254,8 +254,13 @@ const noteHandle = (handle) => {
   showKnownHandles();
 };
 
-const applyParams = () => {
-  const params = { ...readParams(window.location.search), ...rememberedView(recall(VIEW_KEY), window.location.search) };
+// `fresh` is a visit just begun: the remembered view fills in what the link
+// leaves out. Back and Forward go to the view an entry was left in, as it is.
+const applyParams = ({ fresh = false } = {}) => {
+  const params = {
+    ...readParams(window.location.search),
+    ...(fresh ? rememberedView(recall(VIEW_KEY), window.location.search) : {}),
+  };
   if (params.handle) byId("handle").value = params.handle;
   state.sort = params.sort ?? { key: "rating", descending: false };
   byId("searchTask").value = params.query;
@@ -320,7 +325,7 @@ const syncUrl = ({ newEntry = false } = {}) => {
 
 document.addEventListener("DOMContentLoaded", () => {
   onloadFunction(lang);
-  applyParams();
+  applyParams({ fresh: true });
   byId("start").click();
   chooseFriend();
 });
