@@ -21,6 +21,7 @@ import {
   rankClass,
   readParams,
   reachesDigest,
+  rememberHandle,
   rememberedView,
   solvedCheck,
   solvedSummary,
@@ -193,6 +194,7 @@ const onloadFunction = (lang) => {
   byId("heading").textContent = text.pageTitle;
   document.title = text.pageTitle;
   byId("handle").value = recall("handle") ?? "";
+  showKnownHandles();
   byId("handleLabel").textContent = text.handleLabel;
   byId("handle").placeholder = text.handlePlaceholder;
   byId("start").title = text.searchHandleButton;
@@ -226,6 +228,27 @@ const onloadFunction = (lang) => {
 // A link can name the handle, the sort and the filters; anything it leaves
 // out falls back to the remembered handle and the defaults.
 const VIEW_KEY = "unsolved-cf-problems:view";
+
+// The handles looked up lately, offered again by the handle and friend fields.
+const HANDLES_KEY = "unsolved-cf-problems:handles";
+
+const knownHandles = () => {
+  try {
+    const stored = JSON.parse(localStorage.getItem(HANDLES_KEY));
+    return Array.isArray(stored) ? stored.filter((handle) => typeof handle === "string") : [];
+  } catch {
+    return [];
+  }
+};
+
+const showKnownHandles = () => {
+  byId("knownHandles").replaceChildren(...knownHandles().map((handle) => new Option(handle)));
+};
+
+const noteHandle = (handle) => {
+  remember(HANDLES_KEY, JSON.stringify(rememberHandle(knownHandles(), handle)));
+  showKnownHandles();
+};
 
 const applyParams = () => {
   const params = { ...readParams(window.location.search), ...rememberedView(recall(VIEW_KEY), window.location.search) };
@@ -945,6 +968,7 @@ const lookup = async (handle, { force = false } = {}) => {
     state.handle = handle;
     state.rows = history.rows;
     state.submissions = history.submissions;
+    noteHandle(handle);
     state.savedAt = Date.now();
     save(handle, state.rows, state.submissions, state.savedAt);
     fillTagFilter();
@@ -1090,6 +1114,7 @@ const loadFriend = async (handle) => {
     const history = await loadHistory(handle, () => number === friendNumber);
     if (number !== friendNumber || !history) return;
     const entry = { savedAt: Date.now(), summary: solvedSummary(history.state) };
+    noteHandle(handle);
     useFriend(entry);
     status.textContent = "";
     saveFriend(handle, entry);

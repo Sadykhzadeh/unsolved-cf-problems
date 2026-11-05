@@ -18,6 +18,7 @@ import {
   isSearchKey,
   isUsableDigest,
   reachesDigest,
+  rememberHandle,
   rememberedView,
   isTimeout,
   makeFilter,
@@ -551,6 +552,13 @@ test("the view is remembered for a link that does not set it, and only then", ()
   assert.deepEqual(rememberedView(null, "?handle=x"), {});
   assert.deepEqual(rememberedView("{oops", "?handle=x"), {});
   assert.deepEqual(rememberedView(JSON.stringify({ sort: { key: "nope", descending: true }, noGym: "yes" }), ""), {});
+});
+
+test("looked-up handles are remembered newest first, each once, and a few of them", () => {
+  assert.deepEqual(rememberHandle([], "tourist"), ["tourist"]);
+  assert.deepEqual(rememberHandle(["jiangly", "tourist", "Petr"], "Tourist"), ["Tourist", "jiangly", "Petr"]);
+  assert.deepEqual(rememberHandle(["a", "b", "c"], "d", 3), ["d", "a", "b"]);
+  assert.deepEqual(rememberHandle(["a"], ""), ["a"]);
 });
 
 test("unknown or broken parameters fall back to the defaults", () => {

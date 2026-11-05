@@ -48,7 +48,8 @@
     </header>
     <main>
     <label class="visually-hidden" for="handle" id="handleLabel">Codeforces handle</label>
-    <input type="text" id="handle" placeholder="Input your handle here." autocomplete="off" autocapitalize="off" enterkeyhint="search" spellcheck="false">
+    <input type="text" id="handle" list="knownHandles" placeholder="Input your handle here." autocomplete="off" autocapitalize="off" enterkeyhint="search" spellcheck="false">
+    <datalist id="knownHandles"></datalist>
     <button type="button" id="start" title="Search unsolved tasks" aria-label="Search unsolved tasks">🔎</button>
     <br>
     <input type="checkbox" id="doNotShowTags">
@@ -75,7 +76,7 @@
         <label class="check" id="showHiddenBox" hidden><input type="checkbox" id="showHidden"> <span id="showHiddenLabel"></span></label>
         <span class="friend">
             <label for="friend" id="friendLabel"></label>
-            <input type="text" id="friend" autocomplete="off" autocapitalize="off" spellcheck="false">
+            <input type="text" id="friend" list="knownHandles" autocomplete="off" autocapitalize="off" spellcheck="false">
         </span>
         <span id="friendStatus" aria-live="polite"></span>
         <span id="shown" aria-live="polite"></span>

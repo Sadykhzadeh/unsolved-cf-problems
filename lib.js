@@ -160,6 +160,13 @@ export const submissionLink = (row) => {
     : `https://codeforces.com/contest/${row.contestId}/submission/${row.submissionId}`;
 };
 
+// The handles looked up lately, newest first and each once whatever its case,
+// for the field to offer again.
+export const rememberHandle = (handles, handle, limit = 8) => {
+  const same = (other) => other.toLowerCase() === handle.toLowerCase();
+  return handle ? [handle, ...handles.filter((other) => !same(other))].slice(0, limit) : handles;
+};
+
 // What was typed into the handle field. A link to a profile or to someone's
 // submissions, as copied from the address bar on any Codeforces host, stands
 // for the handle in it.
