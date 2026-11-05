@@ -1,13 +1,16 @@
 import {
+  NEWEST_COUNT,
+  advance,
   ageParts,
   defaultDescending,
   describeFailure,
+  emptyDigest,
   emptyKind,
   failedTest,
   fetchApi,
-  findUnsolved,
   isSearchKey,
   isTimeout,
+  isUsableDigest,
   makeFilter,
   matchesFilter,
   packRows,
@@ -16,6 +19,7 @@ import {
   problemKey,
   problemLink,
   readParams,
+  reachesDigest,
   solvedCheck,
   sortRows,
   submissionLink,
@@ -376,11 +380,13 @@ const buildRow = (problem, isHidden) => {
   return row;
 };
 
-const loadSubmissions = async (handle, wanted) => {
+// `newest` asks for that many of the latest submissions rather than all of
+// them: jiangly's 11000 come to 499 KB over the wire, the newest 300 to 11 KB.
+const loadSubmissions = async (handle, wanted, newest) => {
   // Escaped, so a handle containing & or # cannot change the request.
   const url = `https://codeforces.com/api/user.status?handle=${
     encodeURIComponent(handle)
-  }&lang=${encodeURIComponent(lang)}`;
+  }&lang=${encodeURIComponent(lang)}${newest ? `&from=1&count=${newest}` : ""}`;
   // Errors come back as JSON with a comment saying what went wrong, except
   // when Codeforces itself is down and an HTML page answers instead.
   const { response, payload } = await fetchApi(url, { again: () => waitForTurn(wanted) });
@@ -726,6 +732,7 @@ const forget = (handle) => {
   const store = readStore();
   delete store.entries[savedId(handle)];
   writeStore(store);
+  forgetHistory(handle);
 };
 
 const relativeTime = new Intl.RelativeTimeFormat(lang, { numeric: "auto" });
@@ -819,6 +826,80 @@ const waitForTurn = async (wanted) => {
   return true;
 };
 
+// What the submissions older than a day add up to, kept in the Cache API so
+// that a refresh asks Codeforces for the newest submissions only and adds them
+// (see advance() in lib.js). Read from scratch when nothing is kept, when the
+// newest ones do not reach back far enough, and every few days. Only the
+// latest few handles are kept, per language since the names come in it.
+const HISTORY_CACHE = "unsolved-cf-problems-history";
+const KEEP_HISTORIES = 3;
+const historyKey = (handle) =>
+  new URL(`history.v1/${lang}/${encodeURIComponent(handle.toLowerCase())}`, window.location.href).href;
+
+const openHistories = async () => {
+  try {
+    return await caches.open(HISTORY_CACHE);
+  } catch {
+    return null;
+  }
+};
+
+const readHistory = async (handle) => {
+  try {
+    const response = await (await openHistories())?.match(historyKey(handle));
+    const digest = await response?.json();
+    const valid = Number.isFinite(digest?.cutoff) && Number.isFinite(digest.builtAt) && Number.isFinite(digest.count)
+      && ["keys", "twins", "starts", "rows"].every((field) => Array.isArray(digest.state?.[field]));
+    return valid ? digest : null;
+  } catch {
+    return null;
+  }
+};
+
+const saveHistory = async (handle, digest) => {
+  const cache = await openHistories();
+  if (!cache) return;
+  try {
+    await cache.put(historyKey(handle), new Response(JSON.stringify(digest), {
+      headers: { "Content-Type": "application/json", "X-Saved-At": String(Date.now()) },
+    }));
+    const kept = [];
+    for (const request of await cache.keys()) {
+      kept.push({ request, at: Number((await cache.match(request))?.headers.get("X-Saved-At")) || 0 });
+    }
+    kept.sort((a, b) => b.at - a.at);
+    for (const { request } of kept.slice(KEEP_HISTORIES)) await cache.delete(request);
+  } catch {
+    // Not kept; the next refresh reads everything again.
+  }
+};
+
+const forgetHistory = async (handle) => {
+  try {
+    await (await openHistories())?.delete(historyKey(handle));
+  } catch {
+    // Nothing kept, or no cache to forget it from.
+  }
+};
+
+// The rows and the count for a handle, from a refresh of what was kept when
+// that is possible and from all its submissions when not.
+const loadHistory = async (handle, wanted) => {
+  const now = () => Math.floor(Date.now() / 1000);
+  const keep = (result) => {
+    saveHistory(handle, result.digest);
+    return result;
+  };
+  const saved = await readHistory(handle);
+  if (isUsableDigest(saved, now())) {
+    const newest = await loadSubmissions(handle, wanted, NEWEST_COUNT);
+    if (reachesDigest(saved, newest, NEWEST_COUNT)) return keep(advance(saved, newest, now()));
+    if (!await waitForTurn(wanted)) return null;
+  }
+  const everything = await loadSubmissions(handle, wanted);
+  return keep(advance(emptyDigest(now()), everything, now()));
+};
+
 const lookup = async (handle, { force = false } = {}) => {
   const number = ++lookupNumber;
   setLoading("");
@@ -851,11 +932,11 @@ const lookup = async (handle, { force = false } = {}) => {
 
   try {
     if (!await waitForTurn(() => number === lookupNumber)) return;
-    const submissions = await loadSubmissions(handle, () => number === lookupNumber);
-    if (number !== lookupNumber) return;
+    const history = await loadHistory(handle, () => number === lookupNumber);
+    if (number !== lookupNumber || !history) return;
     state.handle = handle;
-    state.rows = findUnsolved(submissions);
-    state.submissions = submissions.length;
+    state.rows = history.rows;
+    state.submissions = history.submissions;
     state.savedAt = Date.now();
     save(handle, state.rows, state.submissions, state.savedAt);
     fillTagFilter();

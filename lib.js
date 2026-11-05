@@ -601,3 +601,47 @@ export const unsolvedRows = (state) => [...state.rows]
   .sort((a, b) => (a.rating ?? UNRATED_SORTS_LAST) - (b.rating ?? UNRATED_SORTS_LAST));
 
 export const findUnsolved = (submissions) => unsolvedRows(foldSubmissions(emptyState(), submissions));
+
+// Submissions younger than this may still change: the system tests of a round
+// or a hack turn an accepted one into a failed one for a while. They stay out
+// of a saved history, and are read again on every refresh.
+export const SETTLE_SECONDS = 24 * 60 * 60;
+
+// A saved history is trusted for this long, then read from scratch: a
+// submission can be rejudged or skipped days later.
+export const REBUILD_AFTER_SECONDS = 3 * 24 * 60 * 60;
+
+// How many of the newest submissions a refresh asks for.
+export const NEWEST_COUNT = 300;
+
+// A history saved so far: the state of every submission up to `cutoff` (a time
+// in seconds), how many of them there were, and when it was last read from
+// scratch.
+export const emptyDigest = (now) => ({ cutoff: 0, count: 0, builtAt: now, state: emptyState() });
+
+export const isUsableDigest = (digest, now) => Boolean(digest) && now - digest.builtAt < REBUILD_AFTER_SECONDS;
+
+// Whether `newest`, the answer to a request for `asked` of the latest
+// submissions, reaches back to what the digest holds, so that nothing between
+// the two is missing.
+export const reachesDigest = (digest, newest, asked) => newest.length < asked
+  || newest.some((item) => item.creationTimeSeconds <= digest.cutoff);
+
+// Adds `submissions`, newest first, to a digest as of `now` (seconds). Those
+// the digest already holds are skipped, those old enough to have settled go
+// into the new digest, and the rest are only read for the rows, so that what
+// they change shows once and is read again next time. Also returns the rows
+// and how many submissions there are in all.
+export const advance = (digest, submissions, now) => {
+  const cutoff = Math.max(digest.cutoff, now - SETTLE_SECONDS);
+  const settled = submissions.filter((item) => item.creationTimeSeconds > digest.cutoff
+    && item.creationTimeSeconds <= cutoff);
+  const recent = submissions.filter((item) => item.creationTimeSeconds > cutoff);
+  const state = foldSubmissions(digest.state, settled);
+  const count = digest.count + settled.length;
+  return {
+    digest: { cutoff, count, builtAt: digest.builtAt, state },
+    rows: unsolvedRows(foldSubmissions(state, recent)),
+    submissions: count + recent.length,
+  };
+};
