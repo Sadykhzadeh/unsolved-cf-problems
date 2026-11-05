@@ -42,6 +42,7 @@ const localize = [{
     handlePlaceholder: "Input your handle here.",
     showTagsChexBox: " Show problem's tags",
     counterOfProblems: "Count of problems:",
+    captionText: "Problems {handle} has tried and not solved",
     nameTD: "Name ",
     tagsTD: "Tags",
     ratingTD: "Rating",
@@ -99,6 +100,7 @@ const localize = [{
     handlePlaceholder: "Введите свой хендл.",
     showTagsChexBox: " Показывать теги задач",
     counterOfProblems: "Количество задач:",
+    captionText: "Задачи, которые пробовал(а) {handle} и не решил(а)",
     nameTD: "Название ",
     tagsTD: "Теги",
     ratingTD: "Рейтинг",
@@ -799,6 +801,7 @@ const showResults = () => {
     byId("table-main").hidden = true;
     byId("filters").hidden = true;
     byId("table-list").replaceChildren();
+    byId("tableCaption").textContent = "";
     drawn = [];
     counter.textContent = !state.handle ? ""
       : emptyKind(state.submissions) === "noSubmissions" ? text.noSubmissionsText : text.congratsText;
@@ -811,6 +814,7 @@ const showResults = () => {
   face.setAttribute("aria-hidden", "true");
   face.textContent = "😱 ";
   counter.replaceChildren(face, `${text.counterOfProblems} ${state.rows.length}`);
+  byId("tableCaption").textContent = fill(text.captionText, { handle: state.handle });
   render();
 };
 
@@ -823,6 +827,7 @@ const clearResults = () => {
   byId("table-main").hidden = true;
   byId("filters").hidden = true;
   byId("freshness").hidden = true;
+  byId("tableCaption").textContent = "";
   byId("table-list").replaceChildren();
   delete byId("table-list").dataset.showing;
 };
@@ -1151,6 +1156,7 @@ byId("about").addEventListener("click", () => {
   byId("table-main").hidden = true;
   byId("filters").hidden = true;
   byId("freshness").hidden = true;
+  byId("tableCaption").textContent = "";
   byId("counter").textContent = "";
 
   // Closing the about panel brings the last results back.
