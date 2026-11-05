@@ -15,6 +15,7 @@ import {
   emptyState,
   findUnsolved,
   foldSubmissions,
+  isPickKey,
   isSearchKey,
   isUsableDigest,
   reachesDigest,
@@ -620,6 +621,15 @@ test("the search shortcut is / on any layout, or the key in its place on a Russi
   assert.equal(isSearchKey("-", "Slash"), false, "German layout: that key is a hyphen");
   assert.equal(isSearchKey("?", "Slash"), false);
   assert.equal(isSearchKey(".", "Period"), false);
+});
+
+test("the pick shortcut is P on any layout, or the key in its place on a Russian one", () => {
+  assert.equal(isPickKey("p", "KeyP"), true);
+  assert.equal(isPickKey("P", "KeyP"), true);
+  assert.equal(isPickKey("з", "KeyP"), true);
+  assert.equal(isPickKey("p", "KeyL"), true, "P on Dvorak");
+  assert.equal(isPickKey("l", "KeyP"), false, "the key that types L on Dvorak");
+  assert.equal(isPickKey("Enter", "Enter"), false);
 });
 
 test("failures say whether the handle, the limit or Codeforces is to blame", () => {

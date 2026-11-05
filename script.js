@@ -8,6 +8,7 @@ import {
   emptyKind,
   failedTest,
   fetchApi,
+  isPickKey,
   isSearchKey,
   isTimeout,
   isUsableDigest,
@@ -205,6 +206,7 @@ const onloadFunction = (lang) => {
   byId("about").textContent = text.aboutButton;
   byId("refresh").textContent = text.refreshButton;
   byId("pick").textContent = text.pickButton;
+  byId("pick").title = `${text.pickButton} (P)`;
   byId("nameLabel").textContent = text.nameTD;
   byId("searchTask").placeholder = text.searchPlaceholder;
   byId("searchTask").setAttribute("aria-label", text.searchPlaceholder);
@@ -703,6 +705,15 @@ document.addEventListener("keydown", (event) => {
   event.preventDefault();
   byId("searchTask").focus();
   byId("searchTask").select();
+});
+
+// P picks a problem from the list on screen, from anywhere but a field.
+document.addEventListener("keydown", (event) => {
+  if (!isPickKey(event.key, event.code) || event.ctrlKey || event.metaKey || event.altKey || event.repeat) return;
+  if (takesTyping(event.target) || event.target instanceof HTMLButtonElement) return;
+  if (byId("filters").hidden) return;
+  event.preventDefault();
+  byId("pick").click();
 });
 
 // Showing tags redraws from memory; it does not ask Codeforces again. With

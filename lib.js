@@ -181,6 +181,11 @@ export const parseHandle = (input) => {
 // key counts too; "/" typed some other way, as Shift+\ there, still does.
 export const isSearchKey = (key, code) => key === "/" || (code === "Slash" && key === ".");
 
+// Whether a key press is the P that picks a problem at random. On a layout
+// without Latin letters, such as Russian, the key where P sits counts: it
+// types "з" there. On one that has P elsewhere, such as Dvorak, P itself does.
+export const isPickKey = (key, code) => (/^[a-z]$/i.test(key) ? key.toLowerCase() === "p" : code === "KeyP");
+
 // Sorts a failed user.status call into something a person can act on, so
 // that Codeforces being down is not reported as a wrong handle.
 export const describeFailure = (httpStatus, payload) => {
