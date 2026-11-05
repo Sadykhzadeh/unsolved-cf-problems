@@ -212,13 +212,32 @@ td {
         font-size: 1.3em
     }
 
+    /* Small enough that the columns, the date and the hide button included,
+       fit a 375 px screen with the tags off; the column widths set for a
+       wide screen are left to the content here, and a date may wrap. */
     table {
-        font-size: 15px
+        font-size: 12px
     }
 
     th,
     td {
-        padding: 4px
+        padding: 3px 1px
+    }
+
+    #nameTD,
+    #tagsTD,
+    #numberOfTask,
+    #ratingTD,
+    #lastTriedTD {
+        width: auto
+    }
+
+    .when {
+        white-space: normal
+    }
+
+    .hide {
+        padding: 0 0.1em
     }
 
     #filters {
