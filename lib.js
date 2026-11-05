@@ -487,20 +487,80 @@ export const solvedCheck = (summary) => {
 // opposed to practice afterwards.
 const ROUND_PARTICIPATION = new Set(["CONTESTANT", "OUT_OF_COMPETITION", "VIRTUAL"]);
 
-// One row per unsolved problem: the problem, its newest attempt and how far
-// that got through the tests, how many attempts there were, whether any was
-// made during a round and when its contest started. user.status lists
-// submissions newest first, so the first one seen for a problem is the
-// latest. A problem solved in its parallel round is not unsolved, and the
-// user's own submissions are enough to tell. Nor is a problem failed in both
-// copies of a shared round two problems: the copies are one row, with the
-// attempts of both counted.
-export const findUnsolved = (submissions) => {
-  const startOf = contestStarts(submissions);
-  const solved = solvedCheck(summarizeSolved(submissions, startOf));
+// What the submissions seen so far add up to, so that newer ones can be added
+// without reading the older ones again: the key of every solved problem, the
+// name, rating and contest of each one outside the gym, the start time of every
+// contest seen, and the unsolved rows in the order they were first met.
+export const emptyState = () => ({ keys: [], twins: [], starts: [], rows: [] });
+
+const rowOf = (item, start, inRound) => ({
+  contestId: item.problem.contestId,
+  problemsetName: item.problem.problemsetName,
+  index: item.problem.index,
+  name: item.problem.name,
+  rating: item.problem.rating,
+  tags: item.problem.tags ?? [],
+  verdict: item.verdict,
+  passedTestCount: item.passedTestCount,
+  testset: item.testset,
+  submissionId: item.id,
+  lastTime: item.creationTimeSeconds,
+  tries: 1,
+  start,
+  inRound,
+});
+
+// The state after `submissions`, newest first and all newer than what `state`
+// already holds, are added to it. One row per unsolved problem: the problem,
+// its newest attempt and how far that got through the tests, how many attempts
+// there were, whether any was made during a round and when its contest
+// started. The first submission seen for a problem is the latest. A problem
+// solved in its parallel round is not unsolved, and the user's own submissions
+// are enough to tell. Nor is a problem failed in both copies of a shared round
+// two problems: the copies are one row, with the attempts of both counted.
+// Folding a history in two parts gives what folding it whole does.
+export const foldSubmissions = (state, submissions) => {
+  const startOf = new Map(state.starts);
+  for (const [contestId, start] of contestStarts(submissions)) {
+    if (contestId !== undefined) startOf.set(contestId, start);
+  }
+
+  const keys = new Set(state.keys);
+  const twins = [...state.twins];
+  for (const item of submissions) {
+    const key = problemKey(item.problem);
+    if (item.verdict !== "OK" || keys.has(key)) continue;
+    keys.add(key);
+    const { problem } = item;
+    if (problem.contestId !== undefined && !isGym(problem.contestId)) {
+      twins.push([problem.name, problem.rating ?? null, problem.contestId]);
+    }
+  }
+  const solved = solvedCheck({
+    keys: [...keys],
+    twins: twins.map(([name, rating, contestId]) => [name, rating, contestId, startOf.get(contestId) ?? null]),
+  });
 
   const unsolved = new Map();
   const rowsByName = new Map();
+  const index = (row) => {
+    unsolved.set(problemKey(row), row);
+    if (hasParallel(row)) {
+      if (!rowsByName.has(row.name)) rowsByName.set(row.name, []);
+      rowsByName.get(row.name).push(row);
+    }
+  };
+  const older = new Set();
+  for (const kept of state.rows) {
+    const row = { ...kept, start: startOf.get(kept.contestId) };
+    if (solved(row, row.start)) continue;
+    older.add(row);
+    index(row);
+  }
+
+  // Rows the new submissions made or touched, in the order they were met; an
+  // older row they touch takes its newest attempt from them.
+  const front = [];
   for (const item of submissions) {
     const { problem } = item;
     const start = startOf.get(problem.contestId);
@@ -510,37 +570,34 @@ export const findUnsolved = (submissions) => {
     if (!seen && hasParallel(problem)) {
       seen = (rowsByName.get(problem.name) ?? []).find((row) => isParallel(row, problem, start));
     }
-    if (seen) {
+    if (seen && older.has(seen)) {
+      older.delete(seen);
+      unsolved.delete(problemKey(seen));
+      const { tries, inRound: before } = seen;
+      Object.assign(seen, rowOf(item, start, before || inRound), { tries: tries + 1 });
+      unsolved.set(problemKey(seen), seen);
+      front.push(seen);
+    } else if (seen) {
       seen.tries += 1;
       seen.inRound ||= inRound;
-      continue;
-    }
-    const row = {
-      contestId: problem.contestId,
-      problemsetName: problem.problemsetName,
-      index: problem.index,
-      name: problem.name,
-      rating: problem.rating,
-      tags: problem.tags ?? [],
-      verdict: item.verdict,
-      passedTestCount: item.passedTestCount,
-      testset: item.testset,
-      submissionId: item.id,
-      lastTime: item.creationTimeSeconds,
-      tries: 1,
-      start,
-      inRound,
-    };
-    unsolved.set(problemKey(problem), row);
-    if (hasParallel(problem)) {
-      if (!rowsByName.has(problem.name)) rowsByName.set(problem.name, []);
-      rowsByName.get(problem.name).push(row);
+    } else {
+      const row = rowOf(item, start, inRound);
+      index(row);
+      front.push(row);
     }
   }
 
-  return [...unsolved.values()].sort((left, right) => {
-    const a = left.rating ?? UNRATED_SORTS_LAST;
-    const b = right.rating ?? UNRATED_SORTS_LAST;
-    return a - b;
-  });
+  return {
+    keys: [...keys],
+    twins,
+    starts: [...startOf],
+    rows: [...front, ...older],
+  };
 };
+
+// The rows of a state, easiest first and unrated last; the rows keep their
+// order among equals.
+export const unsolvedRows = (state) => [...state.rows]
+  .sort((a, b) => (a.rating ?? UNRATED_SORTS_LAST) - (b.rating ?? UNRATED_SORTS_LAST));
+
+export const findUnsolved = (submissions) => unsolvedRows(foldSubmissions(emptyState(), submissions));

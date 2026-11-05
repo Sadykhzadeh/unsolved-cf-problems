@@ -8,7 +8,9 @@ import {
   failedTest,
   fetchApi,
   fetchJson,
+  emptyState,
   findUnsolved,
+  foldSubmissions,
   isSearchKey,
   isTimeout,
   makeFilter,
@@ -25,6 +27,7 @@ import {
   summarizeSolved,
   tagCounts,
   unpackRows,
+  unsolvedRows,
   verdictLabel,
   writeParams,
 } from "../lib.js";
@@ -164,6 +167,39 @@ test("a problem solved in its parallel round is not unsolved", () => {
     return item;
   };
   assert.equal(findUnsolved([gym(100093, "TIME_LIMIT_EXCEEDED"), gym(100092, "OK")]).length, 1);
+});
+
+test("newer submissions fold into a saved state the same as a whole history reads", () => {
+  // Tries, a solve that clears a row, the other copy of a shared round and a
+  // problem first met only in the newer part.
+  const item = (id, contestId, index, verdict, extra = {}) => ({
+    id,
+    creationTimeSeconds: 1_600_000_000 + id,
+    verdict,
+    author: { participantType: "PRACTICE", startTimeSeconds: 1_500_000_000 + contestId },
+    problem: { contestId, index, name: extra.name ?? `${contestId}${index}`, tags: ["dp"], rating: extra.rating ?? 1500 },
+  });
+  const history = [
+    item(20, 1501, "E", "WRONG_ANSWER", { name: "Shared" }),
+    item(19, 30, "A", "OK"),
+    item(18, 10, "B", "TIME_LIMIT_EXCEEDED"),
+    item(17, 1500, "C", "WRONG_ANSWER", { name: "Shared" }),
+    item(16, 20, "A", "WRONG_ANSWER"),
+    item(15, 10, "B", "WRONG_ANSWER"),
+    item(14, 20, "A", "WRONG_ANSWER"),
+    item(13, 30, "A", "WRONG_ANSWER"),
+    item(12, 40, "C", "WRONG_ANSWER", { rating: 1200 }),
+    item(11, 40, "C", "OK", { rating: 1200 }),
+  ];
+  // Rows come back from JSON without their undefined fields.
+  const stored = (rows) => JSON.parse(JSON.stringify(rows));
+  const whole = findUnsolved(history);
+  assert.deepEqual(whole.map((r) => [r.contestId, r.index, r.tries]), [[1501, "E", 2], [10, "B", 2], [20, "A", 2]]);
+  for (let cut = 0; cut <= history.length; cut += 1) {
+    // The saved state goes through JSON, as it does in storage.
+    const saved = JSON.parse(JSON.stringify(foldSubmissions(emptyState(), history.slice(cut))));
+    assert.deepEqual(stored(unsolvedRows(foldSubmissions(saved, history.slice(0, cut)))), stored(whole), `split after ${cut}`);
+  }
 });
 
 test("a friend's solved problems narrow the list, parallel rounds included", () => {
