@@ -10,7 +10,8 @@ Every problem a Codeforces user has tried and not solved, in one table.
   tried, the last verdict and the test it failed on (`WA 37`), and the date
   of the last attempt (linking to that submission).
 - Takes a handle, or a link to a profile pasted from the address bar
-  (`https://codeforces.com/profile/tourist`).
+  (`https://codeforces.com/profile/tourist`). The handles looked up lately are
+  offered again in the handle and friend fields.
 - Sorts by problem, name, rating, tries or last attempt: click a header,
   click again to reverse.
 - Filters by name or problem id (`1520F2`, `1520|F2` or a link to the
