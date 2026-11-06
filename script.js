@@ -227,6 +227,9 @@ const onloadFunction = (lang) => {
   byId("lastTriedLabel").textContent = text.lastTriedTD;
   byId("tagsTD").textContent = text.tagsTD;
   byId("hideLabel").textContent = text.hideTD;
+  for (const link of document.querySelectorAll("#flags a[data-lang]")) {
+    if (link.dataset.lang === lang) link.setAttribute("aria-current", "true");
+  }
 };
 
 // A link can name the handle, the sort and the filters; anything it leaves
