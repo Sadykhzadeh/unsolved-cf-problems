@@ -44,6 +44,7 @@ const localize = [{
     showTagsChexBox: " Show problem's tags",
     counterOfProblems: "Count of problems:",
     captionText: "Problems {handle} has tried and not solved",
+    problemTD: "Problem",
     nameTD: "Name ",
     tagsTD: "Tags",
     ratingTD: "Rating",
@@ -102,6 +103,7 @@ const localize = [{
     showTagsChexBox: " Показывать теги задач",
     counterOfProblems: "Количество задач:",
     captionText: "Задачи, которые пробовал(а) {handle} и не решил(а)",
+    problemTD: "Задача",
     nameTD: "Название ",
     tagsTD: "Теги",
     ratingTD: "Рейтинг",
@@ -207,6 +209,8 @@ const onloadFunction = (lang) => {
   byId("refresh").textContent = text.refreshButton;
   byId("pick").textContent = text.pickButton;
   byId("pick").title = `${text.pickButton} (P)`;
+  // The column is headed "#", which a screen reader would read as a symbol.
+  byId("numberLabel").setAttribute("aria-label", text.problemTD);
   byId("nameLabel").textContent = text.nameTD;
   byId("searchTask").placeholder = text.searchPlaceholder;
   byId("searchTask").setAttribute("aria-label", text.searchPlaceholder);
