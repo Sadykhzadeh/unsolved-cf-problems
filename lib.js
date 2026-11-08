@@ -390,6 +390,10 @@ export const writeParams = ({
   if (friend) params.set("friend", friend);
   if (inRound) params.set("round", "1");
   if (showTags) params.set("tags", "1");
+  // A link that names none of the view would take the sort and switches the
+  // visitor remembers, so one that names a list says the default sort outright.
+  const names = [...params.keys()].filter((name) => name !== "lang");
+  if (names.length && !VIEW_PARAMS.some((name) => params.has(name))) params.set("sort", "rating");
   return params.toString();
 };
 

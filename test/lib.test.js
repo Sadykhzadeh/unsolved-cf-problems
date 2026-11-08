@@ -526,15 +526,27 @@ test("a link carries the handle, sort and filters, and nothing at their defaults
 
   // Several tags are repeated tag= parameters, and the mode is only written when it matters.
   const several = writeParams({ tags: ["dp", "graphs"], tagAny: true });
-  assert.equal(several, "tag=dp&tag=graphs&tagany=1");
+  assert.equal(several, "tag=dp&tag=graphs&tagany=1&sort=rating");
   assert.deepEqual(readParams(`?${several}`).tags, ["dp", "graphs"]);
   assert.equal(readParams(`?${several}`).tagAny, true);
-  assert.equal(writeParams({ tags: ["dp"], tagAny: true }), "tag=dp");
-  assert.equal(writeParams({ tags: ["dp", "dp", ""] }), "tag=dp", "each tag once, none blank");
+  assert.equal(writeParams({ tags: ["dp"], tagAny: true }), "tag=dp&sort=rating");
+  assert.equal(writeParams({ tags: ["dp", "dp", ""] }), "tag=dp&sort=rating", "each tag once, none blank");
   assert.deepEqual(readParams("?tag=dp&tag=dp&tag=").tags, ["dp"]);
 
-  assert.equal(writeParams({ handle: "a b&c", sort: { key: "rating", descending: false } }), "handle=a+b%26c");
-  assert.equal(writeParams({ lang: "ru", handle: "x", min: "abc" }), "lang=ru&handle=x");
+  assert.equal(writeParams({ handle: "a b&c", sort: { key: "rating", descending: false } }), "handle=a+b%26c&sort=rating");
+  assert.equal(writeParams({ lang: "ru", handle: "x", min: "abc" }), "lang=ru&handle=x&sort=rating");
+});
+
+test("a link to the default view names it, so a visitor's remembered view does not replace it", () => {
+  const theirs = JSON.stringify({ sort: { key: "tries", descending: true }, noGym: true });
+  const link = writeParams({ handle: "tourist", min: "1600" });
+  assert.deepEqual(rememberedView(theirs, `?${link}`), {});
+  assert.deepEqual(readParams(`?${link}`).sort, { key: "rating", descending: false });
+  // Nothing to name when the link carries no list, or already names part of the view.
+  assert.equal(writeParams({}), "");
+  assert.equal(writeParams({ lang: "ru" }), "lang=ru");
+  assert.equal(writeParams({ handle: "x", noGym: true }), "handle=x&nogym=1");
+  assert.equal(writeParams({ handle: "x", showTags: true }), "handle=x&tags=1");
 });
 
 test("the view is remembered for a link that does not set it, and only then", () => {
