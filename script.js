@@ -8,6 +8,7 @@ import {
   emptyKind,
   failedTest,
   fetchApi,
+  isFresh,
   isPickKey,
   isSearchKey,
   isTimeout,
@@ -743,6 +744,7 @@ byId("doNotShowTags").addEventListener("change", () => {
 const SAVED_KEY = "unsolved-cf-problems:lookups";
 const SAVED_VERSION = 6;
 const FRESH_FOR = 10 * 60 * 1000;
+const CLOCK_SLACK = 60 * 1000;
 const KEEP_HANDLES = 3;
 
 const savedId = (handle) => `${lang}:${handle.toLowerCase()}`;
@@ -983,7 +985,7 @@ const lookup = async (handle, { force = false } = {}) => {
 
   remember("handle", handle);
   syncUrl({ newEntry: true });
-  if (!force && state.savedAt !== null && Date.now() - state.savedAt < FRESH_FOR) return;
+  if (!force && state.savedAt !== null && isFresh(state.savedAt, Date.now(), FRESH_FOR, CLOCK_SLACK)) return;
 
   setLoading(handle);
   if (state.savedAt !== null) showFreshness(true);
@@ -1136,7 +1138,7 @@ const loadFriend = async (handle) => {
       if (number !== friendNumber) return;
       if (saved) useFriend(saved);
     }
-    if (!handle || (friend.savedAt !== null && Date.now() - friend.savedAt < FRESH_FOR)) return;
+    if (!handle || (friend.savedAt !== null && isFresh(friend.savedAt, Date.now(), FRESH_FOR, CLOCK_SLACK))) return;
     if (friend.savedAt === null) status.textContent = fill(text.loadingText, { handle });
     if (!await waitForTurn(() => number === friendNumber)) return;
     const history = await loadHistory(handle, () => number === friendNumber);

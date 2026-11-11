@@ -15,6 +15,7 @@ import {
   emptyState,
   findUnsolved,
   foldSubmissions,
+  isFresh,
   isPickKey,
   isSearchKey,
   isUsableDigest,
@@ -300,6 +301,16 @@ test("the newest submissions reach a saved history when they go back past its cu
   assert.equal(isUsableDigest(digest, NOW + 2 * DAY), true);
   assert.equal(isUsableDigest(digest, NOW + 4 * DAY), false);
   assert.equal(isUsableDigest(null, NOW), false);
+});
+
+test("a copy is fresh while younger than its age, and stale when stamped well ahead of the clock", () => {
+  const minute = 60;
+  assert.equal(isFresh(NOW - 5 * minute, NOW, 10 * minute, minute), true, "an ordinary fresh copy");
+  assert.equal(isFresh(NOW - 11 * minute, NOW, 10 * minute, minute), false, "an old copy");
+  assert.equal(isFresh(NOW + 30, NOW, 10 * minute, minute), true, "stamped a little ahead, within the slack");
+  assert.equal(isFresh(NOW + 400 * DAY, NOW, 10 * minute, minute), false, "stamped far ahead");
+  assert.equal(isUsableDigest(emptyDigest(NOW + 400 * DAY), NOW), false, "a digest built far ahead is rebuilt");
+  assert.equal(isUsableDigest(emptyDigest(NOW + 30), NOW), true, "a digest built a little ahead is kept");
 });
 
 test("a friend's solved problems narrow the list, parallel rounds included", () => {
