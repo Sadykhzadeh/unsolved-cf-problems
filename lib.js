@@ -679,7 +679,17 @@ export const NEWEST_COUNT = 300;
 // scratch.
 export const emptyDigest = (now) => ({ cutoff: 0, count: 0, builtAt: now, state: emptyState() });
 
-export const isUsableDigest = (digest, now) => Boolean(digest) && now - digest.builtAt < REBUILD_AFTER_SECONDS;
+// Whether a copy stamped `savedAt` is fresh at `now`, with `maxAge` the longest
+// it is trusted, all in the same unit. A stamp more than `slack` ahead of `now`
+// is stale too: a copy saved while the clock ran ahead looks younger than it
+// is, and would stay fresh until the clock caught up. A smaller step back is an
+// ordinary clock adjustment.
+export const isFresh = (savedAt, now, maxAge, slack) => now - savedAt < maxAge && savedAt - now <= slack;
+
+export const CLOCK_SLACK_SECONDS = 60;
+
+export const isUsableDigest = (digest, now) => Boolean(digest)
+  && isFresh(digest.builtAt, now, REBUILD_AFTER_SECONDS, CLOCK_SLACK_SECONDS);
 
 // Whether `newest`, the answer to a request for `asked` of the latest
 // submissions, reaches back to what the digest holds, so that nothing between
