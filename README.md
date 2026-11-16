@@ -30,6 +30,9 @@ Every problem a Codeforces user has tried and not solved, in one table.
   problems.
 - Narrows the list to the problems a friend has solved, their parallel
   rounds included: the ones worth asking them about.
+- Shows the five tags the handle is weakest on above the list: how many of
+  its unsolved problems carry each tag, and solved out of attempted for it.
+  A click on one narrows the list to that tag.
 - Shows or hides the problem tags without reloading anything.
 - Keeps the view in the address bar, so a link opens the same list, sorted
   and filtered the same way, and Back returns to the handle looked up before.

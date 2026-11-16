@@ -669,7 +669,7 @@ export const foldSubmissions = (state, submissions) => {
 
 // Whether a digest carries the per-tag counts of solved problems. A digest
 // saved before they were kept lacks them, and is read again from scratch.
-const isTagCounts = (value) => Boolean(value) && typeof value === "object" && !Array.isArray(value)
+export const isTagCounts = (value) => Boolean(value) && typeof value === "object" && !Array.isArray(value)
   && Object.values(value).every((count) => Number.isInteger(count) && count >= 0);
 export const hasTagCounts = (digest) => isTagCounts(digest?.state?.solvedTags);
 

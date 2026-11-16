@@ -10,6 +10,7 @@ import {
   fetchApi,
   hasTagCounts,
   isFresh,
+  isTagCounts,
   isClearTagsKey,
   isPickKey,
   isSearchKey,
@@ -35,6 +36,7 @@ import {
   unpackRows,
   verdictLabel,
   viewOf,
+  weakTags,
   writeParams,
 } from "./lib.js";
 
@@ -97,6 +99,8 @@ const localize = [{
     refreshingText: "Checking Codeforces for changes...",
     refreshButton: "Refresh",
     showingSavedText: "Showing what was saved {ago}.",
+    weakTagsLabel: "Most unsolved tags:",
+    weakTagTitle: "Solved {solved} of {attempted} attempted problems tagged {tag}. Click to filter by it.",
   },
   "ru": {
     pageTitle: "Нерешённые задачи Codeforces",
@@ -156,6 +160,8 @@ const localize = [{
     refreshingText: "Проверяю, что изменилось на Codeforces...",
     refreshButton: "Обновить",
     showingSavedText: "Показаны данные, сохранённые {ago}.",
+    weakTagsLabel: "Чаще всего нерешённые теги:",
+    weakTagTitle: "Решено {solved} из {attempted} задач с тегом {tag}. Нажмите, чтобы отфильтровать по нему.",
   },
 }];
 
@@ -470,7 +476,7 @@ const failureText = (error, handle) => {
 
 // The last lookup, kept so that showing tags or filtering redraws from memory
 // instead of asking Codeforces for every submission again.
-const state = { handle: "", rows: [], submissions: 0, savedAt: null, sort: { key: "rating", descending: false } };
+const state = { handle: "", rows: [], submissions: 0, solvedTags: {}, savedAt: null, sort: { key: "rating", descending: false } };
 
 // The friend whose solved problems narrow the list, and once their
 // submissions are in, the check for what they solved.
@@ -582,13 +588,42 @@ const fillTagFilter = () => {
   showTagChoice();
 };
 
-byId("tagFilter").addEventListener("input", (event) => {
-  const tag = event.target.value;
-  if (!tag) return;
+// Adds a tag to the filter: the same path whether it was picked from the list
+// or from the tags that are weakest for the handle.
+const addTag = (tag) => {
   chosenTags = [...chosenTags, tag];
   showTagChoice();
   applyFilters();
   syncUrl();
+};
+
+byId("tagFilter").addEventListener("input", (event) => {
+  const tag = event.target.value;
+  if (!tag) return;
+  addTag(tag);
+});
+
+// The handle's weakest tags, above the list. Each one narrows the list to it,
+// unless it is narrowed to already.
+const showWeakTags = () => {
+  const weak = state.rows.length && !aboutOpen() ? weakTags(state.rows, state.solvedTags) : [];
+  byId("weakTags").hidden = !weak.length;
+  byId("weakTagsLabel").textContent = text.weakTagsLabel;
+  byId("weakTagsList").replaceChildren(...weak.map(({ tag, solved, attempted }) => {
+    const chip = document.createElement("button");
+    chip.type = "button";
+    chip.className = "tag-chip";
+    chip.dataset.tag = tag;
+    chip.textContent = `${tag} ${solved}/${attempted}`;
+    chip.title = fill(text.weakTagTitle, { solved, attempted, tag });
+    return chip;
+  }));
+};
+
+byId("weakTagsList").addEventListener("click", (event) => {
+  const chip = event.target.closest("button.tag-chip");
+  if (!chip || chosenTags.includes(chip.dataset.tag)) return;
+  addTag(chip.dataset.tag);
 });
 
 // A removed tag leaves the focus on the list to add one from, rather than
@@ -775,8 +810,15 @@ const readStore = () => {
 const readSaved = (handle) => {
   const entry = readStore().entries[savedId(handle)];
   const rows = entry && Number.isFinite(entry.savedAt) ? unpackRows(entry.rows) : null;
-  if (!rows || !Number.isInteger(entry.submissions)) return null;
-  return { handle: entry.handle ?? handle, savedAt: entry.savedAt, rows, submissions: entry.submissions };
+  // A copy saved before the tag counts were kept is looked up again.
+  if (!rows || !Number.isInteger(entry.submissions) || !isTagCounts(entry.solvedTags)) return null;
+  return {
+    handle: entry.handle ?? handle,
+    savedAt: entry.savedAt,
+    rows,
+    submissions: entry.submissions,
+    solvedTags: entry.solvedTags,
+  };
 };
 
 const writeStore = (store) => {
@@ -788,10 +830,10 @@ const writeStore = (store) => {
   }
 };
 
-const save = (handle, rows, submissions, savedAt) => {
+const save = (handle, rows, submissions, savedAt, solvedTags) => {
   const store = readStore();
   const id = savedId(handle);
-  store.entries[id] = { handle, savedAt, rows: packRows(rows), submissions };
+  store.entries[id] = { handle, savedAt, rows: packRows(rows), submissions, solvedTags };
   const newestFirst = Object.keys(store.entries)
     .sort((a, b) => store.entries[b].savedAt - store.entries[a].savedAt);
   for (const old of newestFirst.slice(KEEP_HANDLES)) delete store.entries[old];
@@ -835,6 +877,7 @@ const showResults = () => {
   if (aboutOpen()) return;
   const counter = byId("counter");
   showFreshness(false);
+  showWeakTags();
   if (!state.rows.length) {
     byId("table-main").hidden = true;
     byId("filters").hidden = true;
@@ -860,10 +903,12 @@ const clearResults = () => {
   state.handle = "";
   state.rows = [];
   state.submissions = 0;
+  state.solvedTags = {};
   state.savedAt = null;
   drawn = [];
   byId("table-main").hidden = true;
   byId("filters").hidden = true;
+  byId("weakTags").hidden = true;
   byId("freshness").hidden = true;
   byId("tableCaption").textContent = "";
   byId("table-list").replaceChildren();
@@ -1013,9 +1058,10 @@ const lookup = async (handle, { force = false } = {}) => {
     state.handle = handle;
     state.rows = history.rows;
     state.submissions = history.submissions;
+    state.solvedTags = history.state.solvedTags;
     noteHandle(handle);
     state.savedAt = Date.now();
-    save(handle, state.rows, state.submissions, state.savedAt);
+    save(handle, state.rows, state.submissions, state.savedAt, state.solvedTags);
     fillTagFilter();
     showResults();
   } catch (error) {
@@ -1195,6 +1241,7 @@ byId("about").addEventListener("click", () => {
   const tableList = byId("table-list");
   byId("table-main").hidden = true;
   byId("filters").hidden = true;
+  byId("weakTags").hidden = true;
   byId("freshness").hidden = true;
   byId("tableCaption").textContent = "";
   byId("counter").textContent = "";
