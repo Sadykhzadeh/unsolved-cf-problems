@@ -189,6 +189,10 @@ export const isSearchKey = (key, code) => key === "/" || (code === "Slash" && ke
 // types "з" there. On one that has P elsewhere, such as Dvorak, P itself does.
 export const isPickKey = (key, code) => (/^[a-z]$/i.test(key) ? key.toLowerCase() === "p" : code === "KeyP");
 
+// Whether a key press is Escape, which clears the tag filter. Named by the key
+// itself, which is the same on every layout.
+export const isClearTagsKey = (key) => key === "Escape";
+
 // Sorts a failed user.status call into something a person can act on, so
 // that Codeforces being down is not reported as a wrong handle.
 export const describeFailure = (httpStatus, payload) => {

@@ -16,6 +16,7 @@ import {
   findUnsolved,
   foldSubmissions,
   isFresh,
+  isClearTagsKey,
   isPickKey,
   isSearchKey,
   isUsableDigest,
@@ -650,6 +651,12 @@ test("the search shortcut is / on any layout, or the key in its place on a Russi
   assert.equal(isSearchKey("-", "Slash"), false, "German layout: that key is a hyphen");
   assert.equal(isSearchKey("?", "Slash"), false);
   assert.equal(isSearchKey(".", "Period"), false);
+});
+
+test("Escape is the key that clears the tag filter", () => {
+  assert.equal(isClearTagsKey("Escape"), true);
+  assert.equal(isClearTagsKey("Esc"), false);
+  assert.equal(isClearTagsKey("Enter"), false);
 });
 
 test("the pick shortcut is P on any layout, or the key in its place on a Russian one", () => {

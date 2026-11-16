@@ -9,6 +9,7 @@ import {
   failedTest,
   fetchApi,
   isFresh,
+  isClearTagsKey,
   isPickKey,
   isSearchKey,
   isTimeout,
@@ -727,6 +728,17 @@ document.addEventListener("keydown", (event) => {
   if (byId("filters").hidden) return;
   event.preventDefault();
   byId("pick").click();
+});
+
+// Escape clears the tag filter from anywhere but a field, as the tags can be
+// cleared with a click on each of them.
+document.addEventListener("keydown", (event) => {
+  if (!isClearTagsKey(event.key) || !chosenTags.length || takesTyping(event.target)) return;
+  chosenTags = [];
+  tagAny = false;
+  showTagChoice();
+  applyFilters();
+  syncUrl();
 });
 
 // Showing tags redraws from memory; it does not ask Codeforces again. With
