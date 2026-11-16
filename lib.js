@@ -558,7 +558,7 @@ const ROUND_PARTICIPATION = new Set(["CONTESTANT", "OUT_OF_COMPETITION", "VIRTUA
 // without reading the older ones again: the key of every solved problem, the
 // name, rating and contest of each one outside the gym, the start time of every
 // contest seen, and the unsolved rows in the order they were first met.
-export const emptyState = () => ({ keys: [], twins: [], starts: [], rows: [] });
+export const emptyState = () => ({ keys: [], twins: [], starts: [], rows: [], solvedTags: {} });
 
 const rowOf = (item, start, inRound) => ({
   contestId: item.problem.contestId,
@@ -594,10 +594,14 @@ export const foldSubmissions = (state, submissions) => {
 
   const keys = new Set(state.keys);
   const twins = [...state.twins];
+  const solvedTags = { ...state.solvedTags };
   for (const item of submissions) {
     const key = problemKey(item.problem);
     if (item.verdict !== "OK" || keys.has(key)) continue;
     keys.add(key);
+    for (const tag of item.problem.tags ?? []) {
+      solvedTags[tag] = Object.hasOwn(solvedTags, tag) ? solvedTags[tag] + 1 : 1;
+    }
     const { problem } = item;
     if (problem.contestId !== undefined && !isGym(problem.contestId)) {
       twins.push([problem.name, problem.rating ?? null, problem.contestId]);
@@ -657,9 +661,36 @@ export const foldSubmissions = (state, submissions) => {
   return {
     keys: [...keys],
     twins,
+    solvedTags,
     starts: [...startOf],
     rows: [...front, ...older],
   };
+};
+
+// Whether a digest carries the per-tag counts of solved problems. A digest
+// saved before they were kept lacks them, and is read again from scratch.
+const isTagCounts = (value) => Boolean(value) && typeof value === "object" && !Array.isArray(value)
+  && Object.values(value).every((count) => Number.isInteger(count) && count >= 0);
+export const hasTagCounts = (digest) => isTagCounts(digest?.state?.solvedTags);
+
+// The tags of the unsolved problems, each with how many problems carry it, how
+// many of the problems tried with it were solved and how many were tried in all.
+// The commonest unsolved first, the bogus "*special" tag left out, at most
+// `limit` of them.
+export const weakTags = (rows, solvedTags, limit = 5) => {
+  const unsolved = new Map();
+  for (const row of rows) {
+    for (const tag of row.tags) {
+      if (tag !== "*special") unsolved.set(tag, (unsolved.get(tag) ?? 0) + 1);
+    }
+  }
+  return [...unsolved]
+    .map(([tag, count]) => {
+      const solved = Object.hasOwn(solvedTags, tag) ? solvedTags[tag] : 0;
+      return { tag, solved, attempted: solved + count, unsolved: count };
+    })
+    .sort((a, b) => b.unsolved - a.unsolved || a.tag.localeCompare(b.tag))
+    .slice(0, limit);
 };
 
 // The rows of a state, easiest first and unrated last; the rows keep their

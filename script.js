@@ -8,6 +8,7 @@ import {
   emptyKind,
   failedTest,
   fetchApi,
+  hasTagCounts,
   isFresh,
   isClearTagsKey,
   isPickKey,
@@ -921,8 +922,10 @@ const readHistory = async (handle) => {
   try {
     const response = await (await openHistories())?.match(historyKey(handle));
     const digest = await response?.json();
+    // A digest saved before the tag counts were kept is read again from scratch.
     const valid = Number.isFinite(digest?.cutoff) && Number.isFinite(digest.builtAt) && Number.isFinite(digest.count)
-      && ["keys", "twins", "starts", "rows"].every((field) => Array.isArray(digest.state?.[field]));
+      && ["keys", "twins", "starts", "rows"].every((field) => Array.isArray(digest.state?.[field]))
+      && hasTagCounts(digest);
     return valid ? digest : null;
   } catch {
     return null;

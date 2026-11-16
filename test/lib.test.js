@@ -15,6 +15,7 @@ import {
   emptyState,
   findUnsolved,
   foldSubmissions,
+  hasTagCounts,
   isFresh,
   isClearTagsKey,
   isPickKey,
@@ -43,6 +44,7 @@ import {
   unsolvedRows,
   verdictLabel,
   viewOf,
+  weakTags,
   writeParams,
 } from "../lib.js";
 
@@ -865,4 +867,57 @@ test("a call answered with the rate limit or a busy server is made once more, wh
   const alone = answers(limited(), ok());
   assert.equal((await fetchApi("x", { fetchFn: alone.fetchFn })).response.status, 503);
   assert.equal(alone.calls.length, 1);
+});
+
+test("the solved problems are counted per tag, once each, and the count survives folding in parts", () => {
+  const item = (id, contestId, index, verdict, tags) => ({
+    id,
+    creationTimeSeconds: 1_600_000_000 + id,
+    verdict,
+    author: { participantType: "PRACTICE" },
+    problem: { contestId, index, name: `${contestId}${index}`, tags, rating: 1500 },
+  });
+  const history = [
+    item(9, 1500, "A", "OK", ["dp", "graphs"]),
+    item(8, 1500, "A", "OK", ["dp", "graphs"]),
+    item(7, 1501, "B", "OK", ["dp"]),
+    item(6, 1502, "C", "WRONG_ANSWER", ["dp"]),
+    item(5, 1500, "D", "OK", ["*special"]),
+  ];
+  const whole = foldSubmissions(emptyState(), history);
+  assert.deepEqual(whole.solvedTags, { dp: 2, graphs: 1, "*special": 1 });
+  const parts = foldSubmissions(foldSubmissions(emptyState(), history.slice(2)), history.slice(0, 2));
+  assert.deepEqual(parts.solvedTags, whole.solvedTags);
+});
+
+test("a tag the problems do not have is not counted, whatever its name", () => {
+  const solved = foldSubmissions(emptyState(), [
+    { id: 1, creationTimeSeconds: 1, verdict: "OK", author: {}, problem: { contestId: 1, index: "A", name: "a", tags: ["constructor"] } },
+  ]);
+  assert.deepEqual(solved.solvedTags, { constructor: 1 });
+  assert.equal(Object.hasOwn(foldSubmissions(emptyState(), []).solvedTags, "constructor"), false);
+  assert.deepEqual(weakTags([{ tags: ["constructor"] }], solved.solvedTags), [{ tag: "constructor", solved: 1, attempted: 2, unsolved: 1 }]);
+});
+
+test("an old digest, saved before the tag counts, is not taken as complete", () => {
+  const old = { cutoff: 1, count: 3, builtAt: 1, state: { keys: [], twins: [], starts: [], rows: [] } };
+  assert.equal(hasTagCounts(old), false);
+  assert.equal(hasTagCounts({ ...old, state: { ...old.state, solvedTags: {} } }), true);
+  assert.equal(hasTagCounts(null), false);
+  for (const bad of [[], "dp", { dp: -1 }, { dp: 1.5 }, { dp: "2" }, null]) {
+    assert.equal(hasTagCounts({ state: { solvedTags: bad } }), false, JSON.stringify(bad));
+  }
+});
+
+test("the weakest tags are the ones with the most unsolved problems, with solved and attempted counts", () => {
+  const row = (tags) => ({ tags });
+  const rows = [row(["dp", "*special"]), row(["dp", "graphs"]), row(["dp"]), row(["graphs"]), row(["trees"])];
+  const solvedTags = { dp: 6, graphs: 4, trees: 0, "*special": 9 };
+  assert.deepEqual(weakTags(rows, solvedTags), [
+    { tag: "dp", solved: 6, attempted: 9, unsolved: 3 },
+    { tag: "graphs", solved: 4, attempted: 6, unsolved: 2 },
+    { tag: "trees", solved: 0, attempted: 1, unsolved: 1 },
+  ]);
+  assert.deepEqual(weakTags(rows, solvedTags, 1).map((entry) => entry.tag), ["dp"]);
+  assert.deepEqual(weakTags([], solvedTags), []);
 });
