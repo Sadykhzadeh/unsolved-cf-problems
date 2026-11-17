@@ -672,34 +672,19 @@ document.addEventListener("keydown", (event) => {
   byId("pick").click();
 });
 
-// The row j and k move through, and that o or Enter opens. Its highlight is a
-// class, so focus stays where it was. Enter is left to a button or a link that
-// has the focus, since it already acts on it.
+// The keys that move a highlight have their code read the first time one of them is
+// pressed with a list on screen. The key test itself is in lib.js.
 let highlighted = null;
-
-const moveHighlight = (step) => {
-  const shown = drawn.filter(([tr]) => !tr.hidden);
-  if (!shown.length) return;
-  const at = shown.findIndex(([, row]) => row === highlighted);
-  const next = at === -1 ? (step > 0 ? 0 : shown.length - 1) : Math.min(shown.length - 1, Math.max(0, at + step));
-  highlighted = shown[next][1];
-  for (const [tr, row] of drawn) tr.classList.toggle("highlight", row === highlighted);
-  shown[next][0].scrollIntoView({ block: "nearest" });
-};
-
-const openHighlighted = () => {
-  const entry = drawn.find(([tr, row]) => row === highlighted && !tr.hidden);
-  if (entry) entry[0].querySelector(".problemName").click();
-};
-
+let keysView = null;
+let keysLoad = null;
 document.addEventListener("keydown", (event) => {
   const action = rowKeyAction(event.key, event.code, event);
   if (!action || takesTyping(event.target) || byId("filters").hidden) return;
-  const native = event.target instanceof HTMLButtonElement || event.target instanceof HTMLAnchorElement;
-  if (action === "open" && (event.repeat || (event.key === "Enter" && native))) return;
-  event.preventDefault();
-  if (action === "open") openHighlighted();
-  else moveHighlight(action === "next" ? 1 : -1);
+  keysLoad ??= import("./keys.js").then(({ createKeys }) => {
+    keysView = createKeys({ drawn: () => drawn, highlight: () => highlighted, setHighlight: (row) => { highlighted = row; } });
+    return keysView;
+  });
+  keysLoad.then((view) => view.press(action, event));
 });
 
 // Escape clears the tag filter from anywhere but a field, as the tags can be
