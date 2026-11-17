@@ -185,6 +185,19 @@ td {
     transition: 0.5s
 }
 
+/* The only motion on the page is these fades. The hover rules are more
+   specific than the buttons themselves, so they are named here too. */
+@media (prefers-reduced-motion: reduce) {
+    #start,
+    #about,
+    #start:hover,
+    #about:hover,
+    #start:not(:hover),
+    #about:not(:hover) {
+        transition: none
+    }
+}
+
 @media only screen and (max-width: 950px) {
     #handle {
         width: 60%
