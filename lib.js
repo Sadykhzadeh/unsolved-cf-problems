@@ -481,6 +481,18 @@ export const ageParts = (ms) => {
   return [-Math.floor(seconds / 86400), "day"];
 };
 
+// How long ago an attempt was, as the [value, unit] Intl.RelativeTimeFormat wants:
+// the largest whole unit, a year or a month counting as 365 or 30 days. Never in
+// the future: a time a little ahead of the clock is "now".
+const AGE_UNITS = [["year", 365 * 86400], ["month", 30 * 86400], ["day", 86400], ["hour", 3600], ["minute", 60]];
+export const relativeAge = (ms) => {
+  const seconds = Math.max(0, ms) / 1000;
+  for (const [unit, size] of AGE_UNITS) {
+    if (seconds >= size) return [-Math.floor(seconds / size), unit];
+  }
+  return [0, "second"];
+};
+
 // Why a list has no rows: the handle has not submitted anything, or has
 // solved everything it tried. The two want different words.
 export const emptyKind = (submissionCount) => (submissionCount === 0 ? "noSubmissions" : "allSolved");

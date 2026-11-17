@@ -31,6 +31,7 @@ import {
   isSearchKey,
   isUsableDigest,
   reachesDigest,
+  relativeAge,
   rememberHandle,
   rememberedView,
   isTimeout,
@@ -1091,4 +1092,14 @@ test("the problemset's solved counts reach the rows it lists, and a row it does 
   const counted = attachSolvedCounts(rows, problems);
   assert.equal(counted[0].solvedCount, 42);
   assert.equal(counted[1].solvedCount, undefined);
+});
+
+test("the age of an attempt is given in its largest whole unit, and never a negative one", () => {
+  assert.deepEqual(relativeAge(30_000), [0, "second"]);
+  assert.deepEqual(relativeAge(90_000), [-1, "minute"]);
+  assert.deepEqual(relativeAge(2 * 3600_000 + 5000), [-2, "hour"]);
+  assert.deepEqual(relativeAge(364 * 86400_000), [-12, "month"], "a year is 365 days, so 364 is months");
+  assert.deepEqual(relativeAge(45 * 86400_000), [-1, "month"]);
+  assert.deepEqual(relativeAge(3 * 365 * 86400_000 + 1000), [-3, "year"]);
+  assert.deepEqual(relativeAge(-5000), [0, "second"], "a time a little ahead of the clock is now");
 });

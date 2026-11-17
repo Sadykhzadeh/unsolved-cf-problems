@@ -8,6 +8,7 @@ import {
   unpackProblemset,
   untriedRows,
   ageParts,
+  relativeAge,
   defaultDescending,
   describeFailure,
   emptyDigest,
@@ -465,8 +466,10 @@ const buildRow = (problem, isHidden) => {
       : cell(short, full));
 
     const when = anchor(submissionLink(problem), dateFormat.format(problem.lastTime * 1000));
-    when.title = `#${problem.submissionId}`;
-    const whenCell = cell(when);
+    const [value, unit] = relativeAge(Date.now() - problem.lastTime * 1000);
+    const age = relativeTime.format(value, unit);
+    when.title = `${age} (#${problem.submissionId})`;
+    const whenCell = cell(when, age);
     whenCell.className = "when";
     row.append(whenCell);
   }
