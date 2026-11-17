@@ -2,7 +2,6 @@ import {
   NEWEST_COUNT,
   advance,
   countText,
-  ratingBandName,
   weakTagName,
   solvedFor,
   ageParts,
@@ -22,7 +21,6 @@ import {
   isSearchKey,
   isTimeout,
   isUsableDigest,
-  isBucket,
   makeFilter,
   matchesFilter,
   packRows,
@@ -31,7 +29,6 @@ import {
   problemKey,
   problemLink,
   rankClass,
-  ratingBuckets,
   rowKeyAction,
   readParams,
   reachesDigest,
@@ -578,53 +575,27 @@ byId("weakTagsList").addEventListener("click", (event) => {
   addTag(chip.dataset.tag);
 });
 
-// The unsolved problems by rating, one button a hundred wide, its bar as tall as
-// the band is full. A band narrows the rating fields to itself; the chosen band
-// clears them. Buttons, so Tab and Enter or Space work as a mouse does.
+// The rating strip has its own code, read when the first results show: until then
+// there is no strip to draw, and nothing to mark.
+let ratingView = null;
+let ratingLoad = null;
+const loadRatingView = () => {
+  ratingLoad ??= import("./rating-strip.js").then(({ createRatingStrip }) => {
+    ratingView = createRatingStrip({ byId, text, listRows, aboutOpen, applyFilters, syncUrl });
+    return ratingView;
+  });
+  return ratingLoad;
+};
+
 const showRatingStrip = () => {
-  const buckets = listRows().length && !aboutOpen() ? ratingBuckets(listRows()) : [];
-  byId("ratingStrip").hidden = !buckets.length;
-  byId("ratingStripLabel").textContent = text.ratingStripLabel;
-  const tallest = Math.max(1, ...buckets.map((bucket) => bucket.count));
-  byId("ratingBars").replaceChildren(...buckets.map(({ from, to, count }) => {
-    const band = document.createElement("button");
-    band.type = "button";
-    band.className = "rating-band";
-    band.dataset.from = from;
-    band.dataset.to = to;
-    const label = ratingBandName({ from, to, count }, text.ratingBandLabel);
-    band.title = `${label}. ${text.ratingBandTitle}`;
-    band.setAttribute("aria-label", label);
-    const bar = document.createElement("span");
-    bar.className = "bar";
-    // An empty band has no bar; a band with a row keeps a sliver of one.
-    bar.style.height = count ? `${Math.max(4, Math.round(count / tallest * 100))}%` : "0";
-    band.append(bar);
-    return band;
-  }));
-  markRatingBands();
-};
-
-const markRatingBands = () => {
-  const min = byId("minRating").value;
-  const max = byId("maxRating").value;
-  for (const band of byId("ratingBars").children) {
-    const chosen = isBucket({ from: Number(band.dataset.from), to: Number(band.dataset.to) }, min, max);
-    band.setAttribute("aria-pressed", String(chosen));
+  if (!listRows().length || aboutOpen()) {
+    byId("ratingStrip").hidden = true;
+    return;
   }
+  loadRatingView().then((view) => view.show());
 };
 
-byId("ratingBars").addEventListener("click", (event) => {
-  const band = event.target.closest("button.rating-band");
-  if (!band) return;
-  const bucket = { from: Number(band.dataset.from), to: Number(band.dataset.to) };
-  const chosen = isBucket(bucket, byId("minRating").value, byId("maxRating").value);
-  // Setting the fields does not fire their input event, so the list is updated here.
-  byId("minRating").value = chosen ? "" : String(bucket.from);
-  byId("maxRating").value = chosen ? "" : String(bucket.to);
-  applyFilters();
-  syncUrl();
-});
+const markRatingBands = () => ratingView?.mark();
 
 // A removed tag leaves the focus on the list to add one from, rather than
 // dropping it to the page with the button.

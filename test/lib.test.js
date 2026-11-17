@@ -19,7 +19,6 @@ import {
   foldSubmissions,
   hasTagCounts,
   fillText,
-  isBucket,
   isFresh,
   solvedFor,
   isClearTagsKey,
@@ -40,8 +39,6 @@ import {
   problemKey,
   problemLink,
   rankClass,
-  ratingBandName,
-  ratingBuckets,
   weakTagName,
   readParams,
   solvedCheck,
@@ -57,6 +54,7 @@ import {
   weakTags,
   writeParams,
 } from "../lib.js";
+import { isBucket, ratingBandName, ratingBuckets } from "../rating-strip.js";
 import {
   attachSolvedCounts, contestNote, contestProgress, listedCheck, packProblemset, ratedContestIds,
   shareInFlight, tookPartIn, unpackProblemset, untriedRows,
