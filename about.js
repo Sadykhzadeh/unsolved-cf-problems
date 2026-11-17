@@ -6,6 +6,7 @@ export const createAbout = ({ byId, text, lang, anchor, aboutOpen, showResults }
     byId("table-main").hidden = true;
     byId("filters").hidden = true;
     byId("weakTags").hidden = true;
+    byId("byTag").hidden = true;
     byId("ratingStrip").hidden = true;
     byId("freshness").hidden = true;
     byId("tableCaption").textContent = "";

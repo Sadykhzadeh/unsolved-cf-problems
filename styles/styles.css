@@ -452,6 +452,12 @@ th[aria-sort="descending"] .sort::after {
     background: var(--fg)
 }
 
+/* The "By tag" table under the weakest tags, centred like them. */
+#byTag {
+    margin: 0.5em auto;
+    max-width: 40em
+}
+
 /* The tags chosen to narrow the list, each one a button that takes it away.
    Their box leaves them to wrap among the other filters. */
 #chosenTags {

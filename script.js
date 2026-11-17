@@ -121,6 +121,7 @@ const onloadFunction = (lang) => {
   byId("inRoundLabel").parentElement.title = text.inRoundTitle;
   byId("friendLabel").textContent = text.friendLabel;
   byId("friendMarkLabel").textContent = text.friendMarkLabel;
+  byId("byTagSummary").textContent = text.byTagLabel;
   byId("upsolveLabel").textContent = text.upsolveLabel;
   byId("friend").placeholder = text.friendPlaceholder;
   byId("ratingLabel").textContent = text.ratingTD;
@@ -564,6 +565,27 @@ const showWeakTags = () => {
   loadTagsView().then((view) => view.show());
 };
 
+// The "By tag" table has its own code, read the first time it is opened.
+let tagTableView = null;
+let tagTableLoad = null;
+const loadTagTable = () => {
+  tagTableLoad ??= import("./tagtable.js").then(({ createTagTable }) => {
+    tagTableView = createTagTable({ byId, text, fill, state, chosen: () => chosenTags, addTag });
+    return tagTableView;
+  });
+  return tagTableLoad;
+};
+
+const showTagTable = () => {
+  const byTag = byId("byTag");
+  byTag.hidden = !listRows().length || aboutOpen();
+  if (!byTag.hidden && byTag.open) loadTagTable().then((view) => view.show());
+};
+
+byId("byTag").addEventListener("toggle", () => {
+  if (byId("byTag").open) loadTagTable().then((view) => view.show());
+});
+
 // The rating strip has its own code, read when the first results show: until then
 // there is no strip to draw, and nothing to mark.
 let ratingView = null;
@@ -833,6 +855,7 @@ const showResults = () => {
   const counter = byId("counter");
   showFreshness(false);
   showWeakTags();
+  showTagTable();
   showRatingStrip();
   if (!listRows().length) {
     byId("table-main").hidden = true;
@@ -867,6 +890,7 @@ const clearResults = () => {
   byId("ratingStrip").hidden = true;
   byId("freshness").hidden = true;
   byId("tableCaption").textContent = "";
+  byId("byTag").hidden = true;
   byId("table-list").replaceChildren();
   delete byId("table-list").dataset.showing;
 };

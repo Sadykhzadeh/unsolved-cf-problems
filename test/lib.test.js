@@ -52,6 +52,7 @@ import {
   viewOf,
   writeParams,
 } from "../lib.js";
+import { sortTags, tagSummary } from "../tagtable.js";
 import { countSolvedBy } from "../friend.js";
 import { isBucket, ratingBandName, ratingBuckets } from "../rating-strip.js";
 import { weakTagName, weakTags } from "../tags.js";
@@ -1222,4 +1223,33 @@ test("the friend marks are in a link only with a friend, and are remembered as p
   const stored = JSON.stringify(viewOf({ sort: null, showTags: false, noGym: false, noSpecial: false, upsolve: false, friendMark: true }));
   assert.equal(rememberedView(stored, "?handle=tourist").friendMark, true);
   assert.deepEqual(rememberedView(stored, "?friend=x&friendmode=mark"), {}, "a link that names the view is its own");
+});
+
+test("the By-tag table counts each tag's unsolved and attempted problems, and takes the median rating of the unsolved ones", () => {
+  const rows = [
+    { tags: ["dp", "greedy"], rating: 1200 },
+    { tags: ["dp", "*special"], rating: 1400 },
+    { tags: ["dp"] },
+    { tags: ["greedy"], rating: 1900 },
+  ];
+  const summary = tagSummary(rows, { dp: 3, greedy: 1 });
+  assert.deepEqual(summary.find((entry) => entry.tag === "dp"), { tag: "dp", unsolved: 3, attempted: 6, median: 1300 });
+  assert.deepEqual(summary.find((entry) => entry.tag === "greedy"), { tag: "greedy", unsolved: 2, attempted: 3, median: 1550 });
+  assert.equal(summary.some((entry) => entry.tag === "*special"), false, "the special tag is not a topic");
+  assert.equal(tagSummary([{ tags: ["trees"] }], {}).find((entry) => entry.tag === "trees").median, null, "no rated problem, no median");
+});
+
+test("the By-tag table sorts by any column, both ways, with a missing median last", () => {
+  const entries = [
+    { tag: "dp", unsolved: 3, attempted: 6, median: 1300 },
+    { tag: "greedy", unsolved: 3, attempted: 4, median: null },
+    { tag: "math", unsolved: 1, attempted: 9, median: 1100 },
+  ];
+  const tags = (sorted) => sorted.map((entry) => entry.tag);
+  assert.deepEqual(tags(sortTags(entries, "unsolved", true)), ["dp", "greedy", "math"], "ties go by name");
+  assert.deepEqual(tags(sortTags(entries, "unsolved", false)), ["math", "dp", "greedy"]);
+  assert.deepEqual(tags(sortTags(entries, "attempted", true)), ["math", "dp", "greedy"]);
+  assert.deepEqual(tags(sortTags(entries, "tag", false)), ["dp", "greedy", "math"]);
+  assert.deepEqual(tags(sortTags(entries, "median", true)), ["dp", "math", "greedy"], "no median is last");
+  assert.deepEqual(tags(sortTags(entries, "median", false)), ["math", "dp", "greedy"], "still last the other way");
 });

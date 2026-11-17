@@ -39,6 +39,9 @@ Every problem a Codeforces user has tried and not solved, in one table.
 - Shows the five tags the handle is weakest on above the list: how many of
   its unsolved problems carry each tag, and solved out of attempted for it.
   A click on one narrows the list to that tag.
+- Opens a "By tag" table under them: every tag of the attempted problems, with how
+  many are unsolved, how many were attempted with it, and the median rating of its
+  unsolved problems. Its columns sort it, and a click on a tag narrows the list.
 - Adds the problems never tried from the contests the handle was rated in, with
   0 tries and no verdict, marked "never tried"; the problem list is read once
   per language and kept for six hours, and the rated contests are read again
