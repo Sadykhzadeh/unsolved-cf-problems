@@ -8,7 +8,6 @@ import {
   contestNote,
   contestProgress,
   countText,
-  csvTable,
   describeFailure,
   NEWEST_COUNT,
   SETTLE_SECONDS,
@@ -44,7 +43,6 @@ import {
   rememberedView,
   isTimeout,
   makeFilter,
-  markdownTable,
   matchesFilter,
   packRows,
   parseHandle,
@@ -69,6 +67,7 @@ import {
   weakTags,
   writeParams,
 } from "../lib.js";
+import { csvTable, markdownTable } from "../lib-export.js";
 
 // Trimmed copies of the API answers, in the shape the API returns them.
 const fixture = (name) => JSON.parse(readFileSync(new URL(`./fixtures/${name}`, import.meta.url), "utf8"));

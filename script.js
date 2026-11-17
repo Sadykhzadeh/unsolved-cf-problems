@@ -30,10 +30,8 @@ import {
   isSearchKey,
   isTimeout,
   isUsableDigest,
-  csvTable,
   isBucket,
   makeFilter,
-  markdownTable,
   matchesFilter,
   packRows,
   parseHandle,
@@ -652,6 +650,7 @@ const visibleRows = () => drawn.filter(([tr]) => !tr.hidden).map(([, row]) => ro
 byId("copyMarkdown").addEventListener("click", async () => {
   const rows = visibleRows();
   try {
+    const { markdownTable } = await import("./lib-export.js");
     await navigator.clipboard.writeText(markdownTable(rows));
     byId("exportStatus").textContent = fill(text.copiedText, { count: rows.length });
   } catch {
@@ -661,7 +660,8 @@ byId("copyMarkdown").addEventListener("click", async () => {
 });
 
 // The CSV starts with a byte order mark, so a spreadsheet reads the names as UTF-8.
-byId("downloadCsv").addEventListener("click", () => {
+byId("downloadCsv").addEventListener("click", async () => {
+  const { csvTable } = await import("./lib-export.js");
   const blob = new Blob(["﻿", csvTable(visibleRows())], { type: "text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
