@@ -511,6 +511,13 @@ export const relativeAge = (ms) => {
 // one with no value is left as it is.
 export const fillText = (template, values) => template.replace(/\{(\w+)\}/g, (match, name) => values[name] ?? match);
 
+// The counter line: how many problems are listed, and how many of them were
+// never tried, when there are any to say.
+export const countText = (listed, untried, { label, untriedLabel }) => {
+  const line = `${label} ${listed}`;
+  return untried > 0 ? `${line}, ${fillText(untriedLabel, { count: untried })}` : line;
+};
+
 // The accessible name of a weak-tag chip: the tag, and how many of the problems
 // attempted with it are unsolved.
 export const weakTagName = ({ tag, solved, attempted, unsolved }, template) => fillText(template, {

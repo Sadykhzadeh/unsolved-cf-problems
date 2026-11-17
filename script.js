@@ -2,6 +2,7 @@ import {
   NEWEST_COUNT,
   advance,
   attachSolvedCounts,
+  countText,
   packProblemset,
   ratingBandName,
   weakTagName,
@@ -62,6 +63,7 @@ const localize = [{
     handlePlaceholder: "Input your handle here.",
     showTagsChexBox: " Show problem's tags",
     counterOfProblems: "Count of problems:",
+    neverTriedCount: "{count} never tried",
     captionText: "Problems {handle} has tried and not solved",
     problemTD: "Problem",
     nameTD: "Name ",
@@ -137,6 +139,7 @@ const localize = [{
     handlePlaceholder: "Введите свой хендл.",
     showTagsChexBox: " Показывать теги задач",
     counterOfProblems: "Количество задач:",
+    neverTriedCount: "{count} не пробовал(а)",
     captionText: "Задачи, которые пробовал(а) {handle} и не решил(а)",
     problemTD: "Задача",
     nameTD: "Название ",
@@ -1087,7 +1090,10 @@ const showResults = () => {
   const face = document.createElement("span");
   face.setAttribute("aria-hidden", "true");
   face.textContent = "😱 ";
-  counter.replaceChildren(face, `${text.counterOfProblems} ${listRows().length}`);
+  counter.replaceChildren(face, countText(listRows().length, state.extra.length, {
+    label: text.counterOfProblems,
+    untriedLabel: text.neverTriedCount,
+  }));
   byId("tableCaption").textContent = fill(text.captionText, { handle: state.handle });
   render();
 };

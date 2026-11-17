@@ -5,6 +5,7 @@ import { readFileSync } from "node:fs";
 import {
   ageParts,
   attachSolvedCounts,
+  countText,
   csvTable,
   describeFailure,
   NEWEST_COUNT,
@@ -1147,4 +1148,12 @@ test("the list keys are j and k to move, o and Enter to open, on any layout, and
   assert.equal(rowKeyAction("j", "KeyJ", { ctrlKey: true }), null);
   assert.equal(rowKeyAction("Enter", "Enter", { altKey: true }), null);
   assert.equal(rowKeyAction("o", "KeyO", { metaKey: true }), null);
+});
+
+test("the counter says how many problems are listed, and how many of them were never tried", () => {
+  const en = { label: "Count of problems:", untriedLabel: "{count} never tried" };
+  assert.equal(countText(225, 185, en), "Count of problems: 225, 185 never tried");
+  assert.equal(countText(225, 0, en), "Count of problems: 225", "nothing said when all were tried");
+  const ru = { label: "Количество задач:", untriedLabel: "{count} не пробовал(а)" };
+  assert.equal(countText(225, 185, ru), "Количество задач: 225, 185 не пробовал(а)");
 });

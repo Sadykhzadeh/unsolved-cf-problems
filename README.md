@@ -42,6 +42,7 @@ Every problem a Codeforces user has tried and not solved, in one table.
   per language and kept for six hours, and the rated contests are read again
   after ten minutes. Rated contests only: virtual and unrated rounds are not in
   the handle's rating history.
+  The counter line says how many of the listed problems were never tried.
 - Shows the unsolved problems by rating as a strip of bars above the list: a
   click on a band keeps only its hundred ratings, and a click on the chosen band
   again clears it. The bands are buttons, so Tab and Enter or Space do the same.
