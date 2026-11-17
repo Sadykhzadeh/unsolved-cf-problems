@@ -229,6 +229,8 @@ const SORTS = {
   tries: { compare: (a, b) => a.tries - b.tries, descending: true },
   // A problem never tried has no attempt; it counts as the oldest, so it sorts last.
   last: { compare: (a, b) => (a.lastTime ?? 0) - (b.lastTime ?? 0), descending: true },
+  // Problems most people solve first; one the problemset does not count sorts last.
+  solved: { compare: (a, b) => (a.solvedCount ?? -1) - (b.solvedCount ?? -1), descending: true },
 };
 
 export const SORT_KEYS = Object.keys(SORTS);
@@ -772,7 +774,7 @@ export const solvedSummary = (state) => {
 // The list as text, for pasting or a spreadsheet: the rows given, in the order
 // given, with the cells the table shows. The verdict reads as the table has it
 // ("WA 37"), and the last attempt is in UTC, to the second.
-const EXPORT_HEADER = ["Problem", "Name", "Rating", "Tags", "Tries", "Last verdict", "Last attempt"];
+const EXPORT_HEADER = ["Problem", "Name", "Rating", "Solved by", "Tags", "Tries", "Last verdict", "Last attempt"];
 
 // A problem never tried has no submission: its row has no attempt time.
 const tried = (row) => row.lastTime !== undefined;
@@ -790,6 +792,7 @@ const exportCells = (row) => [
   problemKey(row),
   row.name,
   row.rating === undefined ? "" : String(row.rating),
+  row.solvedCount === undefined ? "" : String(row.solvedCount),
   row.tags.join(", "),
   String(row.tries),
   verdictText(row),
@@ -882,6 +885,7 @@ export const untriedRows = (problems, contestIds, solved, rows) => {
       index: problem.index,
       name: problem.name,
       rating: problem.rating,
+      solvedCount: problem.solvedCount,
       tags: problem.tags,
       tries: 0,
       start: startOf.get(problem.contestId) ?? null,
@@ -916,4 +920,12 @@ export const unpackProblemset = (packed) => {
     });
   }
   return problems;
+};
+
+// Sets each row's solved count from the problemset, for the rows that are listed.
+// A problem the problemset does not know keeps no count.
+export const attachSolvedCounts = (rows, problems) => {
+  const counts = new Map(problems.map((problem) => [problemKey(problem), problem.solvedCount]));
+  for (const row of rows) row.solvedCount = counts.get(problemKey(row));
+  return rows;
 };

@@ -1,6 +1,7 @@
 import {
   NEWEST_COUNT,
   advance,
+  attachSolvedCounts,
   packProblemset,
   ratedContestIds,
   solvedFor,
@@ -117,6 +118,8 @@ const localize = [{
     upsolveLabel: "Include problems I never tried from contests I took part in",
     upsolveLoadingText: "Loading the problem list and the contests of {handle}...",
     neverTriedText: "never tried",
+    solvedLabel: "Solved by",
+    solvedTitle: "Accepted submissions by everyone, as the problemset counts them",
     ratingStripLabel: "Unsolved by rating:",
     ratingBandLabel: "Rating {from} to {to}: {count} unsolved",
     ratingBandTitle: "Click to keep only these ratings; click the chosen band again to clear it.",
@@ -188,6 +191,8 @@ const localize = [{
     upsolveLabel: "Добавить нерешённые задачи из контестов, в которых участвовал(а)",
     upsolveLoadingText: "Загружаю список задач и контесты {handle}...",
     neverTriedText: "не пробовал(а)",
+    solvedLabel: "Решили",
+    solvedTitle: "Принятых решений у всех, как их считает архив задач",
     ratingStripLabel: "Нерешённые по рейтингу:",
     ratingBandLabel: "Рейтинг с {from} по {to}: нерешённых {count}",
     ratingBandTitle: "Нажмите, чтобы оставить только эти рейтинги; повторный клик по выбранному диапазону снимает его.",
@@ -272,6 +277,8 @@ const onloadFunction = (lang) => {
   byId("lastTriedLabel").textContent = text.lastTriedTD;
   byId("tagsTD").textContent = text.tagsTD;
   byId("hideLabel").textContent = text.hideTD;
+  byId("solvedLabel").textContent = text.solvedLabel;
+  byId("solvedLabel").parentElement.title = text.solvedTitle;
   for (const link of document.querySelectorAll("#flags a[data-lang]")) {
     if (link.dataset.lang === lang) link.setAttribute("aria-current", "true");
   }
@@ -434,6 +441,11 @@ const buildRow = (problem, isHidden) => {
   const rating = cell(problem.rating === undefined ? "-" : String(problem.rating), text.ratingTD);
   rating.className = rankClass(problem.rating);
   row.append(rating);
+
+  // Shown only while the problemset has been read; see countsShown().
+  const solvedBy = cell(problem.solvedCount === undefined ? "-" : String(problem.solvedCount));
+  solvedBy.className = "solved";
+  row.append(solvedBy);
   row.append(cell(String(problem.tries)));
 
   // A problem never tried has no verdict and no attempt: the date says so in words.
@@ -779,6 +791,8 @@ const render = () => {
   const showTags = byId("doNotShowTags").checked;
   byId("tagsTD").hidden = !showTags;
   byId("table-list").classList.toggle("no-tags", !showTags);
+  byId("solvedTD").hidden = !countsShown();
+  byId("table-list").classList.toggle("no-solved", !countsShown());
   // Build into one fragment and insert once; names are set as text, never
   // as markup.
   const fragment = document.createDocumentFragment();
@@ -1238,13 +1252,23 @@ let upsolveNumber = 0;
 const upsolveData = { problems: null, handle: "", contests: null };
 
 const extraRows = () => {
+  if (countsShown()) attachSolvedCounts(state.rows, upsolveData.problems);
   const ready = byId("upsolve").checked && state.solved && upsolveData.problems && upsolveData.contests
     && upsolveData.handle === state.handle.toLowerCase();
   return ready ? untriedRows(upsolveData.problems, upsolveData.contests, state.solved, state.rows) : [];
 };
 
+// The solved counts come with the problem list, which is read for the upsolve view.
+const countsShown = () => byId("upsolve").checked && Boolean(upsolveData.problems);
+let countsWere = false;
+
 const refreshList = () => {
   if (state.savedAt === null) return;
+  // Rows built before the counts came in show a dash; they are built again.
+  if (countsShown() !== countsWere) {
+    built = new WeakMap();
+    countsWere = countsShown();
+  }
   fillTagFilter();
   showResults();
 };

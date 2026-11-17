@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 
 import {
   ageParts,
+  attachSolvedCounts,
   csvTable,
   describeFailure,
   NEWEST_COUNT,
@@ -950,10 +951,10 @@ const exported = [
 
 test("the list copies as a Markdown table, with its links, verdicts and pipes escaped", () => {
   assert.equal(markdownTable(exported), [
-    "| Problem | Name | Rating | Tags | Tries | Last verdict | Last attempt |",
-    "| --- | --- | --- | --- | --- | --- | --- |",
-    "| [1520\\|F2](https://codeforces.com/contest/1520/problem/F2) | Cut \\| the \\*tree\\* | 2100 | dp, graphs | 3 | WA 37 | 2023-11-14T22:13:20Z |",
-    "| [103104\\|J](https://codeforces.com/problemset/gymProblem/103104/J) | Gym one |  |  | 1 | CE | 2023-11-14T22:13:20Z |",
+    "| Problem | Name | Rating | Solved by | Tags | Tries | Last verdict | Last attempt |",
+    "| --- | --- | --- | --- | --- | --- | --- | --- |",
+    "| [1520\\|F2](https://codeforces.com/contest/1520/problem/F2) | Cut \\| the \\*tree\\* | 2100 |  | dp, graphs | 3 | WA 37 | 2023-11-14T22:13:20Z |",
+    "| [103104\\|J](https://codeforces.com/problemset/gymProblem/103104/J) | Gym one |  |  |  | 1 | CE | 2023-11-14T22:13:20Z |",
   ].join("\n"));
   assert.equal(markdownTable([]).split("\n").length, 2);
 });
@@ -966,18 +967,18 @@ test("a name that Markdown would read as markup, or as a line break, stays text"
 
 test("the list downloads as CSV, one line a problem, quoted where a cell needs it", () => {
   assert.equal(csvTable(exported), [
-    "Problem,Name,Rating,Tags,Tries,Last verdict,Last attempt,Problem link,Last submission",
-    "1520|F2,Cut | the *tree*,2100,\"dp, graphs\",3,WA 37,2023-11-14T22:13:20Z,"
+    "Problem,Name,Rating,Solved by,Tags,Tries,Last verdict,Last attempt,Problem link,Last submission",
+    "1520|F2,Cut | the *tree*,2100,,\"dp, graphs\",3,WA 37,2023-11-14T22:13:20Z,"
       + "https://codeforces.com/contest/1520/problem/F2,https://codeforces.com/contest/1520/submission/555",
-    "103104|J,Gym one,,,1,CE,2023-11-14T22:13:20Z,"
+    "103104|J,Gym one,,,,1,CE,2023-11-14T22:13:20Z,"
       + "https://codeforces.com/problemset/gymProblem/103104/J,https://codeforces.com/gym/103104/submission/556",
     "",
   ].join("\r\n"));
 });
 
 test("CSV quotes and doubles quotes, keeps line breaks and Cyrillic, and blocks formulas", () => {
-  // The gym row after its name: empty rating and tags, then the rest of the cells.
-  const rest = ",,,1,CE,2023-11-14T22:13:20Z,https://codeforces.com/problemset/gymProblem/103104/J,"
+  // The gym row after its name: empty rating, solved count and tags, then the rest of the cells.
+  const rest = ",,,,1,CE,2023-11-14T22:13:20Z,https://codeforces.com/problemset/gymProblem/103104/J,"
     + "https://codeforces.com/gym/103104/submission/556";
   const line = (name) => csvTable([{ ...exported[1], name }]).split("\r\n")[1];
   assert.equal(line('He said "hi", twice'), `103104|J,"He said ""hi"", twice"${rest}`);
@@ -986,7 +987,7 @@ test("CSV quotes and doubles quotes, keeps line breaks and Cyrillic, and blocks 
   assert.equal(line("@cmd"), `103104|J,'@cmd${rest}`);
   assert.equal(line("-x"), `103104|J,'-x${rest}`);
   assert.equal(line("line\nbreak"), `103104|J,"line\nbreak"${rest}`);
-  assert.equal(csvTable([]), "Problem,Name,Rating,Tags,Tries,Last verdict,Last attempt,Problem link,Last submission\r\n");
+  assert.equal(csvTable([]), "Problem,Name,Rating,Solved by,Tags,Tries,Last verdict,Last attempt,Problem link,Last submission\r\n");
 });
 
 test("the rating bands run from the lowest rated row to the highest, empty ones included, unrated left out", () => {
@@ -1071,6 +1072,23 @@ test("upsolve: an untried row sorts last by last attempt, and exports with no ve
   const untried = { contestId: 2, index: "B", name: "b", tags: [], tries: 0, rating: 900 };
   assert.deepEqual(sortRows([untried, tried], "last", true).map(problemKey), ["1|A", "2|B"]);
   assert.deepEqual(sortRows([untried, tried], "last", false).map(problemKey), ["2|B", "1|A"]);
-  assert.match(csvTable([untried]).split("\r\n")[1], /^2\|B,b,900,,0,,,https:\/\/codeforces\.com\/contest\/2\/problem\/B,\r?$/);
+  assert.match(csvTable([untried]).split("\r\n")[1], /^2\|B,b,900,,,0,,,https:\/\/codeforces\.com\/contest\/2\/problem\/B,\r?$/);
   assert.equal(markdownTable([untried]).split("\n")[2].includes("| 0 |  |  |"), true);
+});
+
+test("the solved count sorts both ways, and a problem the problemset does not count goes last", () => {
+  const row = (index, solvedCount) => ({ contestId: 1, index, name: index, tags: [], solvedCount });
+  const rows = [row("A", 500), row("B", undefined), row("C", 9000), row("D", 500)];
+  const order = (sorted) => sorted.map((r) => r.index).join("");
+  assert.equal(order(sortRows(rows, "solved", true)), "CADB", "most solved first, ties in list order");
+  assert.equal(order(sortRows(rows, "solved", false)), "BADC", "fewest first, uncounted before them");
+  assert.deepEqual(readParams("?sort=-solved").sort, { key: "solved", descending: true });
+});
+
+test("the problemset's solved counts reach the rows it lists, and a row it does not know keeps none", () => {
+  const problems = [{ contestId: 2, index: "B", solvedCount: 42 }, { contestId: 3, index: "A", solvedCount: 7 }];
+  const rows = [{ contestId: 2, index: "B" }, { contestId: 9, index: "Z" }];
+  const counted = attachSolvedCounts(rows, problems);
+  assert.equal(counted[0].solvedCount, 42);
+  assert.equal(counted[1].solvedCount, undefined);
 });

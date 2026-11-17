@@ -12,7 +12,8 @@ Every problem a Codeforces user has tried and not solved, in one table.
 - Takes a handle, or a link to a profile pasted from the address bar
   (`https://codeforces.com/profile/tourist`). The handles looked up lately are
   offered again in the handle and friend fields.
-- Sorts by problem, name, rating, tries or last attempt: click a header,
+- Sorts by problem, name, rating, tries, last attempt or how many people solved
+  it ("Solved by", shown once the problem list is read for the upsolve view): click a header,
   click again to reverse.
 - Filters by name or problem id (`1520F2`, `1520|F2` or a link to the
   problem), by a rating range and by tags (all of several, or any of them), and can leave out the gym and the
@@ -63,7 +64,7 @@ Every problem a Codeforces user has tried and not solved, in one table.
 | Parameter | Example | Meaning |
 | --- | --- | --- |
 | `handle` | `handle=tourist` | whose problems to list |
-| `sort` | `sort=-tries` | `problem`, `name`, `rating`, `tries` or `last`; a leading `-` sorts descending |
+| `sort` | `sort=-tries` | `problem`, `name`, `rating`, `tries`, `last` or `solved`; a leading `-` sorts descending |
 | `q` | `q=tree` | name contains this, or problem id starts with it |
 | `min`, `max` | `min=1600&max=2000` | rating range, inclusive |
 | `tag` | `tag=dp` | has this tag; repeat it for several, `tag=dp&tag=graphs` |
