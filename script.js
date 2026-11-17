@@ -58,162 +58,6 @@ import {
   writeParams,
 } from "./lib.js";
 
-const localize = [{
-  "en": {
-    pageTitle: "Unsolved Codeforces Problems",
-    searchHandleButton: "Search unsolved tasks",
-    handleLabel: "Codeforces handle",
-    handlePlaceholder: "Input your handle here.",
-    showTagsChexBox: " Show problem's tags",
-    counterOfProblems: "Count of problems:",
-    neverTriedCount: "{count} never tried",
-    contestProgressTitle: "Solved {solved} of {total} in this contest",
-    captionText: "Problems {handle} has tried and not solved",
-    problemTD: "Problem",
-    nameTD: "Name ",
-    tagsTD: "Tags",
-    ratingTD: "Rating",
-    triesTD: "Tries",
-    verdictTD: "Last verdict",
-    notJudgedText: "not judged yet",
-    onTestText: "{verdict} on test {test}",
-    onPretestText: "{verdict} on pretest {test}",
-    lastTriedTD: "Last attempt",
-    congratsText: "Congratulations, you haven't got any unsolved tasks! 🥳",
-    noSubmissionsText: "There are no submissions from this user yet.",
-    loadingText: "Loading the submissions of {handle}...",
-    notFoundText: ":( There is no Codeforces user called \"{handle}\".",
-    badHandleText: ":( Codeforces did not accept this handle: {detail}",
-    rateLimitedText: ":( Codeforces is limiting requests right now. Wait a few seconds and try again.",
-    unavailableText: ":( Codeforces is not answering ({detail}). It may be down for maintenance; try again later.",
-    otherErrorText: ":( Codeforces returned an error: {detail}",
-    networkErrorText: ":( Could not reach Codeforces. Check your connection and try again.",
-    timeoutText: ":( Codeforces stopped answering for 30 seconds. Try again in a moment.",
-    aboutButton: "About",
-    aboutProject: "More about the Project",
-    sourceLink: "Source",
-    searchPlaceholder: "Search by name or id",
-    minRating: "Minimum rating",
-    maxRating: "Maximum rating",
-    anyTag: "Any tag",
-    addTag: "Add a tag",
-    removeTag: "Stop requiring {tag}",
-    tagsAll: "Has all of them",
-    tagsAny: "Has any of them",
-    tagModeTitle: "Switch between problems that have all of the tags and those that have any of them",
-    noGymLabel: "Hide gym",
-    noSpecialLabel: "Hide special rounds",
-    noSpecialTitle: "April Fools, Kotlin Heroes, Q# and the rest tagged *special",
-    inRoundLabel: "Tried in a round",
-    inRoundTitle: "Submitted during the round or a virtual participation, not just in practice",
-    friendLabel: "Solved by",
-    friendPlaceholder: "a friend's handle",
-    shownText: "Showing {shown} of {total}",
-    pickButton: "Pick one at random",
-    hideTD: "Hide",
-    hideButton: "Hide {problem}",
-    unhideButton: "Show {problem} again",
-    showHiddenLabel: "Show hidden ({count})",
-    updatedText: "Updated {ago}.",
-    justNow: "just now",
-    refreshingText: "Checking Codeforces for changes...",
-    refreshButton: "Refresh",
-    showingSavedText: "Showing what was saved {ago}.",
-    weakTagsLabel: "Most unsolved tags:",
-    weakTagTitle: "Solved {solved} of {attempted} attempted problems tagged {tag}. Click to filter by it.",
-    weakTagName: "{tag}: {unsolved} of {attempted} unsolved, filter by this tag",
-    copyMarkdownButton: "Copy as Markdown",
-    downloadCsvButton: "Download CSV",
-    copiedText: "Copied {count} problems as a Markdown table.",
-    copyFailedText: "Could not copy here. Download the CSV instead.",
-    upsolveLabel: "Include problems I never tried from contests I took part in",
-    upsolveLoadingText: "Loading the problem list and the contests of {handle}...",
-    neverTriedText: "never tried",
-    keysHint: "Keys: / to search, P for a random pick, j and k to move the highlight, Enter or o to open it, Escape to clear the tags.",
-    solvedLabel: "Solved by",
-    solvedTitle: "Accepted submissions by everyone, as the problemset counts them",
-    ratingStripLabel: "Unsolved by rating:",
-    ratingBandLabel: "Rating {from} to {to}: {count} unsolved, filter by this range",
-    ratingBandTitle: "Click to keep only these ratings; click the chosen band again to clear it.",
-  },
-  "ru": {
-    pageTitle: "Нерешённые задачи Codeforces",
-    searchHandleButton: "Поиск нерешённых задач",
-    handleLabel: "Хендл на Codeforces",
-    handlePlaceholder: "Введите свой хендл.",
-    showTagsChexBox: " Показывать теги задач",
-    counterOfProblems: "Количество задач:",
-    neverTriedCount: "{count} не пробовал(а)",
-    contestProgressTitle: "Решено {solved} из {total} в этом контесте",
-    captionText: "Задачи, которые пробовал(а) {handle} и не решил(а)",
-    problemTD: "Задача",
-    nameTD: "Название ",
-    tagsTD: "Теги",
-    ratingTD: "Рейтинг",
-    triesTD: "Попытки",
-    verdictTD: "Последний вердикт",
-    notJudgedText: "ещё не проверено",
-    onTestText: "{verdict} на тесте {test}",
-    onPretestText: "{verdict} на претесте {test}",
-    lastTriedTD: "Последняя попытка",
-    congratsText: "Поздравляю, у вас нет нерешённых задач! 🥳",
-    noSubmissionsText: "У этого пользователя пока нет посылок.",
-    loadingText: "Загружаю посылки {handle}...",
-    notFoundText: ":( На Codeforces нет пользователя «{handle}».",
-    badHandleText: ":( Codeforces не принял этот хендл: {detail}",
-    rateLimitedText: ":( Codeforces сейчас ограничивает число запросов. Подождите несколько секунд и попробуйте снова.",
-    unavailableText: ":( Codeforces не отвечает ({detail}). Возможно, идут технические работы; попробуйте позже.",
-    otherErrorText: ":( Codeforces вернул ошибку: {detail}",
-    networkErrorText: ":( Не удалось связаться с Codeforces. Проверьте соединение и попробуйте снова.",
-    timeoutText: ":( Codeforces перестал отвечать на 30 секунд. Попробуйте ещё раз чуть позже.",
-    aboutButton: "О проекте",
-    aboutProject: "Подробнее о проекте",
-    sourceLink: "Исходный код",
-    searchPlaceholder: "Поиск по названию или номеру",
-    minRating: "Минимальный рейтинг",
-    maxRating: "Максимальный рейтинг",
-    anyTag: "Любой тег",
-    addTag: "Добавить тег",
-    removeTag: "Убрать тег {tag}",
-    tagsAll: "Все сразу",
-    tagsAny: "Любой из них",
-    tagModeTitle: "Переключить: задачи со всеми выбранными тегами или с любым из них",
-    noGymLabel: "Без тренировок",
-    noSpecialLabel: "Без особых раундов",
-    noSpecialTitle: "1 апреля, Kotlin Heroes, Q# и остальные задачи с тегом *special",
-    inRoundLabel: "Пробовал(а) на раунде",
-    inRoundTitle: "Отправлял(а) решение во время раунда или виртуального участия, а не только в дорешивании",
-    friendLabel: "Решил(а)",
-    friendPlaceholder: "хендл друга",
-    shownText: "Показано {shown} из {total}",
-    pickButton: "Выбрать наугад",
-    hideTD: "Скрыть",
-    hideButton: "Скрыть {problem}",
-    unhideButton: "Вернуть {problem}",
-    showHiddenLabel: "Показать скрытые ({count})",
-    updatedText: "Обновлено {ago}.",
-    justNow: "только что",
-    refreshingText: "Проверяю, что изменилось на Codeforces...",
-    refreshButton: "Обновить",
-    showingSavedText: "Показаны данные, сохранённые {ago}.",
-    weakTagsLabel: "Чаще всего нерешённые теги:",
-    weakTagTitle: "Решено {solved} из {attempted} задач с тегом {tag}. Нажмите, чтобы отфильтровать по нему.",
-    weakTagName: "{tag}: нерешённых {unsolved} из {attempted}, отфильтровать по тегу",
-    copyMarkdownButton: "Копировать как Markdown",
-    downloadCsvButton: "Скачать CSV",
-    copiedText: "Скопировано задач: {count}, таблица в формате Markdown.",
-    copyFailedText: "Не удалось скопировать. Скачайте CSV.",
-    upsolveLabel: "Добавить нерешённые задачи из контестов, в которых участвовал(а)",
-    upsolveLoadingText: "Загружаю список задач и контесты {handle}...",
-    neverTriedText: "не пробовал(а)",
-    keysHint: "Клавиши: / поиск, P случайная задача, j и k двигают подсветку, Enter или o открывает её, Escape снимает теги.",
-    solvedLabel: "Решили",
-    solvedTitle: "Принятых решений у всех, как их считает архив задач",
-    ratingStripLabel: "Нерешённые по рейтингу:",
-    ratingBandLabel: "Рейтинг с {from} по {to}: нерешённых {count}, отфильтровать по этому диапазону",
-    ratingBandTitle: "Нажмите, чтобы оставить только эти рейтинги; повторный клик по выбранному диапазону снимает его.",
-  },
-}];
 
 const byId = (id) => document.getElementById(id);
 
@@ -249,7 +93,14 @@ const pickLanguage = () => {
 };
 
 const lang = pickLanguage();
-const text = localize[0][lang];
+// The sentences load beside the page, for this language only. Everything that
+// shows text waits for them; they arrive in about one round trip.
+let text = null;
+let pageTitle = "";
+const textReady = import(`./strings-${lang}.js`).then(({ default: strings }) => {
+  text = strings;
+  pageTitle = strings.pageTitle;
+});
 
 const onloadFunction = (lang) => {
   remember("lang", lang);
@@ -365,7 +216,6 @@ const currentParams = () => ({
   upsolve: byId("upsolve").checked,
 });
 
-const pageTitle = text.pageTitle;
 
 // Keeps the address bar a link to what is on screen, and the language flags
 // pointing at the same view in the other language. Typing is debounced:
@@ -396,12 +246,12 @@ const syncUrl = ({ newEntry = false } = {}) => {
   }, 250);
 };
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", () => textReady.then(() => {
   onloadFunction(lang);
   applyParams({ fresh: true });
   byId("start").click();
   chooseFriend();
-});
+}));
 
 byId("handle").addEventListener("keyup", (event) => {
   if (event.key === "Enter") byId("start").click();
