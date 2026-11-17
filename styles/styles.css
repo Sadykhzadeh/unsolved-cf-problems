@@ -138,7 +138,8 @@ td {
     width: 8em
 }
 
-#friendStatus:empty {
+#friendStatus:empty,
+#upsolveStatus:empty {
     display: none
 }
 

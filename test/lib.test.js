@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 
 import {
   ageParts,
@@ -19,6 +20,11 @@ import {
   hasTagCounts,
   isBucket,
   isFresh,
+  packProblemset,
+  ratedContestIds,
+  solvedFor,
+  unpackProblemset,
+  untriedRows,
   isClearTagsKey,
   isPickKey,
   isSearchKey,
@@ -51,6 +57,9 @@ import {
   weakTags,
   writeParams,
 } from "../lib.js";
+
+// Trimmed copies of the API answers, in the shape the API returns them.
+const fixture = (name) => JSON.parse(readFileSync(new URL(`./fixtures/${name}`, import.meta.url), "utf8"));
 
 let nextId = 1000;
 let clock = 2_000_000_000;
@@ -537,9 +546,10 @@ test("a link carries the handle, sort and filters, and nothing at their defaults
     friend: "jiangly",
     inRound: true,
     showTags: true,
+    upsolve: true,
   };
   const search = writeParams(state);
-  assert.equal(search, "handle=tourist&sort=-tries&q=bear&min=1200&tag=dp&nogym=1&nospecial=1&friend=jiangly&round=1&tags=1");
+  assert.equal(search, "handle=tourist&sort=-tries&q=bear&min=1200&tag=dp&nogym=1&nospecial=1&friend=jiangly&round=1&tags=1&upsolve=1");
   assert.deepEqual(readParams(`?${search}`), { ...state, query: "bear" });
 
   // Several tags are repeated tag= parameters, and the mode is only written when it matters.
@@ -606,6 +616,7 @@ test("unknown or broken parameters fall back to the defaults", () => {
     friend: "",
     inRound: false,
     showTags: false,
+    upsolve: false,
   });
   assert.deepEqual(readParams("?sort=name").sort, { key: "name", descending: false });
 });
@@ -999,4 +1010,67 @@ test("a band is the chosen one only when the range fields hold exactly its bound
   assert.equal(isBucket(band, "1600", "1700"), false);
   assert.equal(isBucket(band, "", ""), false);
   assert.equal(isBucket(band, "1600", ""), false);
+});
+
+test("upsolve: a problem of a rated contest that was never tried is listed; a solved one, a twin solved, an unentered contest or one already listed is not", () => {
+  const problems = unpackProblemset(packProblemset(fixture("problemset.json").result));
+  const contests = ratedContestIds(fixture("user-rating.json").result);
+  const attempt = (contestId, index, verdict, name, rating) => ({
+    id: nextId++,
+    creationTimeSeconds: clock--,
+    verdict,
+    passedTestCount: 0,
+    testset: "TESTS",
+    problem: { contestId, index, name, tags: [], rating },
+    author: { participantType: "CONTESTANT", startTimeSeconds: 1_700_000_000 },
+  });
+  // Newest first: a failed attempt at 2279F, an accepted one at 2279E, and an accepted one at 420C,
+  // the Div. 2 twin of 421D ("Bug in Code", rated 1900 in both).
+  const history = [
+    attempt(2279, "F", "WRONG_ANSWER", "The Stones of Nim"),
+    attempt(2279, "E", "OK", "Save Me!"),
+    attempt(420, "C", "OK", "Bug in Code", 1900),
+  ];
+  const state = foldSubmissions(emptyState(), history);
+  const untried = untriedRows(problems, contests, solvedFor(state), state.rows);
+
+  assert.deepEqual(untried.map(problemKey), ["2279|D"]);
+  assert.equal(untried[0].tries, 0);
+  assert.equal(untried[0].lastTime, undefined);
+  assert.equal(untried[0].verdict, undefined);
+  // Attempted and listed once: the failed 2279F is the attempted row, not a second one.
+  const listed = [...state.rows, ...untried].map(problemKey).sort();
+  assert.deepEqual(listed, ["2279|D", "2279|F"]);
+});
+
+test("upsolve: without the accepted twin the Div. 1 copy is listed, so the twin is what leaves it out", () => {
+  const problems = unpackProblemset(packProblemset(fixture("problemset.json").result));
+  const contests = ratedContestIds(fixture("user-rating.json").result);
+  const state = foldSubmissions(emptyState(), []);
+  const untried = untriedRows(problems, contests, solvedFor(state), state.rows);
+  assert.deepEqual(untried.map(problemKey), ["2279|D", "2279|E", "2279|F", "421|D"]);
+});
+
+test("upsolve: the rated contests come from user.rating and the problemset is kept with its solved counts", () => {
+  assert.deepEqual([...ratedContestIds(fixture("user-rating.json").result)].sort((a, b) => a - b), [421, 2279]);
+  const { result } = fixture("problemset.json");
+  const packed = packProblemset(result);
+  const unpacked = unpackProblemset(packed);
+  assert.equal(unpacked.length, result.problems.length);
+  const meta = unpacked.find((problem) => problem.contestId === 421);
+  assert.deepEqual(meta, { contestId: 421, index: "D", name: "Bug in Code", rating: 1900, tags: meta.tags, solvedCount: meta.solvedCount });
+  assert.equal(typeof meta.solvedCount, "number");
+  assert.equal(unpacked.find((problem) => problem.contestId === 2279 && problem.index === "D").rating, undefined);
+  for (const foreign of [null, "x", [[1, "A"]], [[1, 2, "x", null, [], null]]]) {
+    assert.equal(unpackProblemset(foreign), null, JSON.stringify(foreign));
+  }
+});
+
+test("upsolve: an untried row sorts last by last attempt, and exports with no verdict, date or submission", () => {
+  const tried = { contestId: 1, index: "A", name: "a", tags: [], tries: 1, verdict: "OK", lastTime: 1000, submissionId: 9, rating: 800 };
+  const untried = { contestId: 2, index: "B", name: "b", tags: [], tries: 0, rating: 900 };
+  assert.deepEqual(sortRows([untried, tried], "last", true).map(problemKey), ["1|A", "2|B"]);
+  assert.deepEqual(sortRows([untried, tried], "last", false).map(problemKey), ["2|B", "1|A"]);
+  assert.match(csvTable([untried]).split("\r\n")[1], /^2\|B,b,900,,0,,,https:\/\/codeforces\.com\/contest\/2\/problem\/B,\r?$/);
+  assert.equal(markdownTable([untried]).split("\n")[2].includes("| 0 |  |  |"), true);
 });

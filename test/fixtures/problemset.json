@@ -1,0 +1,116 @@
+{
+ "status": "OK",
+ "result": {
+  "problems": [
+   {
+    "contestId": 2279,
+    "index": "D",
+    "name": "Meta Graph",
+    "type": "PROGRAMMING",
+    "points": 1750,
+    "tags": [
+     "constructive algorithms",
+     "dp",
+     "graphs",
+     "shortest paths"
+    ]
+   },
+   {
+    "contestId": 2279,
+    "index": "E",
+    "name": "Save Me!",
+    "type": "PROGRAMMING",
+    "points": 2250,
+    "tags": [
+     "brute force",
+     "dfs and similar",
+     "matrices",
+     "meet-in-the-middle"
+    ]
+   },
+   {
+    "contestId": 2279,
+    "index": "F",
+    "name": "The Stones of Nim",
+    "type": "PROGRAMMING",
+    "points": 3000,
+    "tags": [
+     "bitmasks",
+     "graphs",
+     "greedy"
+    ]
+   },
+   {
+    "contestId": 421,
+    "index": "D",
+    "name": "Bug in Code",
+    "type": "PROGRAMMING",
+    "points": 2000,
+    "rating": 1900,
+    "tags": [
+     "binary search",
+     "data structures",
+     "sortings"
+    ]
+   },
+   {
+    "contestId": 420,
+    "index": "C",
+    "name": "Bug in Code",
+    "type": "PROGRAMMING",
+    "points": 1500,
+    "rating": 1900,
+    "tags": [
+     "data structures",
+     "graphs",
+     "implementation",
+     "two pointers"
+    ]
+   },
+   {
+    "contestId": 1453,
+    "index": "C",
+    "name": "Triangles",
+    "type": "PROGRAMMING",
+    "points": 1500,
+    "rating": 1700,
+    "tags": [
+     "greedy",
+     "implementation"
+    ]
+   }
+  ],
+  "problemStatistics": [
+   {
+    "contestId": 2279,
+    "index": "D",
+    "solvedCount": 599
+   },
+   {
+    "contestId": 2279,
+    "index": "E",
+    "solvedCount": 161
+   },
+   {
+    "contestId": 2279,
+    "index": "F",
+    "solvedCount": 115
+   },
+   {
+    "contestId": 421,
+    "index": "D",
+    "solvedCount": 738
+   },
+   {
+    "contestId": 420,
+    "index": "C",
+    "solvedCount": 1455
+   },
+   {
+    "contestId": 1453,
+    "index": "C",
+    "solvedCount": 6312
+   }
+  ]
+ }
+}

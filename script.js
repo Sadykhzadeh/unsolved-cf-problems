@@ -1,6 +1,11 @@
 import {
   NEWEST_COUNT,
   advance,
+  packProblemset,
+  ratedContestIds,
+  solvedFor,
+  unpackProblemset,
+  untriedRows,
   ageParts,
   defaultDescending,
   describeFailure,
@@ -109,6 +114,9 @@ const localize = [{
     downloadCsvButton: "Download CSV",
     copiedText: "Copied {count} problems as a Markdown table.",
     copyFailedText: "Could not copy here. Download the CSV instead.",
+    upsolveLabel: "Include problems I never tried from contests I took part in",
+    upsolveLoadingText: "Loading the problem list and the contests of {handle}...",
+    neverTriedText: "never tried",
     ratingStripLabel: "Unsolved by rating:",
     ratingBandLabel: "Rating {from} to {to}: {count} unsolved",
     ratingBandTitle: "Click to keep only these ratings; click the chosen band again to clear it.",
@@ -177,6 +185,9 @@ const localize = [{
     downloadCsvButton: "Скачать CSV",
     copiedText: "Скопировано задач: {count}, таблица в формате Markdown.",
     copyFailedText: "Не удалось скопировать. Скачайте CSV.",
+    upsolveLabel: "Добавить нерешённые задачи из контестов, в которых участвовал(а)",
+    upsolveLoadingText: "Загружаю список задач и контесты {handle}...",
+    neverTriedText: "не пробовал(а)",
     ratingStripLabel: "Нерешённые по рейтингу:",
     ratingBandLabel: "Рейтинг с {from} по {to}: нерешённых {count}",
     ratingBandTitle: "Нажмите, чтобы оставить только эти рейтинги; повторный клик по выбранному диапазону снимает его.",
@@ -253,6 +264,7 @@ const onloadFunction = (lang) => {
   byId("inRoundLabel").textContent = text.inRoundLabel;
   byId("inRoundLabel").parentElement.title = text.inRoundTitle;
   byId("friendLabel").textContent = text.friendLabel;
+  byId("upsolveLabel").textContent = text.upsolveLabel;
   byId("friend").placeholder = text.friendPlaceholder;
   byId("ratingLabel").textContent = text.ratingTD;
   byId("triesLabel").textContent = text.triesTD;
@@ -310,6 +322,7 @@ const applyParams = ({ fresh = false } = {}) => {
   byId("inRound").checked = params.inRound;
   byId("friend").value = params.friend;
   byId("doNotShowTags").checked = params.showTags;
+  byId("upsolve").checked = params.upsolve;
 };
 
 const currentParams = () => ({
@@ -326,6 +339,7 @@ const currentParams = () => ({
   friend: friend.handle,
   inRound: byId("inRound").checked,
   showTags: byId("doNotShowTags").checked,
+  upsolve: byId("upsolve").checked,
 });
 
 const pageTitle = text.pageTitle;
@@ -422,20 +436,28 @@ const buildRow = (problem, isHidden) => {
   row.append(rating);
   row.append(cell(String(problem.tries)));
 
-  // "WA 37" for a wrong answer on test 37: how close the attempt came.
-  const [short, full] = verdictLabel(problem.verdict, text.notJudgedText);
-  const test = failedTest(problem);
-  row.append(test
-    ? cell(`${short} ${test.number}`, fill(test.pretest ? text.onPretestText : text.onTestText, {
-      verdict: full, test: test.number,
-    }))
-    : cell(short, full));
+  // A problem never tried has no verdict and no attempt: the date says so in words.
+  if (problem.lastTime === undefined) {
+    row.append(cell(""));
+    const never = cell(text.neverTriedText);
+    never.className = "when";
+    row.append(never);
+  } else {
+    // "WA 37" for a wrong answer on test 37: how close the attempt came.
+    const [short, full] = verdictLabel(problem.verdict, text.notJudgedText);
+    const test = failedTest(problem);
+    row.append(test
+      ? cell(`${short} ${test.number}`, fill(test.pretest ? text.onPretestText : text.onTestText, {
+        verdict: full, test: test.number,
+      }))
+      : cell(short, full));
 
-  const when = anchor(submissionLink(problem), dateFormat.format(problem.lastTime * 1000));
-  when.title = `#${problem.submissionId}`;
-  const whenCell = cell(when);
-  whenCell.className = "when";
-  row.append(whenCell);
+    const when = anchor(submissionLink(problem), dateFormat.format(problem.lastTime * 1000));
+    when.title = `#${problem.submissionId}`;
+    const whenCell = cell(when);
+    whenCell.className = "when";
+    row.append(whenCell);
+  }
 
   // Both glyphs are in the button, one of them hidden by CSS: changing the
   // text would change the width of the column, and with it the layout of
@@ -496,7 +518,16 @@ const failureText = (error, handle) => {
 
 // The last lookup, kept so that showing tags or filtering redraws from memory
 // instead of asking Codeforces for every submission again.
-const state = { handle: "", rows: [], submissions: 0, solvedTags: {}, savedAt: null, sort: { key: "rating", descending: false } };
+// `rows` are the problems attempted and unsolved; `extra` the problems never tried
+// that the upsolve view adds (see ensureUpsolve()), kept apart so that a lookup
+// saves only what it read. `solved` says what the handle has solved, for both.
+const state = {
+  handle: "", rows: [], extra: [], submissions: 0, solvedTags: {}, solved: null, savedAt: null,
+  sort: { key: "rating", descending: false },
+};
+
+// Every row on the list: the attempted ones and, in the upsolve view, the untried ones.
+const listRows = () => state.rows.concat(state.extra);
 
 // The friend whose solved problems narrow the list, and once their
 // submissions are in, the check for what they solved.
@@ -612,7 +643,7 @@ let tagAny = false;
 
 const showTagChoice = () => {
   const select = byId("tagFilter");
-  const options = tagCounts(state.rows)
+  const options = tagCounts(listRows())
     .filter(([tag]) => !chosenTags.includes(tag))
     .map(([tag, count]) => new Option(`${tag} (${count})`, tag));
   select.replaceChildren(new Option(chosenTags.length ? text.addTag : text.anyTag, ""), ...options);
@@ -633,7 +664,8 @@ const showTagChoice = () => {
 };
 
 const fillTagFilter = () => {
-  const present = new Set(state.rows.flatMap((row) => row.tags));
+  state.extra = extraRows();
+  const present = new Set(listRows().flatMap((row) => row.tags));
   chosenTags = chosenTags.filter((tag) => present.has(tag));
   showTagChoice();
 };
@@ -680,7 +712,7 @@ byId("weakTagsList").addEventListener("click", (event) => {
 // the band is full. A band narrows the rating fields to itself; the chosen band
 // clears them. Buttons, so Tab and Enter or Space work as a mouse does.
 const showRatingStrip = () => {
-  const buckets = state.rows.length && !aboutOpen() ? ratingBuckets(state.rows) : [];
+  const buckets = listRows().length && !aboutOpen() ? ratingBuckets(listRows()) : [];
   byId("ratingStrip").hidden = !buckets.length;
   byId("ratingStripLabel").textContent = text.ratingStripLabel;
   const tallest = Math.max(1, ...buckets.map((bucket) => bucket.count));
@@ -753,7 +785,7 @@ const render = () => {
   const { key, descending } = state.sort;
   // A re-sort moves the rows already built rather than building them again:
   // 2500 rows took 64 ms to rebuild.
-  drawn = sortRows(state.rows, key, descending).map((problem) => {
+  drawn = sortRows(listRows(), key, descending).map((problem) => {
     let tr = built.get(problem);
     if (!tr) {
       tr = buildRow(problem, hiddenFor(state.handle).has(problemKey(problem)));
@@ -780,7 +812,7 @@ for (const button of document.querySelectorAll("button.sort")) {
     state.sort = state.sort.key === key
       ? { key, descending: !state.sort.descending }
       : { key, descending: defaultDescending(key) };
-    if (state.rows.length) render();
+    if (listRows().length) render();
     syncUrl();
   });
 }
@@ -878,7 +910,7 @@ document.addEventListener("keydown", (event) => {
 // Showing tags redraws from memory; it does not ask Codeforces again. With
 // About open the rows wait, and are drawn with or without tags on closing.
 byId("doNotShowTags").addEventListener("change", () => {
-  if (state.rows.length && !aboutOpen()) render();
+  if (listRows().length && !aboutOpen()) render();
   syncUrl();
 });
 
@@ -908,14 +940,17 @@ const readStore = () => {
 const readSaved = (handle) => {
   const entry = readStore().entries[savedId(handle)];
   const rows = entry && Number.isFinite(entry.savedAt) ? unpackRows(entry.rows) : null;
-  // A copy saved before the tag counts were kept is looked up again.
-  if (!rows || !Number.isInteger(entry.submissions) || !isTagCounts(entry.solvedTags)) return null;
+  // A copy saved before the tag counts or the solved problems were kept is looked up again.
+  const solved = entry?.solved;
+  const solvedKept = Array.isArray(solved?.keys) && Array.isArray(solved?.twins) && Array.isArray(solved?.starts);
+  if (!rows || !Number.isInteger(entry.submissions) || !isTagCounts(entry.solvedTags) || !solvedKept) return null;
   return {
     handle: entry.handle ?? handle,
     savedAt: entry.savedAt,
     rows,
     submissions: entry.submissions,
     solvedTags: entry.solvedTags,
+    solved,
   };
 };
 
@@ -928,10 +963,10 @@ const writeStore = (store) => {
   }
 };
 
-const save = (handle, rows, submissions, savedAt, solvedTags) => {
+const save = (handle, rows, submissions, savedAt, solvedTags, solved) => {
   const store = readStore();
   const id = savedId(handle);
-  store.entries[id] = { handle, savedAt, rows: packRows(rows), submissions, solvedTags };
+  store.entries[id] = { handle, savedAt, rows: packRows(rows), submissions, solvedTags, solved };
   const newestFirst = Object.keys(store.entries)
     .sort((a, b) => store.entries[b].savedAt - store.entries[a].savedAt);
   for (const old of newestFirst.slice(KEEP_HANDLES)) delete store.entries[old];
@@ -977,7 +1012,7 @@ const showResults = () => {
   showFreshness(false);
   showWeakTags();
   showRatingStrip();
-  if (!state.rows.length) {
+  if (!listRows().length) {
     byId("table-main").hidden = true;
     byId("filters").hidden = true;
     byId("table-list").replaceChildren();
@@ -993,7 +1028,7 @@ const showResults = () => {
   const face = document.createElement("span");
   face.setAttribute("aria-hidden", "true");
   face.textContent = "😱 ";
-  counter.replaceChildren(face, `${text.counterOfProblems} ${state.rows.length}`);
+  counter.replaceChildren(face, `${text.counterOfProblems} ${listRows().length}`);
   byId("tableCaption").textContent = fill(text.captionText, { handle: state.handle });
   render();
 };
@@ -1001,6 +1036,9 @@ const showResults = () => {
 const clearResults = () => {
   state.handle = "";
   state.rows = [];
+  state.extra = [];
+  state.solved = null;
+  byId("upsolveStatus").textContent = "";
   state.submissions = 0;
   state.solvedTags = {};
   state.savedAt = null;
@@ -1121,6 +1159,138 @@ const loadHistory = async (handle, wanted) => {
   return keep(advance(emptyDigest(now()), everything, now()));
 };
 
+// Upsolve: the problems of the contests the handle was rated in that it never
+// tried. The problem list is the same for everyone and comes in one language per
+// name, so it is kept per language for six hours; the rated contests are kept per
+// handle for as long as a lookup is. Both are read in the Cache API, the same
+// way as the friend, with the same call spacing and retries.
+const PROBLEMSET_CACHE = "unsolved-cf-problemset";
+const PROBLEMSET_FRESH = 6 * 60 * 60 * 1000;
+
+const readKept = async (key) => {
+  try {
+    const response = await (await caches.open(PROBLEMSET_CACHE)).match(new URL(key, window.location.href).href);
+    const entry = await response?.json();
+    return Number.isFinite(entry?.savedAt) ? entry : null;
+  } catch {
+    return null;
+  }
+};
+
+const writeKept = async (key, value) => {
+  try {
+    const cache = await caches.open(PROBLEMSET_CACHE);
+    await cache.put(new URL(key, window.location.href).href, new Response(JSON.stringify({ savedAt: Date.now(), value }), {
+      headers: { "Content-Type": "application/json" },
+    }));
+  } catch {
+    // Not kept; the next visit reads it again.
+  }
+};
+
+// One answer from the API, once the call spacing allows it. Null when nothing
+// wants the answer by then.
+const callApi = async (url, wanted) => {
+  if (!await waitForTurn(wanted)) return null;
+  const { response, payload } = await fetchApi(url, { again: () => waitForTurn(wanted) });
+  if (response.ok && payload?.status === "OK" && payload.result !== undefined) return payload.result;
+  throw new LookupFailure(describeFailure(response.status, payload));
+};
+
+const loadProblemset = async (wanted) => {
+  const key = `problemset.v1/${lang}`;
+  const kept = await readKept(key);
+  const usable = kept ? unpackProblemset(kept.value) : null;
+  if (usable && Date.now() - kept.savedAt < PROBLEMSET_FRESH) return usable;
+  let result;
+  try {
+    result = await callApi(`https://codeforces.com/api/problemset.problems?lang=${encodeURIComponent(lang)}`, wanted);
+  } catch (error) {
+    if (usable) return usable;
+    throw error;
+  }
+  if (!result) return null;
+  const packed = packProblemset(result);
+  await writeKept(key, packed);
+  return unpackProblemset(packed);
+};
+
+// The ids of the contests the handle was rated in.
+const loadRatedContests = async (handle, wanted) => {
+  const key = `rating.v1/${handle.toLowerCase()}`;
+  const kept = await readKept(key);
+  if (kept && Date.now() - kept.savedAt < FRESH_FOR && Array.isArray(kept.value)) return new Set(kept.value);
+  let changes;
+  try {
+    changes = await callApi(`https://codeforces.com/api/user.rating?handle=${encodeURIComponent(handle)}`, wanted);
+  } catch (error) {
+    if (kept && Array.isArray(kept.value)) return new Set(kept.value);
+    throw error;
+  }
+  if (!changes) return null;
+  const ids = [...ratedContestIds(changes)];
+  await writeKept(key, ids);
+  return new Set(ids);
+};
+
+// The problem list read this visit, and the contests of the handle it was read for.
+let upsolveNumber = 0;
+const upsolveData = { problems: null, handle: "", contests: null };
+
+const extraRows = () => {
+  const ready = byId("upsolve").checked && state.solved && upsolveData.problems && upsolveData.contests
+    && upsolveData.handle === state.handle.toLowerCase();
+  return ready ? untriedRows(upsolveData.problems, upsolveData.contests, state.solved, state.rows) : [];
+};
+
+const refreshList = () => {
+  if (state.savedAt === null) return;
+  fillTagFilter();
+  showResults();
+};
+
+// Reads what the upsolve view needs for the handle on screen, once, and then
+// shows the list with it. A newer call, or the box being unticked, drops this one.
+const ensureUpsolve = async () => {
+  const number = ++upsolveNumber;
+  const handle = state.handle;
+  const wanted = () => number === upsolveNumber;
+  if (!byId("upsolve").checked || !state.solved || !handle) return;
+  if (upsolveData.problems && upsolveData.contests && upsolveData.handle === handle.toLowerCase()) {
+    refreshList();
+    return;
+  }
+  byId("upsolveStatus").textContent = fill(text.upsolveLoadingText, { handle });
+  try {
+    const problems = upsolveData.problems ?? await loadProblemset(wanted);
+    if (!problems) return;
+    upsolveData.problems = problems;
+    const contests = await loadRatedContests(handle, wanted);
+    if (!contests) return;
+    upsolveData.contests = contests;
+    upsolveData.handle = handle.toLowerCase();
+  } catch (error) {
+    if (!wanted()) return;
+    console.error(error);
+    byId("upsolveStatus").textContent = failureText(error, handle);
+    return;
+  }
+  if (!wanted()) return;
+  byId("upsolveStatus").textContent = "";
+  refreshList();
+};
+
+byId("upsolve").addEventListener("change", () => {
+  if (byId("upsolve").checked) {
+    ensureUpsolve();
+  } else {
+    upsolveNumber++;
+    byId("upsolveStatus").textContent = "";
+    refreshList();
+  }
+  syncUrl();
+});
+
 const lookup = async (handle, { force = false } = {}) => {
   const number = ++lookupNumber;
   setLoading("");
@@ -1140,6 +1310,7 @@ const lookup = async (handle, { force = false } = {}) => {
       Object.assign(state, saved);
       fillTagFilter();
       showResults();
+      ensureUpsolve();
     }
   }
 
@@ -1161,9 +1332,11 @@ const lookup = async (handle, { force = false } = {}) => {
     state.solvedTags = history.state.solvedTags;
     noteHandle(handle);
     state.savedAt = Date.now();
-    save(handle, state.rows, state.submissions, state.savedAt, state.solvedTags);
+    state.solved = solvedFor(history.state);
+    save(handle, state.rows, state.submissions, state.savedAt, state.solvedTags, state.solved);
     fillTagFilter();
     showResults();
+    ensureUpsolve();
   } catch (error) {
     if (number !== lookupNumber) return;
     // Every failure ends up here, so the page never stays on "Loading..."
@@ -1215,6 +1388,7 @@ window.addEventListener("popstate", () => {
   if (state.savedAt !== null && state.handle.toLowerCase() === handle.toLowerCase()) {
     fillTagFilter();
     showResults();
+    ensureUpsolve();
   } else if (!(loadingHandle && handle.toLowerCase() === loadingHandle)) {
     lookup(handle);
   }

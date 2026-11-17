@@ -33,6 +33,11 @@ Every problem a Codeforces user has tried and not solved, in one table.
 - Shows the five tags the handle is weakest on above the list: how many of
   its unsolved problems carry each tag, and solved out of attempted for it.
   A click on one narrows the list to that tag.
+- Adds the problems never tried from the contests the handle was rated in, with
+  0 tries and no verdict, marked "never tried"; the problem list is read once
+  per language and kept for six hours, and the rated contests are read again
+  after ten minutes. Rated contests only: virtual and unrated rounds are not in
+  the handle's rating history.
 - Shows the unsolved problems by rating as a strip of bars above the list: a
   click on a band keeps only its hundred ratings, and a click on the chosen band
   again clears it. The bands are buttons, so Tab and Enter or Space do the same.
@@ -67,6 +72,7 @@ Every problem a Codeforces user has tried and not solved, in one table.
 | `nospecial` | `nospecial=1` | leave out problems tagged `*special` |
 | `friend` | `friend=jiangly` | only problems this handle has solved |
 | `round` | `round=1` | only problems tried during a round, live or virtual |
+| `upsolve` | `upsolve=1` | also the problems never tried from the contests the handle was rated in |
 | `tags` | `tags=1` | show the tags column |
 | `lang` | `lang=ru` | `en` or `ru`; left out of the link for English, remembered |
 

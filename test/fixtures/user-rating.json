@@ -1,0 +1,23 @@
+{
+ "status": "OK",
+ "result": [
+  {
+   "contestId": 421,
+   "contestName": "Codeforces Round 421 (Div. 2)",
+   "handle": "tourist",
+   "rank": 120,
+   "ratingUpdateTimeSeconds": 1500000000,
+   "oldRating": 1500,
+   "newRating": 1520
+  },
+  {
+   "contestId": 2279,
+   "contestName": "Codeforces Round 1133 (Div. 1)",
+   "handle": "tourist",
+   "rank": 2,
+   "ratingUpdateTimeSeconds": 1794071100,
+   "oldRating": 3382,
+   "newRating": 3408
+  }
+ ]
+}

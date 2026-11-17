@@ -227,7 +227,8 @@ const SORTS = {
   name: { compare: (a, b) => a.name.localeCompare(b.name), descending: false },
   rating: { compare: (a, b) => a.rating - b.rating, descending: false },
   tries: { compare: (a, b) => a.tries - b.tries, descending: true },
-  last: { compare: (a, b) => a.lastTime - b.lastTime, descending: true },
+  // A problem never tried has no attempt; it counts as the oldest, so it sorts last.
+  last: { compare: (a, b) => (a.lastTime ?? 0) - (b.lastTime ?? 0), descending: true },
 };
 
 export const SORT_KEYS = Object.keys(SORTS);
@@ -373,12 +374,13 @@ export const readParams = (search) => {
     friend: (params.get("friend") ?? "").trim(),
     inRound: params.get("round") === "1",
     showTags: params.get("tags") === "1",
+    upsolve: params.get("upsolve") === "1",
   };
 };
 
 export const writeParams = ({
   lang, handle, sort, query = "", min = "", max = "", tags = [], tagAny = false, noGym = false, noSpecial = false,
-  friend = "", inRound = false, showTags = false,
+  friend = "", inRound = false, showTags = false, upsolve = false,
 }) => {
   const params = new URLSearchParams();
   if (lang) params.set("lang", lang);
@@ -397,6 +399,7 @@ export const writeParams = ({
   if (friend) params.set("friend", friend);
   if (inRound) params.set("round", "1");
   if (showTags) params.set("tags", "1");
+  if (upsolve) params.set("upsolve", "1");
   // A link that names none of the view would take the sort and switches the
   // visitor remembers, so one that names a list says the default sort outright.
   const names = [...params.keys()].filter((name) => name !== "lang");
@@ -408,9 +411,9 @@ export const writeParams = ({
 // way: the sort, the tags column and leaving out the gym and special rounds.
 // It is remembered between visits, and a link that says anything about these
 // is the view it names, with the rest at their defaults.
-export const viewOf = ({ sort, showTags, noGym, noSpecial }) => ({ sort, showTags, noGym, noSpecial });
+export const viewOf = ({ sort, showTags, noGym, noSpecial, upsolve }) => ({ sort, showTags, noGym, noSpecial, upsolve });
 
-const VIEW_PARAMS = ["sort", "tags", "nogym", "nospecial"];
+const VIEW_PARAMS = ["sort", "tags", "nogym", "nospecial", "upsolve"];
 
 // What `stored`, the text kept by an earlier visit, says about the view, for a
 // link with query `search` that does not say it itself; nothing otherwise, and
@@ -430,7 +433,7 @@ export const rememberedView = (stored, search) => {
   if (Object.hasOwn(SORTS, sort?.key) && typeof sort.descending === "boolean") {
     view.sort = { key: sort.key, descending: sort.descending };
   }
-  for (const name of ["showTags", "noGym", "noSpecial"]) {
+  for (const name of ["showTags", "noGym", "noSpecial", "upsolve"]) {
     if (typeof saved[name] === "boolean") view[name] = saved[name];
   }
   return view;
@@ -771,7 +774,11 @@ export const solvedSummary = (state) => {
 // ("WA 37"), and the last attempt is in UTC, to the second.
 const EXPORT_HEADER = ["Problem", "Name", "Rating", "Tags", "Tries", "Last verdict", "Last attempt"];
 
+// A problem never tried has no submission: its row has no attempt time.
+const tried = (row) => row.lastTime !== undefined;
+
 const verdictText = (row) => {
+  if (!tried(row)) return "";
   const [short] = verdictLabel(row.verdict, "?");
   const test = failedTest(row);
   return test ? `${short} ${test.number}` : short;
@@ -786,7 +793,7 @@ const exportCells = (row) => [
   row.tags.join(", "),
   String(row.tries),
   verdictText(row),
-  attemptTime(row),
+  tried(row) ? attemptTime(row) : "",
 ];
 
 // Markdown reads these as markup, and a pipe as the end of a cell.
@@ -814,7 +821,9 @@ const csvCell = (value) => {
 
 export const csvTable = (rows) => {
   const lines = [[...EXPORT_HEADER, "Problem link", "Last submission"]];
-  for (const row of rows) lines.push([...exportCells(row), problemLink(row), submissionLink(row)]);
+  for (const row of rows) {
+    lines.push([...exportCells(row), problemLink(row), tried(row) ? submissionLink(row) : ""]);
+  }
   return lines.map((line) => line.map(csvCell).join(",")).join("\r\n") + "\r\n";
 };
 
@@ -842,3 +851,69 @@ export const ratingBuckets = (rows) => {
 // Whether the rating range in the filter fields is exactly this band, so the
 // band that is chosen shows as chosen.
 export const isBucket = (bucket, min, max) => bucket.from === bound(min) && bucket.to === bound(max);
+
+// The ids of the contests a handle was rated in, from user.rating. Only rated
+// contests are listed there: a virtual run or an unrated round is not.
+export const ratedContestIds = (ratingChanges) => new Set(ratingChanges.map((change) => change.contestId));
+
+// What a history says about the problems solved, with the start of every
+// contest it holds, in the shape untriedRows() takes.
+export const solvedFor = (state) => ({ ...solvedSummary(state), starts: state.starts });
+
+// The problems of the contests a handle was rated in that it has neither solved
+// nor tried, as rows for the list: no attempt, zero tries. A problem solved in
+// its parallel round counts as solved, as in solvedCheck(). `rows` are the
+// problems already listed as attempted, and stay the only row of their problem:
+// a copy of one of them in a parallel round is the same problem, as in foldSubmissions().
+export const untriedRows = (problems, contestIds, solved, rows) => {
+  const startOf = new Map(solved.starts);
+  const known = solvedCheck({
+    keys: [...solved.keys, ...rows.map(problemKey)],
+    twins: [
+      ...solved.twins,
+      ...rows.filter(hasParallel).map((row) => [row.name, row.rating ?? null, row.contestId, startOf.get(row.contestId) ?? null]),
+    ],
+  });
+  return problems
+    .filter((problem) => contestIds.has(problem.contestId))
+    .filter((problem) => !known(problem, startOf.get(problem.contestId)))
+    .map((problem) => ({
+      contestId: problem.contestId,
+      index: problem.index,
+      name: problem.name,
+      rating: problem.rating,
+      tags: problem.tags,
+      tries: 0,
+      start: startOf.get(problem.contestId) ?? null,
+      inRound: false,
+    }));
+};
+
+// The problemset as it is kept between visits: one array per problem, with its
+// solved count from problemStatistics, which the call returns beside the list.
+export const packProblemset = ({ problems, problemStatistics }) => {
+  const solvedCount = new Map(problemStatistics.map((stat) => [`${stat.contestId}|${stat.index}`, stat.solvedCount]));
+  return problems.map((problem) => [
+    problem.contestId, problem.index, problem.name, problem.rating ?? null, problem.tags ?? [],
+    solvedCount.get(`${problem.contestId}|${problem.index}`) ?? null,
+  ]);
+};
+
+// Anything that does not look like a packed problem refuses the whole copy.
+export const unpackProblemset = (packed) => {
+  if (!Array.isArray(packed)) return null;
+  const problems = [];
+  for (const item of packed) {
+    if (!Array.isArray(item) || item.length !== 6 || !Number.isInteger(item[0])
+      || typeof item[1] !== "string" || typeof item[2] !== "string" || !Array.isArray(item[4])) return null;
+    problems.push({
+      contestId: item[0],
+      index: item[1],
+      name: item[2],
+      rating: item[3] ?? undefined,
+      tags: item[4],
+      solvedCount: item[5] ?? undefined,
+    });
+  }
+  return problems;
+};
