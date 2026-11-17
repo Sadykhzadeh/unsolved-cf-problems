@@ -45,6 +45,7 @@ Every problem a Codeforces user has tried and not solved, in one table.
   a virtual participant or out of competition; practice submissions do not count,
   so an unrated round or a virtual run is covered, and a contest only practised is not.
   The counter line says how many of the listed problems were never tried.
+  Hovering a problem id says how many problems of its contest are solved.
 - Shows the unsolved problems by rating as a strip of bars above the list: a
   click on a band keeps only its hundred ratings, and a click on the chosen band
   again clears it. The bands are buttons, so Tab and Enter or Space do the same.

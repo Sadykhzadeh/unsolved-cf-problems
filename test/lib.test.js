@@ -5,6 +5,8 @@ import { readFileSync } from "node:fs";
 import {
   ageParts,
   attachSolvedCounts,
+  contestNote,
+  contestProgress,
   countText,
   csvTable,
   describeFailure,
@@ -1193,4 +1195,18 @@ test("upsolve: untried problems of an unrated or virtual contest are listed; a p
   const untried = untriedRows(problems, tookPartIn(new Set(), state.taken), listedCheck(solvedFor(state), state.rows));
   // 2279E and 1632E1 were accepted and 2155F is in the status too; 2279D, 2279F and 2155A are untried.
   assert.deepEqual(untried.map(problemKey).sort(), ["2155|A", "2279|D", "2279|F"]);
+});
+
+test("upsolve: a problem id says how many problems of its contest the handle has solved, parallel copies included", () => {
+  const state = foldSubmissions(emptyState(), [
+    { id: 1, creationTimeSeconds: 3, verdict: "OK", passedTestCount: 0, testset: "TESTS", problem: { contestId: 2279, index: "E", name: "Save Me!", tags: [] }, author: { participantType: "CONTESTANT" } },
+    { id: 2, creationTimeSeconds: 2, verdict: "OK", passedTestCount: 0, testset: "TESTS", problem: { contestId: 420, index: "C", name: "Bug in Code", rating: 1900, tags: [] }, author: { participantType: "PRACTICE" } },
+  ]);
+  const problems = unpackProblemset(packProblemset(fixture("problemset.json").result));
+  const progress = contestProgress(problems, solvedFor(state));
+  const template = "Solved {solved} of {total} in this contest";
+  assert.equal(contestNote(progress, 2279, template), "Solved 1 of 3 in this contest");
+  assert.equal(contestNote(progress, 421, template), "Solved 1 of 1 in this contest", "solved through its Div. 2 twin");
+  assert.equal(contestNote(progress, 1453, template), "Solved 0 of 1 in this contest");
+  assert.equal(contestNote(progress, 9999, template), "", "no note for a contest the problemset does not list");
 });

@@ -2,6 +2,8 @@ import {
   NEWEST_COUNT,
   advance,
   attachSolvedCounts,
+  contestNote,
+  contestProgress,
   countText,
   packProblemset,
   ratingBandName,
@@ -67,6 +69,7 @@ const localize = [{
     showTagsChexBox: " Show problem's tags",
     counterOfProblems: "Count of problems:",
     neverTriedCount: "{count} never tried",
+    contestProgressTitle: "Solved {solved} of {total} in this contest",
     captionText: "Problems {handle} has tried and not solved",
     problemTD: "Problem",
     nameTD: "Name ",
@@ -143,6 +146,7 @@ const localize = [{
     showTagsChexBox: " Показывать теги задач",
     counterOfProblems: "Количество задач:",
     neverTriedCount: "{count} не пробовал(а)",
+    contestProgressTitle: "Решено {solved} из {total} в этом контесте",
     captionText: "Задачи, которые пробовал(а) {handle} и не решил(а)",
     problemTD: "Задача",
     nameTD: "Название ",
@@ -443,6 +447,8 @@ const buildRow = (problem, isHidden) => {
   // The id stays on one line on a phone; see the td rule in styles.css.
   const id = cell(anchor(href, problemKey(problem)));
   id.className = "problemId";
+  const note = contestNote(contestNotes, problem.contestId, text.contestProgressTitle);
+  if (note) id.firstChild.title = note;
   row.append(id);
 
   const name = anchor(href, problem.name);
@@ -1329,14 +1335,19 @@ const extraRows = () => {
 
 // The solved counts come with the problem list, which is read for the upsolve view.
 const countsShown = () => byId("upsolve").checked && Boolean(upsolveData.problems);
-let countsWere = false;
+let countsWere = null;
+// Per contest, how many problems the handle has solved, for the notes on the problem ids.
+let contestNotes = new Map();
 
 const refreshList = () => {
   if (state.savedAt === null) return;
-  // Rows built before the counts came in show a dash; they are built again.
-  if (countsShown() !== countsWere) {
+  // Rows built before the counts or the notes came in are built again; the
+  // notes change only with the history or the problem list.
+  const notesFor = countsShown() ? state.solved : null;
+  if (notesFor !== countsWere) {
     built = new WeakMap();
-    countsWere = countsShown();
+    countsWere = notesFor;
+    contestNotes = notesFor ? contestProgress(upsolveData.problems, notesFor) : new Map();
   }
   fillTagFilter();
   showResults();

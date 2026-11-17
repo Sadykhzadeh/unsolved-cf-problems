@@ -527,6 +527,29 @@ export const weakTagName = ({ tag, solved, attempted, unsolved }, template) => f
 // The accessible name of a rating band: its range and how many unsolved problems it holds.
 export const ratingBandName = ({ from, to, count }, template) => fillText(template, { from, to, count });
 
+// How many problems of each contest the problemset lists, and how many of them
+// the handle has solved (a parallel-round copy counts, as in solvedCheck()), as a
+// Map from contest id to { solved, total }.
+export const contestProgress = (problems, solved) => {
+  const startOf = new Map(solved.starts);
+  const known = solvedCheck(solved);
+  const progress = new Map();
+  for (const problem of problems) {
+    const entry = progress.get(problem.contestId) ?? { solved: 0, total: 0 };
+    entry.total += 1;
+    if (known(problem, startOf.get(problem.contestId) ?? null)) entry.solved += 1;
+    progress.set(problem.contestId, entry);
+  }
+  return progress;
+};
+
+// The note on a problem id: its contest's progress, or nothing for a contest the
+// progress does not cover.
+export const contestNote = (progress, contestId, template) => {
+  const entry = progress.get(contestId);
+  return entry ? fillText(template, entry) : "";
+};
+
 // Why a list has no rows: the handle has not submitted anything, or has
 // solved everything it tried. The two want different words.
 export const emptyKind = (submissionCount) => (submissionCount === 0 ? "noSubmissions" : "allSolved");
