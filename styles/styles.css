@@ -366,6 +366,53 @@ th[aria-sort="descending"] .sort::after {
     display: none
 }
 
+/* The unsolved problems by rating: a button a hundred wide, its bar as tall as
+   the band is full. A chosen band is filled in. */
+#ratingStrip {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 4px 8px;
+    margin: 0 0 8px;
+    font-size: 0.8em
+}
+
+#ratingStrip[hidden] {
+    display: none
+}
+
+#ratingBars {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 2px;
+    height: 44px;
+    width: min(100%, 480px)
+}
+
+.rating-band {
+    flex: 1 1 0;
+    max-width: 16px;
+    height: 100%;
+    display: flex;
+    align-items: flex-end;
+    padding: 0;
+    background: none;
+    border: 0;
+    cursor: pointer
+}
+
+.rating-band .bar {
+    display: block;
+    width: 100%;
+    background: var(--edge)
+}
+
+.rating-band[aria-pressed="true"] .bar {
+    background: var(--fg)
+}
+
 /* The tags chosen to narrow the list, each one a button that takes it away.
    Their box leaves them to wrap among the other filters. */
 #chosenTags {

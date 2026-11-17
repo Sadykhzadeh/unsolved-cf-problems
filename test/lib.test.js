@@ -17,6 +17,7 @@ import {
   findUnsolved,
   foldSubmissions,
   hasTagCounts,
+  isBucket,
   isFresh,
   isClearTagsKey,
   isPickKey,
@@ -35,6 +36,7 @@ import {
   problemKey,
   problemLink,
   rankClass,
+  ratingBuckets,
   readParams,
   solvedCheck,
   solvedSummary,
@@ -974,4 +976,27 @@ test("CSV quotes and doubles quotes, keeps line breaks and Cyrillic, and blocks 
   assert.equal(line("-x"), `103104|J,'-x${rest}`);
   assert.equal(line("line\nbreak"), `103104|J,"line\nbreak"${rest}`);
   assert.equal(csvTable([]), "Problem,Name,Rating,Tags,Tries,Last verdict,Last attempt,Problem link,Last submission\r\n");
+});
+
+test("the rating bands run from the lowest rated row to the highest, empty ones included, unrated left out", () => {
+  const rows = [800, 850, 1599, 1600, 3500, undefined].map((rating) => ({ rating }));
+  const buckets = ratingBuckets(rows);
+  assert.equal(buckets.length, 28);
+  assert.deepEqual(buckets[0], { from: 800, to: 899, count: 2 });
+  assert.deepEqual(buckets[1], { from: 900, to: 999, count: 0 });
+  assert.deepEqual(buckets[7], { from: 1500, to: 1599, count: 1 });
+  assert.deepEqual(buckets[8], { from: 1600, to: 1699, count: 1 });
+  assert.deepEqual(buckets.at(-1), { from: 3500, to: 3599, count: 1 });
+  assert.deepEqual(ratingBuckets([{ rating: undefined }, {}]), []);
+  assert.deepEqual(ratingBuckets([]), []);
+  assert.deepEqual(ratingBuckets([{ rating: 1200 }]), [{ from: 1200, to: 1299, count: 1 }]);
+});
+
+test("a band is the chosen one only when the range fields hold exactly its bounds", () => {
+  const band = { from: 1600, to: 1699 };
+  assert.equal(isBucket(band, "1600", "1699"), true);
+  assert.equal(isBucket(band, 1600, 1699), true);
+  assert.equal(isBucket(band, "1600", "1700"), false);
+  assert.equal(isBucket(band, "", ""), false);
+  assert.equal(isBucket(band, "1600", ""), false);
 });

@@ -33,6 +33,9 @@ Every problem a Codeforces user has tried and not solved, in one table.
 - Shows the five tags the handle is weakest on above the list: how many of
   its unsolved problems carry each tag, and solved out of attempted for it.
   A click on one narrows the list to that tag.
+- Shows the unsolved problems by rating as a strip of bars above the list: a
+  click on a band keeps only its hundred ratings, and a click on the chosen band
+  again clears it. The bands are buttons, so Tab and Enter or Space do the same.
 - Shows or hides the problem tags without reloading anything.
 - Copies the list on screen as a Markdown table, or downloads it as CSV; both
   follow the filters and the sort, and the CSV opens in a spreadsheet with

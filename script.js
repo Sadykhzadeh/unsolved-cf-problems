@@ -17,6 +17,7 @@ import {
   isTimeout,
   isUsableDigest,
   csvTable,
+  isBucket,
   makeFilter,
   markdownTable,
   matchesFilter,
@@ -26,6 +27,7 @@ import {
   problemKey,
   problemLink,
   rankClass,
+  ratingBuckets,
   readParams,
   reachesDigest,
   rememberHandle,
@@ -107,6 +109,9 @@ const localize = [{
     downloadCsvButton: "Download CSV",
     copiedText: "Copied {count} problems as a Markdown table.",
     copyFailedText: "Could not copy here. Download the CSV instead.",
+    ratingStripLabel: "Unsolved by rating:",
+    ratingBandLabel: "Rating {from} to {to}: {count} unsolved",
+    ratingBandTitle: "Click to keep only these ratings; click the chosen band again to clear it.",
   },
   "ru": {
     pageTitle: "Нерешённые задачи Codeforces",
@@ -172,6 +177,9 @@ const localize = [{
     downloadCsvButton: "Скачать CSV",
     copiedText: "Скопировано задач: {count}, таблица в формате Markdown.",
     copyFailedText: "Не удалось скопировать. Скачайте CSV.",
+    ratingStripLabel: "Нерешённые по рейтингу:",
+    ratingBandLabel: "Рейтинг с {from} по {to}: нерешённых {count}",
+    ratingBandTitle: "Нажмите, чтобы оставить только эти рейтинги; повторный клик по выбранному диапазону снимает его.",
   },
 }];
 
@@ -567,6 +575,7 @@ const applyFilters = () => {
   byId("copyMarkdown").disabled = shown === 0;
   byId("downloadCsv").disabled = shown === 0;
   byId("exportStatus").textContent = "";
+  markRatingBands();
 };
 
 // The rows on screen, in the order they show, for the export.
@@ -665,6 +674,54 @@ byId("weakTagsList").addEventListener("click", (event) => {
   const chip = event.target.closest("button.tag-chip");
   if (!chip || chosenTags.includes(chip.dataset.tag)) return;
   addTag(chip.dataset.tag);
+});
+
+// The unsolved problems by rating, one button a hundred wide, its bar as tall as
+// the band is full. A band narrows the rating fields to itself; the chosen band
+// clears them. Buttons, so Tab and Enter or Space work as a mouse does.
+const showRatingStrip = () => {
+  const buckets = state.rows.length && !aboutOpen() ? ratingBuckets(state.rows) : [];
+  byId("ratingStrip").hidden = !buckets.length;
+  byId("ratingStripLabel").textContent = text.ratingStripLabel;
+  const tallest = Math.max(1, ...buckets.map((bucket) => bucket.count));
+  byId("ratingBars").replaceChildren(...buckets.map(({ from, to, count }) => {
+    const band = document.createElement("button");
+    band.type = "button";
+    band.className = "rating-band";
+    band.dataset.from = from;
+    band.dataset.to = to;
+    const label = fill(text.ratingBandLabel, { from, to, count });
+    band.title = `${label}. ${text.ratingBandTitle}`;
+    band.setAttribute("aria-label", label);
+    const bar = document.createElement("span");
+    bar.className = "bar";
+    // An empty band has no bar; a band with a row keeps a sliver of one.
+    bar.style.height = count ? `${Math.max(4, Math.round(count / tallest * 100))}%` : "0";
+    band.append(bar);
+    return band;
+  }));
+  markRatingBands();
+};
+
+const markRatingBands = () => {
+  const min = byId("minRating").value;
+  const max = byId("maxRating").value;
+  for (const band of byId("ratingBars").children) {
+    const chosen = isBucket({ from: Number(band.dataset.from), to: Number(band.dataset.to) }, min, max);
+    band.setAttribute("aria-pressed", String(chosen));
+  }
+};
+
+byId("ratingBars").addEventListener("click", (event) => {
+  const band = event.target.closest("button.rating-band");
+  if (!band) return;
+  const bucket = { from: Number(band.dataset.from), to: Number(band.dataset.to) };
+  const chosen = isBucket(bucket, byId("minRating").value, byId("maxRating").value);
+  // Setting the fields does not fire their input event, so the list is updated here.
+  byId("minRating").value = chosen ? "" : String(bucket.from);
+  byId("maxRating").value = chosen ? "" : String(bucket.to);
+  applyFilters();
+  syncUrl();
 });
 
 // A removed tag leaves the focus on the list to add one from, rather than
@@ -919,6 +976,7 @@ const showResults = () => {
   const counter = byId("counter");
   showFreshness(false);
   showWeakTags();
+  showRatingStrip();
   if (!state.rows.length) {
     byId("table-main").hidden = true;
     byId("filters").hidden = true;
@@ -950,6 +1008,7 @@ const clearResults = () => {
   byId("table-main").hidden = true;
   byId("filters").hidden = true;
   byId("weakTags").hidden = true;
+  byId("ratingStrip").hidden = true;
   byId("freshness").hidden = true;
   byId("tableCaption").textContent = "";
   byId("table-list").replaceChildren();
@@ -1283,6 +1342,7 @@ byId("about").addEventListener("click", () => {
   byId("table-main").hidden = true;
   byId("filters").hidden = true;
   byId("weakTags").hidden = true;
+  byId("ratingStrip").hidden = true;
   byId("freshness").hidden = true;
   byId("tableCaption").textContent = "";
   byId("counter").textContent = "";

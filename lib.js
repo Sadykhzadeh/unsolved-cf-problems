@@ -817,3 +817,28 @@ export const csvTable = (rows) => {
   for (const row of rows) lines.push([...exportCells(row), problemLink(row), submissionLink(row)]);
   return lines.map((line) => line.map(csvCell).join(",")).join("\r\n") + "\r\n";
 };
+
+// The rating bands of the rows, each a hundred wide, from the lowest band with
+// a rated row to the highest, the empty ones between included. `count` is how
+// many rows fall in the band; unrated rows are in no band. Empty for no rated rows.
+export const ratingBuckets = (rows) => {
+  const counts = new Map();
+  for (const row of rows) {
+    if (typeof row.rating !== "number") continue;
+    const from = Math.floor(row.rating / 100) * 100;
+    counts.set(from, (counts.get(from) ?? 0) + 1);
+  }
+  if (!counts.size) return [];
+  const bands = [...counts.keys()];
+  const low = Math.min(...bands);
+  const high = Math.max(...bands);
+  const buckets = [];
+  for (let from = low; from <= high; from += 100) {
+    buckets.push({ from, to: from + 99, count: counts.get(from) ?? 0 });
+  }
+  return buckets;
+};
+
+// Whether the rating range in the filter fields is exactly this band, so the
+// band that is chosen shows as chosen.
+export const isBucket = (bucket, min, max) => bucket.from === bound(min) && bucket.to === bound(max);
