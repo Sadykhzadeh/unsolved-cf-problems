@@ -22,7 +22,9 @@ Every problem a Codeforces user has tried and not solved, in one table.
   such), and can keep just the problems tried during a round, live or
   virtual, rather than only in practice: the ones left to upsolve. Press
   `/` (or the key in its place on a Russian layout) to jump to the search
-  box, `P` to pick a problem at random, and Escape to clear the tag filter.
+  box, `P` to pick a problem at random, `j` and `k` to move a highlight down
+  and up the list, `Enter` or `o` to open the highlighted problem in a new tab,
+  and Escape to clear the tag filter.
 - Hides a problem you do not mean to come back to (a submission to the
   wrong problem, a marathon round) with the button at the end of its row;
   "Show hidden" brings them back. Hidden problems are remembered per handle

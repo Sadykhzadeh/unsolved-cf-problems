@@ -33,6 +33,7 @@ import {
   isUsableDigest,
   reachesDigest,
   relativeAge,
+  rowKeyAction,
   rememberHandle,
   rememberedView,
   isTimeout,
@@ -1128,4 +1129,22 @@ test("the name of a rating band says its range, how many unsolved problems it ho
 test("a template keeps a mark it has no value for, rather than printing undefined", () => {
   assert.equal(fillText("{a} and {b}", { a: 1 }), "1 and {b}");
   assert.equal(fillText("no marks", {}), "no marks");
+});
+
+test("the list keys are j and k to move, o and Enter to open, on any layout, and left alone with a modifier", () => {
+  assert.equal(rowKeyAction("j", "KeyJ"), "next");
+  assert.equal(rowKeyAction("J", "KeyJ"), "next", "shift does not change the letter");
+  assert.equal(rowKeyAction("k", "KeyK"), "previous");
+  assert.equal(rowKeyAction("o", "KeyO"), "open");
+  assert.equal(rowKeyAction("Enter", "Enter"), "open");
+  // Russian layout: the keys where j, k and o sit type о, л and щ.
+  assert.equal(rowKeyAction("о", "KeyJ"), "next");
+  assert.equal(rowKeyAction("л", "KeyK"), "previous");
+  assert.equal(rowKeyAction("щ", "KeyO"), "open");
+  // Dvorak: the letter typed is what counts, whatever key it came from.
+  assert.equal(rowKeyAction("j", "KeyC"), "next");
+  for (const other of ["x", "p", "/", "Escape", "Tab"]) assert.equal(rowKeyAction(other, "Key" + other.toUpperCase()), null, other);
+  assert.equal(rowKeyAction("j", "KeyJ", { ctrlKey: true }), null);
+  assert.equal(rowKeyAction("Enter", "Enter", { altKey: true }), null);
+  assert.equal(rowKeyAction("o", "KeyO", { metaKey: true }), null);
 });

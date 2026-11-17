@@ -37,6 +37,7 @@ import {
   problemLink,
   rankClass,
   ratingBuckets,
+  rowKeyAction,
   readParams,
   reachesDigest,
   rememberHandle,
@@ -122,6 +123,7 @@ const localize = [{
     upsolveLabel: "Include problems I never tried from contests I took part in",
     upsolveLoadingText: "Loading the problem list and the contests of {handle}...",
     neverTriedText: "never tried",
+    keysHint: "Keys: / to search, P for a random pick, j and k to move the highlight, Enter or o to open it, Escape to clear the tags.",
     solvedLabel: "Solved by",
     solvedTitle: "Accepted submissions by everyone, as the problemset counts them",
     ratingStripLabel: "Unsolved by rating:",
@@ -196,6 +198,7 @@ const localize = [{
     upsolveLabel: "Добавить нерешённые задачи из контестов, в которых участвовал(а)",
     upsolveLoadingText: "Загружаю список задач и контесты {handle}...",
     neverTriedText: "не пробовал(а)",
+    keysHint: "Клавиши: / поиск, P случайная задача, j и k двигают подсветку, Enter или o открывает её, Escape снимает теги.",
     solvedLabel: "Решили",
     solvedTitle: "Принятых решений у всех, как их считает архив задач",
     ratingStripLabel: "Нерешённые по рейтингу:",
@@ -812,6 +815,7 @@ const render = () => {
     if (!tr) {
       tr = buildRow(problem, hiddenFor(state.handle).has(problemKey(problem)));
       tr.classList.toggle("picked", problem === picked);
+      tr.classList.toggle("highlight", problem === highlighted);
       built.set(problem, tr);
     }
     return [tr, problem];
@@ -916,6 +920,36 @@ document.addEventListener("keydown", (event) => {
   if (byId("filters").hidden) return;
   event.preventDefault();
   byId("pick").click();
+});
+
+// The row j and k move through, and that o or Enter opens. Its highlight is a
+// class, so focus stays where it was. Enter is left to a button or a link that
+// has the focus, since it already acts on it.
+let highlighted = null;
+
+const moveHighlight = (step) => {
+  const shown = drawn.filter(([tr]) => !tr.hidden);
+  if (!shown.length) return;
+  const at = shown.findIndex(([, row]) => row === highlighted);
+  const next = at === -1 ? (step > 0 ? 0 : shown.length - 1) : Math.min(shown.length - 1, Math.max(0, at + step));
+  highlighted = shown[next][1];
+  for (const [tr, row] of drawn) tr.classList.toggle("highlight", row === highlighted);
+  shown[next][0].scrollIntoView({ block: "nearest" });
+};
+
+const openHighlighted = () => {
+  const entry = drawn.find(([tr, row]) => row === highlighted && !tr.hidden);
+  if (entry) entry[0].querySelector(".problemName").click();
+};
+
+document.addEventListener("keydown", (event) => {
+  const action = rowKeyAction(event.key, event.code, event);
+  if (!action || takesTyping(event.target) || byId("filters").hidden) return;
+  const native = event.target instanceof HTMLButtonElement || event.target instanceof HTMLAnchorElement;
+  if (action === "open" && (event.repeat || (event.key === "Enter" && native))) return;
+  event.preventDefault();
+  if (action === "open") openHighlighted();
+  else moveHighlight(action === "next" ? 1 : -1);
 });
 
 // Escape clears the tag filter from anywhere but a field, as the tags can be
@@ -1569,6 +1603,9 @@ byId("about").addEventListener("click", () => {
     text.aboutProject,
   ));
   td.append(document.createElement("br"));
+  const keys = document.createElement("small");
+  keys.textContent = text.keysHint;
+  td.append(keys, document.createElement("br"));
   const credits = document.createElement("small");
   credits.append(anchor("https://got.az/azer/unsolved-cf-problems", text.sourceLink));
   credits.append(document.createTextNode(" | "));

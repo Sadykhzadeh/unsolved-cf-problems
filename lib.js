@@ -189,6 +189,20 @@ export const isSearchKey = (key, code) => key === "/" || (code === "Slash" && ke
 // types "з" there. On one that has P elsewhere, such as Dvorak, P itself does.
 export const isPickKey = (key, code) => (/^[a-z]$/i.test(key) ? key.toLowerCase() === "p" : code === "KeyP");
 
+// What a key press does to the highlighted row of the list: "next" and "previous"
+// move the highlight, "open" opens the problem. j, k and o are Latin letters, and
+// on a layout without them the key where they sit counts, as with P. Enter is named
+// by the key itself. A key with Ctrl, Cmd or Alt is left to the browser.
+const ROW_LETTERS = { j: "next", k: "previous", o: "open" };
+export const rowKeyAction = (key, code, { ctrlKey = false, metaKey = false, altKey = false } = {}) => {
+  if (ctrlKey || metaKey || altKey) return null;
+  if (key === "Enter") return "open";
+  for (const [letter, action] of Object.entries(ROW_LETTERS)) {
+    if (/^[a-z]$/i.test(key) ? key.toLowerCase() === letter : code === `Key${letter.toUpperCase()}`) return action;
+  }
+  return null;
+};
+
 // Whether a key press is Escape, which clears the tag filter. Named by the key
 // itself, which is the same on every layout.
 export const isClearTagsKey = (key) => key === "Escape";

@@ -466,6 +466,12 @@ th[aria-sort="descending"] .sort::after {
     opacity: 0.6
 }
 
+/* The row the j and k keys have reached. */
+tr.highlight {
+    outline: 2px dotted var(--fg);
+    outline-offset: -2px
+}
+
 /* The row "Pick one at random" chose. */
 tr.picked {
     outline: 2px solid var(--fg);
