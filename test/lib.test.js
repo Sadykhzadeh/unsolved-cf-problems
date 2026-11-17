@@ -39,7 +39,6 @@ import {
   problemKey,
   problemLink,
   rankClass,
-  weakTagName,
   readParams,
   solvedCheck,
   solvedSummary,
@@ -51,10 +50,10 @@ import {
   unsolvedRows,
   verdictLabel,
   viewOf,
-  weakTags,
   writeParams,
 } from "../lib.js";
 import { isBucket, ratingBandName, ratingBuckets } from "../rating-strip.js";
+import { weakTagName, weakTags } from "../tags.js";
 import {
   attachSolvedCounts, contestNote, contestProgress, listedCheck, packProblemset, ratedContestIds,
   shareInFlight, tookPartIn, unpackProblemset, untriedRows,

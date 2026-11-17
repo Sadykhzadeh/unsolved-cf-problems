@@ -2,7 +2,6 @@ import {
   NEWEST_COUNT,
   advance,
   countText,
-  weakTagName,
   solvedFor,
   ageParts,
   relativeAge,
@@ -40,7 +39,6 @@ import {
   unpackRows,
   verdictLabel,
   viewOf,
-  weakTags,
   writeParams,
 } from "./lib.js";
 
@@ -551,29 +549,24 @@ byId("tagFilter").addEventListener("input", (event) => {
   addTag(tag);
 });
 
-// The handle's weakest tags, above the list. Each one narrows the list to it,
-// unless it is narrowed to already.
-const showWeakTags = () => {
-  const weak = state.rows.length && !aboutOpen() ? weakTags(state.rows, state.solvedTags) : [];
-  byId("weakTags").hidden = !weak.length;
-  byId("weakTagsLabel").textContent = text.weakTagsLabel;
-  byId("weakTagsList").replaceChildren(...weak.map(({ tag, solved, attempted, unsolved }) => {
-    const chip = document.createElement("button");
-    chip.type = "button";
-    chip.className = "tag-chip";
-    chip.dataset.tag = tag;
-    chip.textContent = `${tag} ${solved}/${attempted}`;
-    chip.title = fill(text.weakTagTitle, { solved, attempted, tag });
-    chip.setAttribute("aria-label", weakTagName({ tag, solved, attempted, unsolved }, text.weakTagName));
-    return chip;
-  }));
+// The handle's weakest tags have their own code, read when the first results show.
+let tagsView = null;
+let tagsLoad = null;
+const loadTagsView = () => {
+  tagsLoad ??= import("./tags.js").then(({ createTags }) => {
+    tagsView = createTags({ byId, text, fill, state, chosen: () => chosenTags, addTag });
+    return tagsView;
+  });
+  return tagsLoad;
 };
 
-byId("weakTagsList").addEventListener("click", (event) => {
-  const chip = event.target.closest("button.tag-chip");
-  if (!chip || chosenTags.includes(chip.dataset.tag)) return;
-  addTag(chip.dataset.tag);
-});
+const showWeakTags = () => {
+  if (!state.rows.length || aboutOpen()) {
+    byId("weakTags").hidden = true;
+    return;
+  }
+  loadTagsView().then((view) => view.show());
+};
 
 // The rating strip has its own code, read when the first results show: until then
 // there is no strip to draw, and nothing to mark.

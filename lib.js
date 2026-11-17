@@ -518,11 +518,6 @@ export const countText = (listed, untried, { label, untriedLabel }) => {
   return untried > 0 ? `${line}, ${fillText(untriedLabel, { count: untried })}` : line;
 };
 
-// The accessible name of a weak-tag chip: the tag, and how many of the problems
-// attempted with it are unsolved.
-export const weakTagName = ({ tag, solved, attempted, unsolved }, template) => fillText(template, {
-  tag, solved, attempted, unsolved,
-});
 
 
 
@@ -731,25 +726,6 @@ export const isTagCounts = (value) => Boolean(value) && typeof value === "object
   && Object.values(value).every((count) => Number.isInteger(count) && count >= 0);
 export const hasTagCounts = (digest) => isTagCounts(digest?.state?.solvedTags);
 
-// The tags of the unsolved problems, each with how many problems carry it, how
-// many of the problems tried with it were solved and how many were tried in all.
-// The commonest unsolved first, the bogus "*special" tag left out, at most
-// `limit` of them.
-export const weakTags = (rows, solvedTags, limit = 5) => {
-  const unsolved = new Map();
-  for (const row of rows) {
-    for (const tag of row.tags) {
-      if (tag !== "*special") unsolved.set(tag, (unsolved.get(tag) ?? 0) + 1);
-    }
-  }
-  return [...unsolved]
-    .map(([tag, count]) => {
-      const solved = Object.hasOwn(solvedTags, tag) ? solvedTags[tag] : 0;
-      return { tag, solved, attempted: solved + count, unsolved: count };
-    })
-    .sort((a, b) => b.unsolved - a.unsolved || a.tag.localeCompare(b.tag))
-    .slice(0, limit);
-};
 
 // The rows of a state, easiest first and unrated last; the rows keep their
 // order among equals.
