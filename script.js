@@ -3,6 +3,8 @@ import {
   advance,
   attachSolvedCounts,
   packProblemset,
+  ratingBandName,
+  weakTagName,
   ratedContestIds,
   solvedFor,
   unpackProblemset,
@@ -112,6 +114,7 @@ const localize = [{
     showingSavedText: "Showing what was saved {ago}.",
     weakTagsLabel: "Most unsolved tags:",
     weakTagTitle: "Solved {solved} of {attempted} attempted problems tagged {tag}. Click to filter by it.",
+    weakTagName: "{tag}: {unsolved} of {attempted} unsolved, filter by this tag",
     copyMarkdownButton: "Copy as Markdown",
     downloadCsvButton: "Download CSV",
     copiedText: "Copied {count} problems as a Markdown table.",
@@ -122,7 +125,7 @@ const localize = [{
     solvedLabel: "Solved by",
     solvedTitle: "Accepted submissions by everyone, as the problemset counts them",
     ratingStripLabel: "Unsolved by rating:",
-    ratingBandLabel: "Rating {from} to {to}: {count} unsolved",
+    ratingBandLabel: "Rating {from} to {to}: {count} unsolved, filter by this range",
     ratingBandTitle: "Click to keep only these ratings; click the chosen band again to clear it.",
   },
   "ru": {
@@ -185,6 +188,7 @@ const localize = [{
     showingSavedText: "Показаны данные, сохранённые {ago}.",
     weakTagsLabel: "Чаще всего нерешённые теги:",
     weakTagTitle: "Решено {solved} из {attempted} задач с тегом {tag}. Нажмите, чтобы отфильтровать по нему.",
+    weakTagName: "{tag}: нерешённых {unsolved} из {attempted}, отфильтровать по тегу",
     copyMarkdownButton: "Копировать как Markdown",
     downloadCsvButton: "Скачать CSV",
     copiedText: "Скопировано задач: {count}, таблица в формате Markdown.",
@@ -195,7 +199,7 @@ const localize = [{
     solvedLabel: "Решили",
     solvedTitle: "Принятых решений у всех, как их считает архив задач",
     ratingStripLabel: "Нерешённые по рейтингу:",
-    ratingBandLabel: "Рейтинг с {from} по {to}: нерешённых {count}",
+    ratingBandLabel: "Рейтинг с {from} по {to}: нерешённых {count}, отфильтровать по этому диапазону",
     ratingBandTitle: "Нажмите, чтобы оставить только эти рейтинги; повторный клик по выбранному диапазону снимает его.",
   },
 }];
@@ -706,13 +710,14 @@ const showWeakTags = () => {
   const weak = state.rows.length && !aboutOpen() ? weakTags(state.rows, state.solvedTags) : [];
   byId("weakTags").hidden = !weak.length;
   byId("weakTagsLabel").textContent = text.weakTagsLabel;
-  byId("weakTagsList").replaceChildren(...weak.map(({ tag, solved, attempted }) => {
+  byId("weakTagsList").replaceChildren(...weak.map(({ tag, solved, attempted, unsolved }) => {
     const chip = document.createElement("button");
     chip.type = "button";
     chip.className = "tag-chip";
     chip.dataset.tag = tag;
     chip.textContent = `${tag} ${solved}/${attempted}`;
     chip.title = fill(text.weakTagTitle, { solved, attempted, tag });
+    chip.setAttribute("aria-label", weakTagName({ tag, solved, attempted, unsolved }, text.weakTagName));
     return chip;
   }));
 };
@@ -737,7 +742,7 @@ const showRatingStrip = () => {
     band.className = "rating-band";
     band.dataset.from = from;
     band.dataset.to = to;
-    const label = fill(text.ratingBandLabel, { from, to, count });
+    const label = ratingBandName({ from, to, count }, text.ratingBandLabel);
     band.title = `${label}. ${text.ratingBandTitle}`;
     band.setAttribute("aria-label", label);
     const bar = document.createElement("span");

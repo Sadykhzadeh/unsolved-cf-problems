@@ -19,6 +19,7 @@ import {
   findUnsolved,
   foldSubmissions,
   hasTagCounts,
+  fillText,
   isBucket,
   isFresh,
   packProblemset,
@@ -44,7 +45,9 @@ import {
   problemKey,
   problemLink,
   rankClass,
+  ratingBandName,
   ratingBuckets,
+  weakTagName,
   readParams,
   solvedCheck,
   solvedSummary,
@@ -1102,4 +1105,27 @@ test("the age of an attempt is given in its largest whole unit, and never a nega
   assert.deepEqual(relativeAge(45 * 86400_000), [-1, "month"]);
   assert.deepEqual(relativeAge(3 * 365 * 86400_000 + 1000), [-3, "year"]);
   assert.deepEqual(relativeAge(-5000), [0, "second"], "a time a little ahead of the clock is now");
+});
+
+test("the name of a weak-tag chip says the tag, how many attempted problems are unsolved, and what a click does", () => {
+  const template = "{tag}: {unsolved} of {attempted} unsolved, filter by this tag";
+  assert.equal(
+    weakTagName({ tag: "greedy", solved: 16, attempted: 100, unsolved: 84 }, template),
+    "greedy: 84 of 100 unsolved, filter by this tag",
+  );
+  assert.equal(
+    weakTagName({ tag: "*special", solved: 0, attempted: 1, unsolved: 1 }, template),
+    "*special: 1 of 1 unsolved, filter by this tag",
+  );
+});
+
+test("the name of a rating band says its range, how many unsolved problems it holds, and what a click does", () => {
+  const template = "Rating {from} to {to}: {count} unsolved, filter by this range";
+  assert.equal(ratingBandName({ from: 1600, to: 1699, count: 12 }, template), "Rating 1600 to 1699: 12 unsolved, filter by this range");
+  assert.equal(ratingBandName({ from: 800, to: 899, count: 0 }, template), "Rating 800 to 899: 0 unsolved, filter by this range");
+});
+
+test("a template keeps a mark it has no value for, rather than printing undefined", () => {
+  assert.equal(fillText("{a} and {b}", { a: 1 }), "1 and {b}");
+  assert.equal(fillText("no marks", {}), "no marks");
 });

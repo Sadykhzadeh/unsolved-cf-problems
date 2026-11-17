@@ -493,6 +493,19 @@ export const relativeAge = (ms) => {
   return [0, "second"];
 };
 
+// The page's sentences with their values filled in: {name} marks a value, and
+// one with no value is left as it is.
+export const fillText = (template, values) => template.replace(/\{(\w+)\}/g, (match, name) => values[name] ?? match);
+
+// The accessible name of a weak-tag chip: the tag, and how many of the problems
+// attempted with it are unsolved.
+export const weakTagName = ({ tag, solved, attempted, unsolved }, template) => fillText(template, {
+  tag, solved, attempted, unsolved,
+});
+
+// The accessible name of a rating band: its range and how many unsolved problems it holds.
+export const ratingBandName = ({ from, to, count }, template) => fillText(template, { from, to, count });
+
 // Why a list has no rows: the handle has not submitted anything, or has
 // solved everything it tried. The two want different words.
 export const emptyKind = (submissionCount) => (submissionCount === 0 ? "noSubmissions" : "allSolved");
