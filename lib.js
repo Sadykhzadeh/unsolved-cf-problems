@@ -391,12 +391,13 @@ export const readParams = (search) => {
     inRound: params.get("round") === "1",
     showTags: params.get("tags") === "1",
     upsolve: params.get("upsolve") === "1",
+    friendMark: params.get("friendmode") === "mark",
   };
 };
 
 export const writeParams = ({
   lang, handle, sort, query = "", min = "", max = "", tags = [], tagAny = false, noGym = false, noSpecial = false,
-  friend = "", inRound = false, showTags = false, upsolve = false,
+  friend = "", inRound = false, showTags = false, upsolve = false, friendMark = false,
 }) => {
   const params = new URLSearchParams();
   if (lang) params.set("lang", lang);
@@ -413,6 +414,7 @@ export const writeParams = ({
   if (noGym) params.set("nogym", "1");
   if (noSpecial) params.set("nospecial", "1");
   if (friend) params.set("friend", friend);
+  if (friend && friendMark) params.set("friendmode", "mark");
   if (inRound) params.set("round", "1");
   if (showTags) params.set("tags", "1");
   if (upsolve) params.set("upsolve", "1");
@@ -427,9 +429,11 @@ export const writeParams = ({
 // way: the sort, the tags column and leaving out the gym and special rounds.
 // It is remembered between visits, and a link that says anything about these
 // is the view it names, with the rest at their defaults.
-export const viewOf = ({ sort, showTags, noGym, noSpecial, upsolve }) => ({ sort, showTags, noGym, noSpecial, upsolve });
+export const viewOf = ({ sort, showTags, noGym, noSpecial, upsolve, friendMark }) => ({
+  sort, showTags, noGym, noSpecial, upsolve, friendMark,
+});
 
-const VIEW_PARAMS = ["sort", "tags", "nogym", "nospecial", "upsolve"];
+const VIEW_PARAMS = ["sort", "tags", "nogym", "nospecial", "upsolve", "friendmode"];
 
 // What `stored`, the text kept by an earlier visit, says about the view, for a
 // link with query `search` that does not say it itself; nothing otherwise, and
@@ -449,7 +453,7 @@ export const rememberedView = (stored, search) => {
   if (Object.hasOwn(SORTS, sort?.key) && typeof sort.descending === "boolean") {
     view.sort = { key: sort.key, descending: sort.descending };
   }
-  for (const name of ["showTags", "noGym", "noSpecial", "upsolve"]) {
+  for (const name of ["showTags", "noGym", "noSpecial", "upsolve", "friendMark"]) {
     if (typeof saved[name] === "boolean") view[name] = saved[name];
   }
   return view;
@@ -513,9 +517,12 @@ export const fillText = (template, values) => template.replace(/\{(\w+)\}/g, (ma
 
 // The counter line: how many problems are listed, and how many of them were
 // never tried, when there are any to say.
-export const countText = (listed, untried, { label, untriedLabel }) => {
-  const line = `${label} ${listed}`;
-  return untried > 0 ? `${line}, ${fillText(untriedLabel, { count: untried })}` : line;
+// The friend part is given only while the friend marks are on: null leaves it out.
+export const countText = (listed, untried, { label, untriedLabel, friendLabel = null, friendSolved = null }) => {
+  let line = `${label} ${listed}`;
+  if (untried > 0) line += `, ${fillText(untriedLabel, { count: untried })}`;
+  if (friendSolved !== null) line += `, ${fillText(friendLabel, { count: friendSolved })}`;
+  return line;
 };
 
 

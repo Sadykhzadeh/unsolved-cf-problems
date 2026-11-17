@@ -3,9 +3,12 @@
 // is chosen (see loadFriend() in script.js).
 import { isFresh, solvedCheck, solvedSummary } from "./lib.js";
 
+// How many of the rows the friend has solved, by the friend's check (see solvedCheck()).
+export const countSolvedBy = (rows, solvedBy) => rows.filter((row) => solvedBy(row, row.start)).length;
+
 export const createFriend = ({
   friend, byId, text, fill, failureText, waitForTurn, lang, FRESH_FOR, CLOCK_SLACK,
-  applyFilters, syncUrl, loadHistory, noteHandle, forgetHistory,
+  applyFilters, syncUrl, loadHistory, noteHandle, forgetHistory, drawn, listRows,
 }) => {
   // A friend's submissions are boiled down to what they solved and kept in the
   // Cache API, which has room for them where localStorage does not: jiangly's
@@ -112,5 +115,26 @@ export const createFriend = ({
     }
   };
 
-  return { load: loadFriend };
+  // The friend's marks on the list: a row the friend solved gets its mark while the
+  // marks are ticked. The mark is made when a row first needs it.
+  const mark = () => {
+    const on = byId("friendMark").checked;
+    for (const [tr, row] of drawn()) {
+      const solved = on && Boolean(friend.solvedBy?.(row, row.start));
+      if (solved && !tr.querySelector(".friend-mark")) {
+        const span = document.createElement("span");
+        span.className = "friend-mark";
+        span.textContent = text.friendMarker;
+        span.title = text.friendMarkerTitle;
+        tr.querySelector(".problemName").parentElement.append(span);
+      }
+      tr.classList.toggle("friend-solved", solved);
+    }
+  };
+
+  // How many of the listed problems the friend has solved, while the marks are ticked.
+  const solvedCount = () => (byId("friendMark").checked && friend.solvedBy
+    ? countSolvedBy(listRows(), friend.solvedBy) : null);
+
+  return { load: loadFriend, mark, solvedCount };
 };

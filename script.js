@@ -120,6 +120,7 @@ const onloadFunction = (lang) => {
   byId("inRoundLabel").textContent = text.inRoundLabel;
   byId("inRoundLabel").parentElement.title = text.inRoundTitle;
   byId("friendLabel").textContent = text.friendLabel;
+  byId("friendMarkLabel").textContent = text.friendMarkLabel;
   byId("upsolveLabel").textContent = text.upsolveLabel;
   byId("friend").placeholder = text.friendPlaceholder;
   byId("ratingLabel").textContent = text.ratingTD;
@@ -181,6 +182,7 @@ const applyParams = ({ fresh = false } = {}) => {
   byId("friend").value = params.friend;
   byId("doNotShowTags").checked = params.showTags;
   byId("upsolve").checked = params.upsolve;
+  byId("friendMark").checked = params.friendMark;
 };
 
 const currentParams = () => ({
@@ -198,6 +200,7 @@ const currentParams = () => ({
   inRound: byId("inRound").checked,
   showTags: byId("doNotShowTags").checked,
   upsolve: byId("upsolve").checked,
+  friendMark: byId("friendMark").checked,
 });
 
 
@@ -407,6 +410,26 @@ let built = new WeakMap();
 // The row last picked at random.
 let picked = null;
 
+// With the friend marks ticked, the friend's solved problems are marked on the
+// list and do not narrow it (the marks are made by friend.js, once a friend is read).
+const friendFiltering = () => !byId("friendMark").checked;
+
+// The counter line over the list: how many are listed, how many were never tried, and
+// with the friend marks on, how many of them the friend has solved.
+const showCounter = () => {
+  // The face is for the eye; a screen reader would announce it by name.
+  const face = document.createElement("span");
+  face.setAttribute("aria-hidden", "true");
+  face.textContent = "😱 ";
+  const friendSolved = friendView ? friendView.solvedCount() : null;
+  byId("counter").replaceChildren(face, countText(listRows().length, state.extra.length, {
+    label: text.counterOfProblems,
+    untriedLabel: text.neverTriedCount,
+    friendLabel: text.friendSolvedCount,
+    friendSolved,
+  }));
+};
+
 const applyFilters = () => {
   const filter = makeFilter({
     query: byId("searchTask").value,
@@ -416,7 +439,7 @@ const applyFilters = () => {
     tagAny,
     noGym: byId("noGym").checked,
     noSpecial: byId("noSpecial").checked,
-    solvedBy: friend.solvedBy,
+    solvedBy: friendFiltering() ? friend.solvedBy : null,
     inRound: byId("inRound").checked,
     hidden: byId("showHidden").checked ? null : hiddenFor(state.handle),
   });
@@ -439,6 +462,8 @@ const applyFilters = () => {
   byId("copyMarkdown").disabled = shown === 0;
   byId("downloadCsv").disabled = shown === 0;
   byId("exportStatus").textContent = "";
+  if (friendView) friendView.mark();
+  if (friendView && byId("friendMark").checked && listRows().length) showCounter();
   markRatingBands();
 };
 
@@ -821,14 +846,7 @@ const showResults = () => {
   }
   byId("table-main").hidden = false;
   byId("filters").hidden = false;
-  // The face is for the eye; a screen reader would announce it by name.
-  const face = document.createElement("span");
-  face.setAttribute("aria-hidden", "true");
-  face.textContent = "😱 ";
-  counter.replaceChildren(face, countText(listRows().length, state.extra.length, {
-    label: text.counterOfProblems,
-    untriedLabel: text.neverTriedCount,
-  }));
+  showCounter();
   byId("tableCaption").textContent = fill(text.captionText, { handle: state.handle });
   render();
 };
@@ -1118,7 +1136,7 @@ const loadFriendView = () => {
   friendLoad ??= import("./friend.js").then(({ createFriend }) => {
     friendView = createFriend({
       friend, byId, text, fill, failureText, waitForTurn, lang, FRESH_FOR, CLOCK_SLACK,
-      applyFilters, syncUrl, loadHistory, noteHandle, forgetHistory,
+      applyFilters, syncUrl, loadHistory, noteHandle, forgetHistory, drawn: () => drawn, listRows,
     });
     return friendView;
   });
@@ -1139,6 +1157,10 @@ const chooseFriend = () => {
 byId("friend").addEventListener("change", chooseFriend);
 byId("friend").addEventListener("keydown", (event) => {
   if (event.key === "Enter") chooseFriend();
+});
+byId("friendMark").addEventListener("change", () => {
+  refreshList();
+  syncUrl();
 });
 
 // The About panel has its own code, read the first time it is opened.

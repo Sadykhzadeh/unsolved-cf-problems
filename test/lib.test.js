@@ -52,6 +52,7 @@ import {
   viewOf,
   writeParams,
 } from "../lib.js";
+import { countSolvedBy } from "../friend.js";
 import { isBucket, ratingBandName, ratingBuckets } from "../rating-strip.js";
 import { weakTagName, weakTags } from "../tags.js";
 import {
@@ -549,9 +550,10 @@ test("a link carries the handle, sort and filters, and nothing at their defaults
     inRound: true,
     showTags: true,
     upsolve: true,
+    friendMark: true,
   };
   const search = writeParams(state);
-  assert.equal(search, "handle=tourist&sort=-tries&q=bear&min=1200&tag=dp&nogym=1&nospecial=1&friend=jiangly&round=1&tags=1&upsolve=1");
+  assert.equal(search, "handle=tourist&sort=-tries&q=bear&min=1200&tag=dp&nogym=1&nospecial=1&friend=jiangly&friendmode=mark&round=1&tags=1&upsolve=1");
   assert.deepEqual(readParams(`?${search}`), { ...state, query: "bear" });
 
   // Several tags are repeated tag= parameters, and the mode is only written when it matters.
@@ -619,6 +621,7 @@ test("unknown or broken parameters fall back to the defaults", () => {
     inRound: false,
     showTags: false,
     upsolve: false,
+    friendMark: false,
   });
   assert.deepEqual(readParams("?sort=name").sort, { key: "name", descending: false });
 });
@@ -1199,4 +1202,24 @@ test("upsolve: a problem id says how many problems of its contest the handle has
   assert.equal(contestNote(progress, 421, template), "Solved 1 of 1 in this contest", "solved through its Div. 2 twin");
   assert.equal(contestNote(progress, 1453, template), "Solved 0 of 1 in this contest");
   assert.equal(contestNote(progress, 9999, template), "", "no note for a contest the problemset does not list");
+});
+
+test("the friend marks count the listed problems the friend solved, and the counter line says so", () => {
+  const rows = [{ contestId: 1, index: "A" }, { contestId: 2, index: "B" }, { contestId: 3, index: "C" }];
+  const solvedBy = (row) => row.contestId !== 2;
+  assert.equal(countSolvedBy(rows, solvedBy), 2);
+  const en = { label: "Count of problems:", untriedLabel: "{count} never tried", friendLabel: "{count} of these your friend has solved" };
+  assert.equal(countText(3, 0, { ...en, friendSolved: 2 }), "Count of problems: 3, 2 of these your friend has solved");
+  assert.equal(countText(3, 1, { ...en, friendSolved: 0 }), "Count of problems: 3, 1 never tried, 0 of these your friend has solved");
+  assert.equal(countText(3, 0, en), "Count of problems: 3", "no friend part while the marks are off");
+});
+
+test("the friend marks are in a link only with a friend, and are remembered as part of the view", () => {
+  assert.equal(writeParams({ handle: "x", friend: "jiangly", friendMark: true }), "handle=x&friend=jiangly&friendmode=mark");
+  assert.equal(writeParams({ handle: "x", friendMark: true }), "handle=x&sort=rating", "marks mean nothing without a friend");
+  assert.equal(readParams("?friend=jiangly&friendmode=mark").friendMark, true);
+  assert.equal(readParams("?friend=jiangly").friendMark, false);
+  const stored = JSON.stringify(viewOf({ sort: null, showTags: false, noGym: false, noSpecial: false, upsolve: false, friendMark: true }));
+  assert.equal(rememberedView(stored, "?handle=tourist").friendMark, true);
+  assert.deepEqual(rememberedView(stored, "?friend=x&friendmode=mark"), {}, "a link that names the view is its own");
 });

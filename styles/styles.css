@@ -487,6 +487,18 @@ th[aria-sort="descending"] .sort::after {
     opacity: 0.6
 }
 
+/* The mark on a problem the friend solved: shown on that row only, while the friend
+   marks are on. */
+.friend-mark {
+    display: none;
+    margin-left: 0.4em;
+    font-size: 0.8em
+}
+
+tr.friend-solved .friend-mark {
+    display: inline
+}
+
 /* The row the j and k keys have reached. */
 tr.highlight {
     outline: 2px dotted var(--fg);

@@ -33,7 +33,9 @@ Every problem a Codeforces user has tried and not solved, in one table.
   long to choose from; filter first to pick among, say, the 1800-2000 dp
   problems.
 - Narrows the list to the problems a friend has solved, their parallel
-  rounds included: the ones worth asking them about.
+  rounds included: the ones worth asking them about. Ticking "Mark instead of
+  filtering" keeps the whole list instead, marks those problems with "✓ friend",
+  and says how many there are in the counter line.
 - Shows the five tags the handle is weakest on above the list: how many of
   its unsolved problems carry each tag, and solved out of attempted for it.
   A click on one narrows the list to that tag.
@@ -79,6 +81,7 @@ Every problem a Codeforces user has tried and not solved, in one table.
 | `nogym` | `nogym=1` | leave out the gym |
 | `nospecial` | `nospecial=1` | leave out problems tagged `*special` |
 | `friend` | `friend=jiangly` | only problems this handle has solved |
+| `friendmode` | `friendmode=mark` | with a friend, mark the problems they solved instead of keeping only those |
 | `round` | `round=1` | only problems tried during a round, live or virtual |
 | `upsolve` | `upsolve=1` | also the problems never tried from the contests the handle was rated in |
 | `tags` | `tags=1` | show the tags column |
