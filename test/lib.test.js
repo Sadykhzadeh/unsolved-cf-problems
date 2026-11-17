@@ -34,6 +34,7 @@ import {
   isUsableDigest,
   reachesDigest,
   relativeAge,
+  shareInFlight,
   rowKeyAction,
   rememberHandle,
   rememberedView,
@@ -1156,4 +1157,21 @@ test("the counter says how many problems are listed, and how many of them were n
   assert.equal(countText(225, 0, en), "Count of problems: 225", "nothing said when all were tried");
   const ru = { label: "Количество задач:", untriedLabel: "{count} не пробовал(а)" };
   assert.equal(countText(225, 185, ru), "Количество задач: 225, 185 не пробовал(а)");
+});
+
+test("overlapping lookups share one request to the API, and a later one asks again", async () => {
+  let calls = 0;
+  const fetchFn = async () => {
+    calls += 1;
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    return new Response(JSON.stringify({ status: "OK", result: [calls] }), { status: 200 });
+  };
+  const shared = shareInFlight((url) => fetchApi(url, { fetchFn }).then(({ payload }) => payload.result));
+  const answers = await Promise.all([shared("problemset"), shared("problemset"), shared("problemset")]);
+  assert.equal(calls, 1, "three overlapping calls, one request");
+  assert.deepEqual(answers, [[1], [1], [1]]);
+  assert.deepEqual(await shared("problemset"), [2], "once settled, the next call asks again");
+  assert.equal(calls, 2);
+  const failing = shareInFlight(async () => { throw new Error("down"); });
+  await assert.rejects(Promise.all([failing("x"), failing("x")]), /down/);
 });

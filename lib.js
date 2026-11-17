@@ -939,6 +939,20 @@ export const untriedRows = (problems, contestIds, solved, rows) => {
     }));
 };
 
+// Overlapping calls with the same key share one run of `load`: a call made while
+// a run is still in flight gets that run's answer, and a call made after it has
+// settled starts another. Nothing is kept beyond the run itself.
+export const shareInFlight = (load) => {
+  const inFlight = new Map();
+  return (key) => {
+    if (!inFlight.has(key)) {
+      const run = Promise.resolve().then(() => load(key)).finally(() => inFlight.delete(key));
+      inFlight.set(key, run);
+    }
+    return inFlight.get(key);
+  };
+};
+
 // The problemset as it is kept between visits: one array per problem, with its
 // solved count from problemStatistics, which the call returns beside the list.
 export const packProblemset = ({ problems, problemStatistics }) => {

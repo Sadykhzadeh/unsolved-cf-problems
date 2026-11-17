@@ -39,6 +39,7 @@ import {
   rankClass,
   ratingBuckets,
   rowKeyAction,
+  shareInFlight,
   readParams,
   reachesDigest,
   rememberHandle,
@@ -1262,19 +1263,23 @@ const callApi = async (url, wanted) => {
   throw new LookupFailure(describeFailure(response.status, payload));
 };
 
-const loadProblemset = async (wanted) => {
+// Every lookup that overlaps another asks for the same list, so they share one
+// request. The request is not tied to the lookup that started it: the list is the
+// same for all of them, and each lookup decides for itself whether to use it.
+const problemsetOnce = shareInFlight((url) => callApi(url, () => true));
+
+const loadProblemset = async () => {
   const key = `problemset.v1/${lang}`;
   const kept = await readKept(key);
   const usable = kept ? unpackProblemset(kept.value) : null;
   if (usable && Date.now() - kept.savedAt < PROBLEMSET_FRESH) return usable;
   let result;
   try {
-    result = await callApi(`https://codeforces.com/api/problemset.problems?lang=${encodeURIComponent(lang)}`, wanted);
+    result = await problemsetOnce(`https://codeforces.com/api/problemset.problems?lang=${encodeURIComponent(lang)}`);
   } catch (error) {
     if (usable) return usable;
     throw error;
   }
-  if (!result) return null;
   const packed = packProblemset(result);
   await writeKept(key, packed);
   return unpackProblemset(packed);
@@ -1337,8 +1342,7 @@ const ensureUpsolve = async () => {
   }
   byId("upsolveStatus").textContent = fill(text.upsolveLoadingText, { handle });
   try {
-    const problems = upsolveData.problems ?? await loadProblemset(wanted);
-    if (!problems) return;
+    const problems = upsolveData.problems ?? await loadProblemset();
     upsolveData.problems = problems;
     const contests = await loadRatedContests(handle, wanted);
     if (!contests) return;
