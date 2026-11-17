@@ -1,0 +1,161 @@
+{
+ "status": "OK",
+ "result": [
+  {
+   "id": 397765878,
+   "contestId": 2279,
+   "creationTimeSeconds": 1794066910,
+   "relativeTimeSeconds": 4810,
+   "problem": {
+    "contestId": 2279,
+    "index": "E",
+    "name": "Save Me!",
+    "type": "PROGRAMMING",
+    "points": 2250,
+    "tags": [
+     "brute force",
+     "dfs and similar",
+     "matrices",
+     "meet-in-the-middle"
+    ]
+   },
+   "author": {
+    "contestId": 2279,
+    "participantId": 250064794,
+    "members": [
+     {
+      "handle": "tourist"
+     }
+    ],
+    "participantType": "CONTESTANT",
+    "ghost": false,
+    "room": 18,
+    "startTimeSeconds": 1794062100
+   },
+   "programmingLanguage": "C++23 (GCC 14-64, msys2)",
+   "verdict": "OK",
+   "testset": "TESTS",
+   "passedTestCount": 65,
+   "timeConsumedMillis": 1765,
+   "memoryConsumedBytes": 102400
+  },
+  {
+   "id": 144593559,
+   "contestId": 1632,
+   "creationTimeSeconds": 1643568214,
+   "relativeTimeSeconds": 5134,
+   "problem": {
+    "contestId": 1632,
+    "index": "E1",
+    "name": "Distance Tree (easy version)",
+    "type": "PROGRAMMING",
+    "points": 1500,
+    "rating": 2400,
+    "tags": [
+     "binary search",
+     "data structures",
+     "dfs and similar",
+     "graphs",
+     "shortest paths",
+     "trees"
+    ]
+   },
+   "author": {
+    "contestId": 1632,
+    "participantId": 127591785,
+    "members": [
+     {
+      "handle": "tourist"
+     }
+    ],
+    "participantType": "VIRTUAL",
+    "ghost": false,
+    "startTimeSeconds": 1643563080
+   },
+   "programmingLanguage": "C++17 (GCC 9-64)",
+   "verdict": "OK",
+   "testset": "TESTS",
+   "passedTestCount": 39,
+   "timeConsumedMillis": 15,
+   "memoryConsumedBytes": 614400
+  },
+  {
+   "id": 342070375,
+   "contestId": 2155,
+   "creationTimeSeconds": 1759684404,
+   "relativeTimeSeconds": 2304,
+   "problem": {
+    "contestId": 2155,
+    "index": "F",
+    "name": "Juan's Colorful Tree",
+    "type": "PROGRAMMING",
+    "points": 3000,
+    "rating": 2800,
+    "tags": [
+     "data structures",
+     "dfs and similar",
+     "dsu",
+     "graphs",
+     "meet-in-the-middle",
+     "trees"
+    ]
+   },
+   "author": {
+    "contestId": 2155,
+    "participantId": 220909213,
+    "members": [
+     {
+      "handle": "tourist"
+     }
+    ],
+    "participantType": "OUT_OF_COMPETITION",
+    "ghost": false,
+    "room": 1007,
+    "startTimeSeconds": 1759682100
+   },
+   "programmingLanguage": "C++20 (GCC 13-64)",
+   "verdict": "OK",
+   "testset": "TESTS",
+   "passedTestCount": 43,
+   "timeConsumedMillis": 827,
+   "memoryConsumedBytes": 79564800
+  },
+  {
+   "id": 390885111,
+   "contestId": 920,
+   "creationTimeSeconds": 1789534560,
+   "relativeTimeSeconds": 2147483647,
+   "problem": {
+    "contestId": 920,
+    "index": "F",
+    "name": "SUM and REPLACE",
+    "type": "PROGRAMMING",
+    "rating": 2000,
+    "tags": [
+     "brute force",
+     "data structures",
+     "dsu",
+     "number theory"
+    ]
+   },
+   "author": {
+    "contestId": 920,
+    "participantId": 185403612,
+    "members": [
+     {
+      "handle": "tourist"
+     }
+    ],
+    "participantType": "PRACTICE",
+    "ghost": false,
+    "startTimeSeconds": 1517582100
+   },
+   "programmingLanguage": "C++23 (GCC 14-64, msys2)",
+   "verdict": "OK",
+   "testset": "TESTS",
+   "passedTestCount": 78,
+   "timeConsumedMillis": 562,
+   "memoryConsumedBytes": 17100800
+  }
+ ]
+}

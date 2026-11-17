@@ -609,7 +609,7 @@ const ROUND_PARTICIPATION = new Set(["CONTESTANT", "OUT_OF_COMPETITION", "VIRTUA
 // without reading the older ones again: the key of every solved problem, the
 // name, rating and contest of each one outside the gym, the start time of every
 // contest seen, and the unsolved rows in the order they were first met.
-export const emptyState = () => ({ keys: [], twins: [], starts: [], rows: [], solvedTags: {} });
+export const emptyState = () => ({ keys: [], twins: [], starts: [], rows: [], solvedTags: {}, taken: [] });
 
 const rowOf = (item, start, inRound) => ({
   contestId: item.problem.contestId,
@@ -646,6 +646,12 @@ export const foldSubmissions = (state, submissions) => {
   const keys = new Set(state.keys);
   const twins = [...state.twins];
   const solvedTags = { ...state.solvedTags };
+  const taken = new Set(state.taken);
+  for (const item of submissions) {
+    if (ROUND_PARTICIPATION.has(item.author?.participantType) && item.problem.contestId !== undefined) {
+      taken.add(item.problem.contestId);
+    }
+  }
   for (const item of submissions) {
     const key = problemKey(item.problem);
     if (item.verdict !== "OK" || keys.has(key)) continue;
@@ -713,6 +719,7 @@ export const foldSubmissions = (state, submissions) => {
     keys: [...keys],
     twins,
     solvedTags,
+    taken: [...taken],
     starts: [...startOf],
     rows: [...front, ...older],
   };
@@ -907,7 +914,12 @@ export const ratedContestIds = (ratingChanges) => new Set(ratingChanges.map((cha
 
 // What a history says about the problems solved, with the start of every
 // contest it holds, in the shape untriedRows() takes.
-export const solvedFor = (state) => ({ ...solvedSummary(state), starts: state.starts });
+export const solvedFor = (state) => ({ ...solvedSummary(state), starts: state.starts, taken: state.taken });
+
+// The contests a handle took part in: those in its rating history, and those its
+// submissions were made in as a contestant, a virtual participant or out of
+// competition (see taken in foldSubmissions()).
+export const tookPartIn = (ratedIds, taken) => new Set([...ratedIds, ...taken]);
 
 // The problems of the contests a handle was rated in that it has neither solved
 // nor tried, as rows for the list: no attempt, zero tries. A problem solved in

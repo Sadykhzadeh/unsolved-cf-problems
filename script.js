@@ -10,6 +10,7 @@ import {
   solvedFor,
   unpackProblemset,
   listedCheck,
+  tookPartIn,
   untriedRows,
   ageParts,
   relativeAge,
@@ -1006,7 +1007,8 @@ const readSaved = (handle) => {
   const rows = entry && Number.isFinite(entry.savedAt) ? unpackRows(entry.rows) : null;
   // A copy saved before the tag counts or the solved problems were kept is looked up again.
   const solved = entry?.solved;
-  const solvedKept = Array.isArray(solved?.keys) && Array.isArray(solved?.twins) && Array.isArray(solved?.starts);
+  const solvedKept = Array.isArray(solved?.keys) && Array.isArray(solved?.twins) && Array.isArray(solved?.starts)
+    && Array.isArray(solved?.taken);
   if (!rows || !Number.isInteger(entry.submissions) || !isTagCounts(entry.solvedTags) || !solvedKept) return null;
   return {
     handle: entry.handle ?? handle,
@@ -1174,7 +1176,7 @@ const readHistory = async (handle) => {
     const digest = await response?.json();
     // A digest saved before the tag counts were kept is read again from scratch.
     const valid = Number.isFinite(digest?.cutoff) && Number.isFinite(digest.builtAt) && Number.isFinite(digest.count)
-      && ["keys", "twins", "starts", "rows"].every((field) => Array.isArray(digest.state?.[field]))
+      && ["keys", "twins", "starts", "rows", "taken"].every((field) => Array.isArray(digest.state?.[field]))
       && hasTagCounts(digest);
     return valid ? digest : null;
   } catch {
@@ -1322,7 +1324,7 @@ const extraRows = () => {
   if (countsShown()) attachSolvedCounts(state.rows, upsolveData.problems);
   const ready = byId("upsolve").checked && state.solved && upsolveData.problems && upsolveData.contests
     && upsolveData.handle === state.handle.toLowerCase();
-  return ready ? untriedRows(upsolveData.problems, upsolveData.contests, listedCheckFor()) : [];
+  return ready ? untriedRows(upsolveData.problems, tookPartIn(upsolveData.contests, state.solved.taken), listedCheckFor()) : [];
 };
 
 // The solved counts come with the problem list, which is read for the upsolve view.

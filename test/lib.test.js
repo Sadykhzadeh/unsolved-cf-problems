@@ -26,6 +26,7 @@ import {
   packProblemset,
   ratedContestIds,
   solvedFor,
+  tookPartIn,
   unpackProblemset,
   listedCheck,
   untriedRows,
@@ -1175,4 +1176,21 @@ test("overlapping lookups share one request to the API, and a later one asks aga
   assert.equal(calls, 2);
   const failing = shareInFlight(async () => { throw new Error("down"); });
   await assert.rejects(Promise.all([failing("x"), failing("x")]), /down/);
+});
+
+test("upsolve: a contest counts as taken in when a submission there is a contest, virtual or out-of-competition one, not practice", () => {
+  const state = foldSubmissions(emptyState(), fixture("user-status.json").result);
+  assert.deepEqual([...state.taken].sort((a, b) => a - b), [1632, 2155, 2279]);
+  assert.deepEqual([...tookPartIn(new Set([421]), state.taken)].sort((a, b) => a - b), [421, 1632, 2155, 2279]);
+});
+
+test("upsolve: untried problems of an unrated or virtual contest are listed; a practice-only contest adds none", () => {
+  const state = foldSubmissions(emptyState(), fixture("user-status.json").result);
+  const problems = unpackProblemset(packProblemset(fixture("problemset.json").result));
+  // The fixture has no problems of 2155, 1632 or 920: one of each is added here.
+  problems.push({ contestId: 2155, index: "A", name: "Unrated round", rating: undefined, tags: [], solvedCount: 3 });
+  problems.push({ contestId: 920, index: "B", name: "Practice only", rating: 1200, tags: [], solvedCount: 9 });
+  const untried = untriedRows(problems, tookPartIn(new Set(), state.taken), listedCheck(solvedFor(state), state.rows));
+  // 2279E and 1632E1 were accepted and 2155F is in the status too; 2279D, 2279F and 2155A are untried.
+  assert.deepEqual(untried.map(problemKey).sort(), ["2155|A", "2279|D", "2279|F"]);
 });

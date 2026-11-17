@@ -40,8 +40,10 @@ Every problem a Codeforces user has tried and not solved, in one table.
 - Adds the problems never tried from the contests the handle was rated in, with
   0 tries and no verdict, marked "never tried"; the problem list is read once
   per language and kept for six hours, and the rated contests are read again
-  after ten minutes. Rated contests only: virtual and unrated rounds are not in
-  the handle's rating history.
+  after ten minutes. A contest counts as one the handle took part in when it is in
+  its rating history, or when the handle has a submission in it as a contestant,
+  a virtual participant or out of competition; practice submissions do not count,
+  so an unrated round or a virtual run is covered, and a contest only practised is not.
   The counter line says how many of the listed problems were never tried.
 - Shows the unsolved problems by rating as a strip of bars above the list: a
   click on a band keeps only its hundred ratings, and a click on the chosen band
