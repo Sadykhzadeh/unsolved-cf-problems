@@ -4,9 +4,6 @@ import { readFileSync } from "node:fs";
 
 import {
   ageParts,
-  attachSolvedCounts,
-  contestNote,
-  contestProgress,
   countText,
   describeFailure,
   NEWEST_COUNT,
@@ -24,20 +21,13 @@ import {
   fillText,
   isBucket,
   isFresh,
-  packProblemset,
-  ratedContestIds,
   solvedFor,
-  tookPartIn,
-  unpackProblemset,
-  listedCheck,
-  untriedRows,
   isClearTagsKey,
   isPickKey,
   isSearchKey,
   isUsableDigest,
   reachesDigest,
   relativeAge,
-  shareInFlight,
   rowKeyAction,
   rememberHandle,
   rememberedView,
@@ -67,6 +57,10 @@ import {
   weakTags,
   writeParams,
 } from "../lib.js";
+import {
+  attachSolvedCounts, contestNote, contestProgress, listedCheck, packProblemset, ratedContestIds,
+  shareInFlight, tookPartIn, unpackProblemset, untriedRows,
+} from "../lib-upsolve.js";
 import { csvTable, markdownTable } from "../lib-export.js";
 
 // Trimmed copies of the API answers, in the shape the API returns them.

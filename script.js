@@ -1,19 +1,10 @@
 import {
   NEWEST_COUNT,
   advance,
-  attachSolvedCounts,
-  contestNote,
-  contestProgress,
   countText,
-  packProblemset,
   ratingBandName,
   weakTagName,
-  ratedContestIds,
   solvedFor,
-  unpackProblemset,
-  listedCheck,
-  tookPartIn,
-  untriedRows,
   ageParts,
   relativeAge,
   defaultDescending,
@@ -22,6 +13,7 @@ import {
   emptyKind,
   failedTest,
   fetchApi,
+  LookupFailure,
   hasTagCounts,
   isFresh,
   isTagCounts,
@@ -41,7 +33,6 @@ import {
   rankClass,
   ratingBuckets,
   rowKeyAction,
-  shareInFlight,
   readParams,
   reachesDigest,
   rememberHandle,
@@ -295,7 +286,7 @@ const buildRow = (problem, isHidden) => {
   // The id stays on one line on a phone; see the td rule in styles.css.
   const id = cell(anchor(href, problemKey(problem)));
   id.className = "problemId";
-  const note = contestNote(contestNotes, problem.contestId, text.contestProgressTitle);
+  const note = upsolve ? upsolve.note(problem.contestId, text.contestProgressTitle) : "";
   if (note) id.firstChild.title = note;
   row.append(id);
 
@@ -313,7 +304,7 @@ const buildRow = (problem, isHidden) => {
   rating.className = rankClass(problem.rating);
   row.append(rating);
 
-  // Shown only while the problemset has been read; see countsShown().
+  // Shown only while the problemset has been read; see upsolveShown().
   const solvedBy = cell(problem.solvedCount === undefined ? "-" : String(problem.solvedCount));
   solvedBy.className = "solved";
   row.append(solvedBy);
@@ -381,13 +372,6 @@ const loadSubmissions = async (handle, wanted, newest) => {
   throw new LookupFailure(describeFailure(response.status, payload));
 };
 
-class LookupFailure extends Error {
-  constructor(failure) {
-    super(failure.detail);
-    this.failure = failure;
-  }
-}
-
 const fill = (template, values) =>
   template.replace(/\{(\w+)\}/g, (match, name) => values[name] ?? match);
 
@@ -407,7 +391,7 @@ const failureText = (error, handle) => {
 // that the upsolve view adds (see ensureUpsolve()), kept apart so that a lookup
 // saves only what it read. `solved` says what the handle has solved, for both.
 const state = {
-  handle: "", rows: [], extra: [], submissions: 0, solvedTags: {}, solved: null, check: null, checkFor: null, savedAt: null,
+  handle: "", rows: [], extra: [], submissions: 0, solvedTags: {}, solved: null, savedAt: null,
   sort: { key: "rating", descending: false },
 };
 
@@ -551,7 +535,7 @@ const showTagChoice = () => {
 };
 
 const fillTagFilter = () => {
-  state.extra = extraRows();
+  state.extra = upsolve ? upsolve.extraRows() : [];
   const present = new Set(listRows().flatMap((row) => row.tags));
   chosenTags = chosenTags.filter((tag) => present.has(tag));
   showTagChoice();
@@ -667,8 +651,8 @@ const render = () => {
   const showTags = byId("doNotShowTags").checked;
   byId("tagsTD").hidden = !showTags;
   byId("table-list").classList.toggle("no-tags", !showTags);
-  byId("solvedTD").hidden = !countsShown();
-  byId("table-list").classList.toggle("no-solved", !countsShown());
+  byId("solvedTD").hidden = !upsolveShown();
+  byId("table-list").classList.toggle("no-solved", !upsolveShown());
   // Build into one fragment and insert once; names are set as text, never
   // as markup.
   const fragment = document.createDocumentFragment();
@@ -1084,161 +1068,48 @@ const loadHistory = async (handle, wanted) => {
   return keep(advance(emptyDigest(now()), everything, now()));
 };
 
-// Upsolve: the problems of the contests the handle was rated in that it never
-// tried. The problem list is the same for everyone and comes in one language per
-// name, so it is kept per language for six hours; the rated contests are kept per
-// handle for as long as a lookup is. Both are read in the Cache API, the same
-// way as the friend, with the same call spacing and retries.
-const PROBLEMSET_CACHE = "unsolved-cf-problemset";
-const PROBLEMSET_FRESH = 6 * 60 * 60 * 1000;
-
-const readKept = async (key) => {
-  try {
-    const response = await (await caches.open(PROBLEMSET_CACHE)).match(new URL(key, window.location.href).href);
-    const entry = await response?.json();
-    return Number.isFinite(entry?.savedAt) ? entry : null;
-  } catch {
-    return null;
-  }
+// The upsolve view has its own code, read the first time the view needs it: the
+// box is ticked, a link names it, or the list is sorted by the solved counts.
+let upsolve = null;
+let upsolveLoad = null;
+const loadUpsolve = () => {
+  upsolveLoad ??= import("./upsolve.js").then(({ createUpsolve }) => {
+    upsolve = createUpsolve({
+      state, byId, text, fill, failureText, waitForTurn, lang, FRESH_FOR,
+      refreshList: () => refreshList(),
+    });
+    return upsolve;
+  });
+  return upsolveLoad;
 };
 
-const writeKept = async (key, value) => {
-  try {
-    const cache = await caches.open(PROBLEMSET_CACHE);
-    await cache.put(new URL(key, window.location.href).href, new Response(JSON.stringify({ savedAt: Date.now(), value }), {
-      headers: { "Content-Type": "application/json" },
-    }));
-  } catch {
-    // Not kept; the next visit reads it again.
-  }
+const ensureUpsolve = () => {
+  if (!upsolve && !byId("upsolve").checked && state.sort.key !== "solved") return;
+  loadUpsolve().then((view) => view.ensure());
 };
 
-// One answer from the API, once the call spacing allows it. Null when nothing
-// wants the answer by then.
-const callApi = async (url, wanted) => {
-  if (!await waitForTurn(wanted)) return null;
-  const { response, payload } = await fetchApi(url, { again: () => waitForTurn(wanted) });
-  if (response.ok && payload?.status === "OK" && payload.result !== undefined) return payload.result;
-  throw new LookupFailure(describeFailure(response.status, payload));
-};
+const upsolveShown = () => Boolean(upsolve?.shown());
 
-// Every lookup that overlaps another asks for the same list, so they share one
-// request. The request is not tied to the lookup that started it: the list is the
-// same for all of them, and each lookup decides for itself whether to use it.
-const problemsetOnce = shareInFlight((url) => callApi(url, () => true));
-
-const loadProblemset = async () => {
-  const key = `problemset.v1/${lang}`;
-  const kept = await readKept(key);
-  const usable = kept ? unpackProblemset(kept.value) : null;
-  if (usable && Date.now() - kept.savedAt < PROBLEMSET_FRESH) return usable;
-  let result;
-  try {
-    result = await problemsetOnce(`https://codeforces.com/api/problemset.problems?lang=${encodeURIComponent(lang)}`);
-  } catch (error) {
-    if (usable) return usable;
-    throw error;
-  }
-  const packed = packProblemset(result);
-  await writeKept(key, packed);
-  return unpackProblemset(packed);
-};
-
-// The ids of the contests the handle was rated in.
-const loadRatedContests = async (handle, wanted) => {
-  const key = `rating.v1/${handle.toLowerCase()}`;
-  const kept = await readKept(key);
-  if (kept && Date.now() - kept.savedAt < FRESH_FOR && Array.isArray(kept.value)) return new Set(kept.value);
-  let changes;
-  try {
-    changes = await callApi(`https://codeforces.com/api/user.rating?handle=${encodeURIComponent(handle)}`, wanted);
-  } catch (error) {
-    if (kept && Array.isArray(kept.value)) return new Set(kept.value);
-    throw error;
-  }
-  if (!changes) return null;
-  const ids = [...ratedContestIds(changes)];
-  await writeKept(key, ids);
-  return new Set(ids);
-};
-
-// The problem list read this visit, and the contests of the handle it was read for.
-let upsolveNumber = 0;
-const upsolveData = { problems: null, handle: "", contests: null };
-
-// The check is built once per history, and kept while the history is the same:
-// a refresh that only changes the view reuses it.
-const listedCheckFor = () => {
-  if (state.checkFor !== state.solved) {
-    state.check = listedCheck(state.solved, state.rows);
-    state.checkFor = state.solved;
-  }
-  return state.check;
-};
-
-const extraRows = () => {
-  if (countsShown()) attachSolvedCounts(state.rows, upsolveData.problems);
-  const ready = byId("upsolve").checked && state.solved && upsolveData.problems && upsolveData.contests
-    && upsolveData.handle === state.handle.toLowerCase();
-  return ready ? untriedRows(upsolveData.problems, tookPartIn(upsolveData.contests, state.solved.taken), listedCheckFor()) : [];
-};
-
-// The solved counts come with the problem list, which is read for the upsolve view.
-const countsShown = () => byId("upsolve").checked && Boolean(upsolveData.problems);
+// The solved counts and the notes on the problem ids belong to one history: when
+// that changes, the rows are built again.
 let countsWere = null;
-// Per contest, how many problems the handle has solved, for the notes on the problem ids.
-let contestNotes = new Map();
 
 const refreshList = () => {
   if (state.savedAt === null) return;
-  // Rows built before the counts or the notes came in are built again; the
-  // notes change only with the history or the problem list.
-  const notesFor = countsShown() ? state.solved : null;
-  if (notesFor !== countsWere) {
+  const shownKey = upsolve ? upsolve.shownFor() : null;
+  if (shownKey !== countsWere) {
     built = new WeakMap();
-    countsWere = notesFor;
-    contestNotes = notesFor ? contestProgress(upsolveData.problems, notesFor) : new Map();
+    countsWere = shownKey;
   }
   fillTagFilter();
   showResults();
-};
-
-// Reads what the upsolve view needs for the handle on screen, once, and then
-// shows the list with it. A newer call, or the box being unticked, drops this one.
-const ensureUpsolve = async () => {
-  const number = ++upsolveNumber;
-  const handle = state.handle;
-  const wanted = () => number === upsolveNumber;
-  if (!byId("upsolve").checked || !state.solved || !handle) return;
-  if (upsolveData.problems && upsolveData.contests && upsolveData.handle === handle.toLowerCase()) {
-    refreshList();
-    return;
-  }
-  byId("upsolveStatus").textContent = fill(text.upsolveLoadingText, { handle });
-  try {
-    const problems = upsolveData.problems ?? await loadProblemset();
-    upsolveData.problems = problems;
-    const contests = await loadRatedContests(handle, wanted);
-    if (!contests) return;
-    upsolveData.contests = contests;
-    upsolveData.handle = handle.toLowerCase();
-  } catch (error) {
-    if (!wanted()) return;
-    console.error(error);
-    byId("upsolveStatus").textContent = failureText(error, handle);
-    return;
-  }
-  if (!wanted()) return;
-  byId("upsolveStatus").textContent = "";
-  refreshList();
 };
 
 byId("upsolve").addEventListener("change", () => {
   if (byId("upsolve").checked) {
     ensureUpsolve();
   } else {
-    upsolveNumber++;
-    byId("upsolveStatus").textContent = "";
+    upsolve?.off();
     refreshList();
   }
   syncUrl();
