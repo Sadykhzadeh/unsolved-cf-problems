@@ -9,6 +9,7 @@ import {
   ratedContestIds,
   solvedFor,
   unpackProblemset,
+  listedCheck,
   untriedRows,
   ageParts,
   relativeAge,
@@ -551,7 +552,7 @@ const failureText = (error, handle) => {
 // that the upsolve view adds (see ensureUpsolve()), kept apart so that a lookup
 // saves only what it read. `solved` says what the handle has solved, for both.
 const state = {
-  handle: "", rows: [], extra: [], submissions: 0, solvedTags: {}, solved: null, savedAt: null,
+  handle: "", rows: [], extra: [], submissions: 0, solvedTags: {}, solved: null, check: null, checkFor: null, savedAt: null,
   sort: { key: "rating", descending: false },
 };
 
@@ -1307,11 +1308,21 @@ const loadRatedContests = async (handle, wanted) => {
 let upsolveNumber = 0;
 const upsolveData = { problems: null, handle: "", contests: null };
 
+// The check is built once per history, and kept while the history is the same:
+// a refresh that only changes the view reuses it.
+const listedCheckFor = () => {
+  if (state.checkFor !== state.solved) {
+    state.check = listedCheck(state.solved, state.rows);
+    state.checkFor = state.solved;
+  }
+  return state.check;
+};
+
 const extraRows = () => {
   if (countsShown()) attachSolvedCounts(state.rows, upsolveData.problems);
   const ready = byId("upsolve").checked && state.solved && upsolveData.problems && upsolveData.contests
     && upsolveData.handle === state.handle.toLowerCase();
-  return ready ? untriedRows(upsolveData.problems, upsolveData.contests, state.solved, state.rows) : [];
+  return ready ? untriedRows(upsolveData.problems, upsolveData.contests, listedCheckFor()) : [];
 };
 
 // The solved counts come with the problem list, which is read for the upsolve view.

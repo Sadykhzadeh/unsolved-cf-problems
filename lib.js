@@ -914,7 +914,10 @@ export const solvedFor = (state) => ({ ...solvedSummary(state), starts: state.st
 // its parallel round counts as solved, as in solvedCheck(). `rows` are the
 // problems already listed as attempted, and stay the only row of their problem:
 // a copy of one of them in a parallel round is the same problem, as in foldSubmissions().
-export const untriedRows = (problems, contestIds, solved, rows) => {
+// The check untriedRows() needs, built once for a history and the rows listed from it,
+// as the page keeps it: whether a problem is solved or listed already, and the
+// start of each contest the handle entered.
+export const listedCheck = (solved, rows) => {
   const startOf = new Map(solved.starts);
   const known = solvedCheck({
     keys: [...solved.keys, ...rows.map(problemKey)],
@@ -923,9 +926,14 @@ export const untriedRows = (problems, contestIds, solved, rows) => {
       ...rows.filter(hasParallel).map((row) => [row.name, row.rating ?? null, row.contestId, startOf.get(row.contestId) ?? null]),
     ],
   });
+  return { startOf, isKnown: (problem) => known(problem, startOf.get(problem.contestId)) };
+};
+
+export const untriedRows = (problems, contestIds, check) => {
+  const { startOf } = check;
   return problems
     .filter((problem) => contestIds.has(problem.contestId))
-    .filter((problem) => !known(problem, startOf.get(problem.contestId)))
+    .filter((problem) => !check.isKnown(problem))
     .map((problem) => ({
       contestId: problem.contestId,
       index: problem.index,

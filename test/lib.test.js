@@ -27,6 +27,7 @@ import {
   ratedContestIds,
   solvedFor,
   unpackProblemset,
+  listedCheck,
   untriedRows,
   isClearTagsKey,
   isPickKey,
@@ -1040,7 +1041,7 @@ test("upsolve: a problem of a rated contest that was never tried is listed; a so
     attempt(420, "C", "OK", "Bug in Code", 1900),
   ];
   const state = foldSubmissions(emptyState(), history);
-  const untried = untriedRows(problems, contests, solvedFor(state), state.rows);
+  const untried = untriedRows(problems, contests, listedCheck(solvedFor(state), state.rows));
 
   assert.deepEqual(untried.map(problemKey), ["2279|D"]);
   assert.equal(untried[0].tries, 0);
@@ -1055,7 +1056,7 @@ test("upsolve: without the accepted twin the Div. 1 copy is listed, so the twin 
   const problems = unpackProblemset(packProblemset(fixture("problemset.json").result));
   const contests = ratedContestIds(fixture("user-rating.json").result);
   const state = foldSubmissions(emptyState(), []);
-  const untried = untriedRows(problems, contests, solvedFor(state), state.rows);
+  const untried = untriedRows(problems, contests, listedCheck(solvedFor(state), state.rows));
   assert.deepEqual(untried.map(problemKey), ["2279|D", "2279|E", "2279|F", "421|D"]);
 });
 
