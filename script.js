@@ -16,7 +16,9 @@ import {
   isSearchKey,
   isTimeout,
   isUsableDigest,
+  csvTable,
   makeFilter,
+  markdownTable,
   matchesFilter,
   packRows,
   parseHandle,
@@ -101,6 +103,10 @@ const localize = [{
     showingSavedText: "Showing what was saved {ago}.",
     weakTagsLabel: "Most unsolved tags:",
     weakTagTitle: "Solved {solved} of {attempted} attempted problems tagged {tag}. Click to filter by it.",
+    copyMarkdownButton: "Copy as Markdown",
+    downloadCsvButton: "Download CSV",
+    copiedText: "Copied {count} problems as a Markdown table.",
+    copyFailedText: "Could not copy here. Download the CSV instead.",
   },
   "ru": {
     pageTitle: "Нерешённые задачи Codeforces",
@@ -162,6 +168,10 @@ const localize = [{
     showingSavedText: "Показаны данные, сохранённые {ago}.",
     weakTagsLabel: "Чаще всего нерешённые теги:",
     weakTagTitle: "Решено {solved} из {attempted} задач с тегом {tag}. Нажмите, чтобы отфильтровать по нему.",
+    copyMarkdownButton: "Копировать как Markdown",
+    downloadCsvButton: "Скачать CSV",
+    copiedText: "Скопировано задач: {count}, таблица в формате Markdown.",
+    copyFailedText: "Не удалось скопировать. Скачайте CSV.",
   },
 }];
 
@@ -218,6 +228,8 @@ const onloadFunction = (lang) => {
   byId("refresh").textContent = text.refreshButton;
   byId("pick").textContent = text.pickButton;
   byId("pick").title = `${text.pickButton} (P)`;
+  byId("copyMarkdown").textContent = text.copyMarkdownButton;
+  byId("downloadCsv").textContent = text.downloadCsvButton;
   // The column is headed "#", which a screen reader would read as a symbol.
   byId("numberLabel").setAttribute("aria-label", text.problemTD);
   byId("nameLabel").textContent = text.nameTD;
@@ -551,7 +563,36 @@ const applyFilters = () => {
   byId("shown").textContent = shown === drawn.length
     ? ""
     : fill(text.shownText, { shown, total: drawn.length });
+  // An export of nothing is not offered, and a status from before the change is stale.
+  byId("copyMarkdown").disabled = shown === 0;
+  byId("downloadCsv").disabled = shown === 0;
+  byId("exportStatus").textContent = "";
 };
+
+// The rows on screen, in the order they show, for the export.
+const visibleRows = () => drawn.filter(([tr]) => !tr.hidden).map(([, row]) => row);
+
+byId("copyMarkdown").addEventListener("click", async () => {
+  const rows = visibleRows();
+  try {
+    await navigator.clipboard.writeText(markdownTable(rows));
+    byId("exportStatus").textContent = fill(text.copiedText, { count: rows.length });
+  } catch {
+    // Clipboard access is refused outside a secure page, or by the browser.
+    byId("exportStatus").textContent = text.copyFailedText;
+  }
+});
+
+// The CSV starts with a byte order mark, so a spreadsheet reads the names as UTF-8.
+byId("downloadCsv").addEventListener("click", () => {
+  const blob = new Blob(["﻿", csvTable(visibleRows())], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `unsolved-${state.handle.replace(/[^\w-]/g, "_") || "problems"}.csv`;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+});
 
 // The tags the list is narrowed to, and whether a problem needs all of them
 // or any. The list offers the tags that occur among the rows, with counts, and

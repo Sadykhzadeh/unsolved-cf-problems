@@ -34,6 +34,9 @@ Every problem a Codeforces user has tried and not solved, in one table.
   its unsolved problems carry each tag, and solved out of attempted for it.
   A click on one narrows the list to that tag.
 - Shows or hides the problem tags without reloading anything.
+- Copies the list on screen as a Markdown table, or downloads it as CSV; both
+  follow the filters and the sort, and the CSV opens in a spreadsheet with
+  cells that start like a formula left as text.
 - Keeps the view in the address bar, so a link opens the same list, sorted
   and filtered the same way, and Back returns to the handle looked up before.
 - Remembers the sort, the tags column and the gym and special-round switches

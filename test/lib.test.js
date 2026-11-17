@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import {
   ageParts,
+  csvTable,
   describeFailure,
   NEWEST_COUNT,
   SETTLE_SECONDS,
@@ -26,6 +27,7 @@ import {
   rememberedView,
   isTimeout,
   makeFilter,
+  markdownTable,
   matchesFilter,
   packRows,
   parseHandle,
@@ -920,4 +922,56 @@ test("the weakest tags are the ones with the most unsolved problems, with solved
   ]);
   assert.deepEqual(weakTags(rows, solvedTags, 1).map((entry) => entry.tag), ["dp"]);
   assert.deepEqual(weakTags([], solvedTags), []);
+});
+
+const exported = [
+  {
+    contestId: 1520, index: "F2", name: "Cut | the *tree*", rating: 2100, tags: ["dp", "graphs"], tries: 3,
+    verdict: "WRONG_ANSWER", passedTestCount: 36, testset: "TESTS", lastTime: 1700000000, submissionId: 555,
+  },
+  {
+    contestId: 103104, index: "J", name: "Gym one", tags: [], tries: 1,
+    verdict: "COMPILATION_ERROR", lastTime: 1700000000, submissionId: 556,
+  },
+];
+
+test("the list copies as a Markdown table, with its links, verdicts and pipes escaped", () => {
+  assert.equal(markdownTable(exported), [
+    "| Problem | Name | Rating | Tags | Tries | Last verdict | Last attempt |",
+    "| --- | --- | --- | --- | --- | --- | --- |",
+    "| [1520\\|F2](https://codeforces.com/contest/1520/problem/F2) | Cut \\| the \\*tree\\* | 2100 | dp, graphs | 3 | WA 37 | 2023-11-14T22:13:20Z |",
+    "| [103104\\|J](https://codeforces.com/problemset/gymProblem/103104/J) | Gym one |  |  | 1 | CE | 2023-11-14T22:13:20Z |",
+  ].join("\n"));
+  assert.equal(markdownTable([]).split("\n").length, 2);
+});
+
+test("a name that Markdown would read as markup, or as a line break, stays text", () => {
+  const row = { ...exported[1], name: "a_b [c](d)\nnext <x>" };
+  const line = markdownTable([row]).split("\n")[2];
+  assert.match(line, /\| a\\_b \\\[c\\\]\(d\) next \\<x\\> \|/);
+});
+
+test("the list downloads as CSV, one line a problem, quoted where a cell needs it", () => {
+  assert.equal(csvTable(exported), [
+    "Problem,Name,Rating,Tags,Tries,Last verdict,Last attempt,Problem link,Last submission",
+    "1520|F2,Cut | the *tree*,2100,\"dp, graphs\",3,WA 37,2023-11-14T22:13:20Z,"
+      + "https://codeforces.com/contest/1520/problem/F2,https://codeforces.com/contest/1520/submission/555",
+    "103104|J,Gym one,,,1,CE,2023-11-14T22:13:20Z,"
+      + "https://codeforces.com/problemset/gymProblem/103104/J,https://codeforces.com/gym/103104/submission/556",
+    "",
+  ].join("\r\n"));
+});
+
+test("CSV quotes and doubles quotes, keeps line breaks and Cyrillic, and blocks formulas", () => {
+  // The gym row after its name: empty rating and tags, then the rest of the cells.
+  const rest = ",,,1,CE,2023-11-14T22:13:20Z,https://codeforces.com/problemset/gymProblem/103104/J,"
+    + "https://codeforces.com/gym/103104/submission/556";
+  const line = (name) => csvTable([{ ...exported[1], name }]).split("\r\n")[1];
+  assert.equal(line('He said "hi", twice'), `103104|J,"He said ""hi"", twice"${rest}`);
+  assert.equal(line("Треугольники"), `103104|J,Треугольники${rest}`);
+  assert.equal(line("=1+1"), `103104|J,'=1+1${rest}`);
+  assert.equal(line("@cmd"), `103104|J,'@cmd${rest}`);
+  assert.equal(line("-x"), `103104|J,'-x${rest}`);
+  assert.equal(line("line\nbreak"), `103104|J,"line\nbreak"${rest}`);
+  assert.equal(csvTable([]), "Problem,Name,Rating,Tags,Tries,Last verdict,Last attempt,Problem link,Last submission\r\n");
 });

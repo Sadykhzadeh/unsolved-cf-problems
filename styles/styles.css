@@ -344,7 +344,9 @@ th[aria-sort="descending"] .sort::after {
 }
 
 #refresh,
-#pick {
+#pick,
+#copyMarkdown,
+#downloadCsv {
     background: none;
     border: 0;
     padding: 0;
@@ -352,6 +354,16 @@ th[aria-sort="descending"] .sort::after {
     color: inherit;
     text-decoration: underline;
     cursor: pointer
+}
+
+#copyMarkdown:disabled,
+#downloadCsv:disabled {
+    opacity: 0.5;
+    cursor: default
+}
+
+#exportStatus:empty {
+    display: none
 }
 
 /* The tags chosen to narrow the list, each one a button that takes it away.

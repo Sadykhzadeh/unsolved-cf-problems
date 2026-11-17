@@ -765,3 +765,55 @@ export const solvedSummary = (state) => {
     twins: state.twins.map(([name, rating, contestId]) => [name, rating, contestId, startOf.get(contestId) ?? null]),
   };
 };
+
+// The list as text, for pasting or a spreadsheet: the rows given, in the order
+// given, with the cells the table shows. The verdict reads as the table has it
+// ("WA 37"), and the last attempt is in UTC, to the second.
+const EXPORT_HEADER = ["Problem", "Name", "Rating", "Tags", "Tries", "Last verdict", "Last attempt"];
+
+const verdictText = (row) => {
+  const [short] = verdictLabel(row.verdict, "?");
+  const test = failedTest(row);
+  return test ? `${short} ${test.number}` : short;
+};
+
+const attemptTime = (row) => new Date(row.lastTime * 1000).toISOString().replace(/\.\d{3}Z$/, "Z");
+
+const exportCells = (row) => [
+  problemKey(row),
+  row.name,
+  row.rating === undefined ? "" : String(row.rating),
+  row.tags.join(", "),
+  String(row.tries),
+  verdictText(row),
+  attemptTime(row),
+];
+
+// Markdown reads these as markup, and a pipe as the end of a cell.
+const MARKDOWN_SPECIAL = /[\\`*_[\]|<>]/g;
+const markdownCell = (text) => text.replace(MARKDOWN_SPECIAL, "\\$&").replace(/\r?\n/g, " ");
+
+export const markdownTable = (rows) => {
+  const header = `| ${EXPORT_HEADER.join(" | ")} |`;
+  const rule = `| ${EXPORT_HEADER.map(() => "---").join(" | ")} |`;
+  const body = rows.map((row) => {
+    const [problem, ...rest] = exportCells(row);
+    const cells = [`[${markdownCell(problem)}](${problemLink(row)})`, ...rest.map(markdownCell)];
+    return `| ${cells.join(" | ")} |`;
+  });
+  return [header, rule, ...body].join("\n");
+};
+
+// RFC 4180: a cell with a comma, quote or line break is quoted, with its quotes
+// doubled. A cell that starts like a formula gets a quote in front of it, so a
+// spreadsheet shows the text rather than running it.
+const csvCell = (value) => {
+  const guarded = /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
+  return /[",\r\n]/.test(guarded) ? `"${guarded.replace(/"/g, "\"\"")}"` : guarded;
+};
+
+export const csvTable = (rows) => {
+  const lines = [[...EXPORT_HEADER, "Problem link", "Last submission"]];
+  for (const row of rows) lines.push([...exportCells(row), problemLink(row), submissionLink(row)]);
+  return lines.map((line) => line.map(csvCell).join(",")).join("\r\n") + "\r\n";
+};
