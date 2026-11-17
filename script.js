@@ -434,7 +434,10 @@ const buildRow = (problem, isHidden) => {
   const href = problemLink(problem);
   const row = document.createElement("tr");
 
-  row.append(cell(anchor(href, problemKey(problem))));
+  // The id stays on one line on a phone; see the td rule in styles.css.
+  const id = cell(anchor(href, problemKey(problem)));
+  id.className = "problemId";
+  row.append(id);
 
   const name = anchor(href, problem.name);
   name.className = "problemName";

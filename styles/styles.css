@@ -152,6 +152,13 @@ td {
     white-space: nowrap
 }
 
+/* A label too long for a phone wraps inside itself, with its box, instead of
+   running off both edges of the centred row. */
+.check.wide {
+    white-space: normal;
+    max-width: 100%
+}
+
 #handle {
     width: 25%;
     margin-bottom: 7px
@@ -248,6 +255,20 @@ td {
 
     .when {
         white-space: normal
+    }
+
+    /* The narrowest column is as wide as its longest unbreakable piece: a
+       name with a long word, or a problem id, set the minimum width of the
+       whole table, and with "Solved by" it no longer fit a 360 px screen. Cells
+       may now break inside a word when they must. */
+    td {
+        overflow-wrap: anywhere
+    }
+
+    /* A problem id is one piece: it moves whole or not at all. */
+    td.problemId {
+        white-space: nowrap;
+        overflow-wrap: normal
     }
 
     .hide {
