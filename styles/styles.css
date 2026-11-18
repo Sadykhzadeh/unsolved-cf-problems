@@ -391,6 +391,12 @@ th[aria-sort="descending"] .sort::after {
     opacity: 0.85
 }
 
+/* The line on what a repeat lookup found solved, under the freshness line. */
+#solvedSince {
+    margin-top: 0;
+    font-size: 0.9em
+}
+
 #refresh,
 #pick,
 #copyMarkdown,

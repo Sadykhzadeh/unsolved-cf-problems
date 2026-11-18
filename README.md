@@ -67,6 +67,10 @@ Every problem a Codeforces user has tried and not solved, in one table.
   always name the sort (`sort=rating` for the default), so they open the same
   list whatever view the visitor remembers.
 - Shows the last lookup instantly on the next visit (see below).
+- When a lookup replaces a saved copy of the same handle (searching it again, or
+  a visit once the copy is ten minutes old), says which problems the handle
+  solved since that copy, with links to them. A visit to a copy younger than ten
+  minutes does not look the handle up again, so there is nothing to compare.
 - Says why a lookup failed: no such user, an invalid handle, the API rate
   limit, Codeforces being down, or no connection.
 - English and Russian; follows the system's light or dark theme; fits a

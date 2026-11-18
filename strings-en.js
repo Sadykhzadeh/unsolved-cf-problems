@@ -91,6 +91,8 @@ export default {
         { keys: ["?"], meaning: "Show or hide this list" },
     ],
     keysHelpClose: "Close",
+    solvedSinceText: "Solved since the saved copy this lookup replaced, saved {ago}: {count}.",
+    solvedSinceNoneText: "None of the problems unsolved in the saved copy this lookup replaced, saved {ago}, is solved now.",
     solvedLabel: "Solved by",
     solvedTitle: "Accepted submissions by everyone, as the problemset counts them",
     ratingStripLabel: "Unsolved by rating:",

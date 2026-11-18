@@ -870,6 +870,7 @@ const showResults = () => {
   }
   const counter = byId("counter");
   showFreshness(false);
+  byId("solvedSince").hidden = byId("solvedSince").dataset.handle !== state.handle || aboutOpen();
   showWeakTags();
   showTagTable();
   showRatingStrip();
@@ -907,6 +908,8 @@ const clearResults = () => {
   byId("weakTags").hidden = true;
   byId("ratingStrip").hidden = true;
   byId("freshness").hidden = true;
+  byId("solvedSince").hidden = true;
+  delete byId("solvedSince").dataset.handle;
   byId("tableCaption").textContent = "";
   byId("byTag").hidden = true;
   byId("table-list").replaceChildren();
@@ -1101,6 +1104,9 @@ const lookup = async (handle, { force = false } = {}) => {
     if (!await waitForTurn(() => number === lookupNumber)) return;
     const history = await loadHistory(handle, () => number === lookupNumber);
     if (number !== lookupNumber || !history) return;
+    const replaced = state.savedAt !== null && state.handle.toLowerCase() === handle.toLowerCase()
+      ? { rows: state.rows, savedAt: state.savedAt }
+      : null;
     state.handle = handle;
     state.rows = history.rows;
     state.submissions = history.submissions;
@@ -1109,6 +1115,7 @@ const lookup = async (handle, { force = false } = {}) => {
     state.savedAt = Date.now();
     state.solved = solvedFor(history.state);
     save(handle, state.rows, state.submissions, state.savedAt, state.solvedTags, state.solved);
+    if (replaced) showSolvedSince(replaced, handle);
     fillTagFilter();
     showResults();
     ensureUpsolve();
@@ -1138,6 +1145,19 @@ const lookup = async (handle, { force = false } = {}) => {
     // In finally, so that nothing thrown on the way leaves the form dead.
     if (number === lookupNumber) setLoading("");
   }
+};
+
+// A repeat lookup says which problems it found solved since the saved copy it
+// replaced. Its code is read the first time that happens.
+let sinceLoad = null;
+const showSolvedSince = (previous, handle) => {
+  const current = state.rows;
+  const solved = state.solved;
+  sinceLoad ??= import("./since.js");
+  sinceLoad.then(({ fillSolvedSince }) => {
+    fillSolvedSince({ byId, text, fill, anchor, ago, handle, previous, current, solved });
+    if (state.handle === handle) byId("solvedSince").hidden = aboutOpen();
+  });
 };
 
 // Searching for the handle already on screen means "check again", so it

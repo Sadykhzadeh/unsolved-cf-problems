@@ -62,6 +62,7 @@ import {
   shareInFlight, tookPartIn, unpackProblemset, untriedRows,
 } from "../lib-upsolve.js";
 import { csvTable, markdownTable } from "../lib-export.js";
+import { solvedSince } from "../lib-since.js";
 import { createKeys } from "../keys.js";
 
 // Trimmed copies of the API answers, in the shape the API returns them.
@@ -1348,4 +1349,18 @@ test("the rated contests of a handle are kept under one encoded key per handle",
   assert.equal(ratedKey("a/b"), "rating.v1/a%2Fb");
   assert.equal(ratedKey("a\\b"), "rating.v1/a%5Cb");
   assert.equal(ratedKey("a?b#c"), "rating.v1/a%3Fb%23c");
+});
+
+test("a problem is solved since the saved copy when it is gone from the list and the handle solved it", () => {
+  const previous = [
+    { contestId: 1500, index: "A", name: "Alpha", rating: 800 },
+    { contestId: 1500, index: "B", name: "Beta", rating: 900 },
+    { contestId: 1501, index: "C", name: "Gamma", rating: 1000 },
+    { contestId: 1600, index: "C", name: "Delta", rating: 2000 },
+  ];
+  const current = [{ contestId: 1500, index: "B", name: "Beta", rating: 900 }];
+  // Delta is solved in its parallel round, 1601, which the summary lists as a twin.
+  const solved = { keys: ["1500|A"], twins: [["Delta", 2000, 1601, null]], starts: [], taken: [] };
+  assert.deepEqual(solvedSince(previous, current, solved).map(problemKey), ["1500|A", "1600|C"]);
+  assert.deepEqual(solvedSince(previous, [], { keys: [], twins: [], starts: [], taken: [] }), []);
 });

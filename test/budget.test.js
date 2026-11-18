@@ -8,7 +8,7 @@ import { gzipSync } from "node:zlib";
 // English sentences, which load beside the page (see script.js). Lazily imported
 // modules are not part of it: they are read on first use, and that is the point.
 // Raised only on purpose, when a change is worth the bytes.
-const FIRST_VISIT_GZIP_BUDGET = 34100;
+const FIRST_VISIT_GZIP_BUDGET = 34400;
 
 const root = new URL("../", import.meta.url);
 const read = (file) => readFileSync(new URL(file, root));
@@ -49,7 +49,7 @@ test("the first visit to the English page downloads no more than its budget", ()
 
 test("the lazily imported modules are not part of the first visit", () => {
   const files = firstVisitFiles();
-  for (const lazy of ["upsolve.js", "lib-upsolve.js", "lib-export.js", "friend.js", "rating-strip.js", "tags.js", "tagtable.js", "about.js", "hide.js", "keys.js", "help.js", "strings-ru.js"]) {
+  for (const lazy of ["upsolve.js", "lib-upsolve.js", "lib-export.js", "friend.js", "rating-strip.js", "tags.js", "tagtable.js", "about.js", "hide.js", "keys.js", "help.js", "since.js", "lib-since.js", "strings-ru.js"]) {
     assert.equal(files.includes(lazy), false, `${lazy} is read on first use, not on a first visit`);
   }
 });

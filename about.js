@@ -9,6 +9,7 @@ export const createAbout = ({ byId, text, lang, anchor, aboutOpen, showResults }
     byId("byTag").hidden = true;
     byId("ratingStrip").hidden = true;
     byId("freshness").hidden = true;
+    byId("solvedSince").hidden = true;
     byId("tableCaption").textContent = "";
     byId("counter").textContent = "";
 
