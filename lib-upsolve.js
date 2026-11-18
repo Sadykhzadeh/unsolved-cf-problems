@@ -2,6 +2,10 @@
 // saved copies of the problem list. Loaded with the view (see upsolve.js), not on a plain lookup.
 import { fillText, hasParallel, problemKey, solvedCheck } from "./lib.js";
 
+// The key the rated contests of a handle are kept under, encoded as the history and
+// friend keys are, so that a handle cannot change the path it is kept at.
+export const ratedKey = (handle) => `rating.v1/${encodeURIComponent(handle.toLowerCase())}`;
+
 // The ids of the contests a handle was rated in, from user.rating. Only rated
 // contests are listed there: a virtual run or an unrated round is not.
 export const ratedContestIds = (ratingChanges) => new Set(ratingChanges.map((change) => change.contestId));

@@ -3,7 +3,7 @@
 // loadUpsolve() in script.js), so a visit that does not use the view does not read it.
 import { LookupFailure, describeFailure, fetchApi, isFresh } from "./lib.js";
 import {
-  attachSolvedCounts, contestNote, contestProgress, listedCheck, packProblemset, ratedContestIds,
+  attachSolvedCounts, contestNote, contestProgress, listedCheck, packProblemset, ratedContestIds, ratedKey,
   shareInFlight, tookPartIn, unpackProblemset, untriedRows,
 } from "./lib-upsolve.js";
 
@@ -74,7 +74,7 @@ export const createUpsolve = ({
 
   // The ids of the contests the handle was rated in.
   const loadRatedContests = async (handle, wanted) => {
-    const key = `rating.v1/${handle.toLowerCase()}`;
+    const key = ratedKey(handle);
     const kept = await readKept(key);
     if (kept && isFresh(kept.savedAt, Date.now(), FRESH_FOR, CLOCK_SLACK) && Array.isArray(kept.value)) return new Set(kept.value);
     let changes;
