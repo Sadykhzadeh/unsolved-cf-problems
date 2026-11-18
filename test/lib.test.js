@@ -61,6 +61,7 @@ import {
   shareInFlight, tookPartIn, unpackProblemset, untriedRows,
 } from "../lib-upsolve.js";
 import { csvTable, markdownTable } from "../lib-export.js";
+import { createKeys } from "../keys.js";
 
 // Trimmed copies of the API answers, in the shape the API returns them.
 const fixture = (name) => JSON.parse(readFileSync(new URL(`./fixtures/${name}`, import.meta.url), "utf8"));
@@ -1286,4 +1287,31 @@ test("the By-tag table sorts by any column, both ways, with a missing median las
   assert.deepEqual(tags(sortTags(entries, "tag", false)), ["dp", "greedy", "math"]);
   assert.deepEqual(tags(sortTags(entries, "median", true)), ["dp", "math", "greedy"], "no median is last");
   assert.deepEqual(tags(sortTags(entries, "median", false)), ["math", "dp", "greedy"], "still last the other way");
+});
+
+test("the j and k highlight stays on its problem when the rows are built again", () => {
+  // keys.js tests the element it is given, so the browser classes are stood in for.
+  globalThis.HTMLButtonElement ??= class {};
+  globalThis.HTMLAnchorElement ??= class {};
+  const drawnRows = (problems) => problems.map((problem) => {
+    const classes = new Set();
+    const tr = {
+      hidden: false,
+      classList: { toggle: (name, on = !classes.has(name)) => (on ? classes.add(name) : classes.delete(name)), has: (name) => classes.has(name) },
+      scrollIntoView() {},
+    };
+    return [tr, problem];
+  });
+  const problems = [1, 2, 3].map((contestId) => ({ contestId, index: "A", name: `p${contestId}`, tags: [] }));
+  let drawn = drawnRows(problems);
+  let highlight = null;
+  const keys = createKeys({ drawn: () => drawn, highlight: () => highlight, setHighlight: (key) => { highlight = key; } });
+  const press = { key: "j", repeat: false, target: {}, preventDefault() {} };
+  keys.press("next", press);
+  assert.equal(highlight, problemKey(problems[0]));
+  drawn = drawnRows(problems.map((problem) => ({ ...problem })));
+  keys.press("next", press);
+  assert.equal(highlight, problemKey(problems[1]));
+  assert.equal(drawn[1][0].classList.has("highlight"), true);
+  assert.equal(drawn[0][0].classList.has("highlight"), false);
 });

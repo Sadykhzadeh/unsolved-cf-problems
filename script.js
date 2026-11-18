@@ -411,7 +411,7 @@ const friend = { handle: "", savedAt: null, solvedBy: null };
 // instead of rebuilding the table.
 let drawn = [];
 let built = new WeakMap();
-// The row last picked at random.
+// The key of the row last picked at random.
 let picked = null;
 
 // With the friend marks ticked, the friend's solved problems are marked on the
@@ -647,8 +647,8 @@ const render = () => {
     let tr = built.get(problem);
     if (!tr) {
       tr = buildRow(problem, hiddenFor(state.handle).has(problemKey(problem)));
-      tr.classList.toggle("picked", problem === picked);
-      tr.classList.toggle("highlight", problem === highlighted);
+      tr.classList.toggle("picked", problemKey(problem) === picked);
+      tr.classList.toggle("highlight", problemKey(problem) === highlighted);
       built.set(problem, tr);
     }
     return [tr, problem];
@@ -690,10 +690,11 @@ for (const id of ["searchTask", "minRating", "maxRating", "minTries", "noGym", "
 byId("pick").addEventListener("click", () => {
   const hidden = hiddenFor(state.handle);
   const choices = drawn.filter(([tr, row]) => !tr.hidden && !hidden.has(problemKey(row)));
-  const problem = pickOne(choices.map(([, row]) => row), picked);
+  const previous = drawn.find(([, row]) => problemKey(row) === picked)?.[1] ?? null;
+  const problem = pickOne(choices.map(([, row]) => row), previous);
   if (!problem) return;
-  picked = problem;
-  for (const [tr, row] of drawn) tr.classList.toggle("picked", row === problem);
+  picked = problemKey(problem);
+  for (const [tr, row] of drawn) tr.classList.toggle("picked", problemKey(row) === picked);
   const link = built.get(problem).querySelector(".problemName");
   link.focus({ preventScroll: true });
   link.scrollIntoView({ block: "center" });
@@ -732,7 +733,7 @@ document.addEventListener("keydown", (event) => {
   const action = rowKeyAction(event.key, event.code, event);
   if (!action || takesTyping(event.target) || byId("filters").hidden) return;
   keysLoad ??= import("./keys.js").then(({ createKeys }) => {
-    keysView = createKeys({ drawn: () => drawn, highlight: () => highlighted, setHighlight: (row) => { highlighted = row; } });
+    keysView = createKeys({ drawn: () => drawn, highlight: () => highlighted, setHighlight: (key) => { highlighted = key; } });
     return keysView;
   });
   keysLoad.then((view) => view.press(action, event));
@@ -883,6 +884,8 @@ const clearResults = () => {
   state.rows = [];
   state.extra = [];
   state.solved = null;
+  picked = null;
+  highlighted = null;
   byId("upsolveStatus").textContent = "";
   state.submissions = 0;
   state.solvedTags = {};
