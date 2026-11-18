@@ -6,6 +6,9 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Only the page's own scripts and styles run; the API and the icons are the only
+         other hosts it loads from. -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' https://sta.codeforces.com; connect-src 'self' https://codeforces.com; object-src 'none'; base-uri 'none'; form-action 'none'">
     <meta name="color-scheme" content="dark light">
     <meta name="theme-color" content="#111115" media="(prefers-color-scheme: dark)">
     <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
@@ -95,7 +98,7 @@
     <p id="weakTags" hidden><span id="weakTagsLabel"></span> <span id="weakTagsList"></span></p>
     <details id="byTag" hidden><summary id="byTagSummary"></summary><div id="byTagBody"></div></details>
     <div class="table-scroll">
-    <table style="width:100%">
+    <table>
         <caption class="visually-hidden" id="tableCaption"></caption>
         <thead id="table-main" hidden>
             <tr>

@@ -221,6 +221,10 @@ td {
     overflow-x: auto
 }
 
+.table-scroll > table {
+    width: 100%
+}
+
 @media only screen and (max-width: 600px) {
     html,
     body,
