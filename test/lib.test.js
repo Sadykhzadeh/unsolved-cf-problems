@@ -911,6 +911,26 @@ test("the solved problems are counted per tag, once each, and the count survives
   assert.deepEqual(parts.solvedTags, whole.solvedTags);
 });
 
+test("a problem accepted in both copies of a shared round counts once in the tag counts", () => {
+  const item = (id, contestId, index, verdict, name) => ({
+    id,
+    creationTimeSeconds: 1_600_000_000 + id,
+    verdict,
+    author: { participantType: "PRACTICE" },
+    problem: { contestId, index, name, tags: ["math"], rating: 1500 },
+  });
+  const history = [
+    item(4, 1700, "B", "OK", "Other"),
+    item(3, 1001, "A", "OK", "Shared"),
+    item(2, 1000, "A", "OK", "Shared"),
+    item(1, 1000, "A", "WRONG_ANSWER", "Shared"),
+  ];
+  const whole = foldSubmissions(emptyState(), history);
+  assert.deepEqual(whole.solvedTags, { math: 2 });
+  const parts = foldSubmissions(foldSubmissions(emptyState(), history.slice(2)), history.slice(0, 2));
+  assert.deepEqual(parts.solvedTags, whole.solvedTags);
+});
+
 test("a tag the problems do not have is not counted, whatever its name", () => {
   const solved = foldSubmissions(emptyState(), [
     { id: 1, creationTimeSeconds: 1, verdict: "OK", author: {}, problem: { contestId: 1, index: "A", name: "a", tags: ["constructor"] } },

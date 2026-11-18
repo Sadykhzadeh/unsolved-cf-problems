@@ -647,6 +647,12 @@ export const foldSubmissions = (state, submissions) => {
 
   const keys = new Set(state.keys);
   const twins = [...state.twins];
+  const twinsNamed = new Map();
+  const copiesOf = (name) => {
+    if (!twinsNamed.has(name)) twinsNamed.set(name, []);
+    return twinsNamed.get(name);
+  };
+  for (const twin of twins) copiesOf(twin[0]).push(twin);
   const solvedTags = { ...state.solvedTags };
   const taken = new Set(state.taken);
   for (const item of submissions) {
@@ -658,12 +664,22 @@ export const foldSubmissions = (state, submissions) => {
     const key = problemKey(item.problem);
     if (item.verdict !== "OK" || keys.has(key)) continue;
     keys.add(key);
-    for (const tag of item.problem.tags ?? []) {
-      solvedTags[tag] = Object.hasOwn(solvedTags, tag) ? solvedTags[tag] + 1 : 1;
-    }
     const { problem } = item;
+    // The accepted copy of a problem from a shared round is the same problem, so the
+    // tags count it once, whichever copy comes first.
+    const copies = copiesOf(problem.name);
+    const copied = hasParallel(problem) && copies.some(([, rating, contestId]) => isParallel(
+      { contestId, rating, start: startOf.get(contestId) ?? null }, problem, startOf.get(problem.contestId) ?? null,
+    ));
+    if (!copied) {
+      for (const tag of item.problem.tags ?? []) {
+        solvedTags[tag] = Object.hasOwn(solvedTags, tag) ? solvedTags[tag] + 1 : 1;
+      }
+    }
     if (problem.contestId !== undefined && !isGym(problem.contestId)) {
-      twins.push([problem.name, problem.rating ?? null, problem.contestId]);
+      const twin = [problem.name, problem.rating ?? null, problem.contestId];
+      twins.push(twin);
+      copies.push(twin);
     }
   }
   const solved = solvedCheck({
