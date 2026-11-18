@@ -556,3 +556,24 @@ tr.dismissed .hide .glyph-back {
 tr.dismissed .problemName {
     text-decoration-line: underline line-through
 }
+
+/* The keyboard shortcuts dialog: each key sits in a column beside its meaning. */
+#keysHelp {
+    max-width: 32em;
+    text-align: start
+}
+
+#keysHelp dl {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 0.5em 1em;
+    margin: 1em 0
+}
+
+#keysHelp dt {
+    white-space: nowrap
+}
+
+#keysHelp dd {
+    margin: 0
+}

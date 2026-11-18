@@ -22,6 +22,7 @@ import {
   isFresh,
   solvedFor,
   isClearTagsKey,
+  isHelpKey,
   isPickKey,
   isSearchKey,
   isUsableDigest,
@@ -695,6 +696,12 @@ test("Escape is the key that clears the tag filter", () => {
   assert.equal(isClearTagsKey("Escape"), true);
   assert.equal(isClearTagsKey("Esc"), false);
   assert.equal(isClearTagsKey("Enter"), false);
+});
+
+test("? is the key that opens the list of keyboard shortcuts", () => {
+  assert.equal(isHelpKey("?"), true);
+  assert.equal(isHelpKey("/"), false);
+  assert.equal(isHelpKey("h"), false);
 });
 
 test("the pick shortcut is P on any layout, or the key in its place on a Russian one", () => {

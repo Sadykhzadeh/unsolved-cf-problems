@@ -207,6 +207,9 @@ export const rowKeyAction = (key, code, { ctrlKey = false, metaKey = false, altK
 // itself, which is the same on every layout.
 export const isClearTagsKey = (key) => key === "Escape";
 
+// Whether a key press is ?, which opens the list of keyboard shortcuts.
+export const isHelpKey = (key) => key === "?";
+
 // Sorts a failed user.status call into something a person can act on, so
 // that Codeforces being down is not reported as a wrong handle.
 export const describeFailure = (httpStatus, payload) => {

@@ -16,6 +16,7 @@ import {
   isFresh,
   isTagCounts,
   isClearTagsKey,
+  isHelpKey,
   isPickKey,
   isSearchKey,
   isTimeout,
@@ -748,6 +749,16 @@ document.addEventListener("keydown", (event) => {
   showTagChoice();
   applyFilters();
   syncUrl();
+});
+
+// ? opens the list of keyboard shortcuts from anywhere but a field. Its code is read
+// the first time it is opened.
+let helpLoad = null;
+document.addEventListener("keydown", (event) => {
+  if (!isHelpKey(event.key) || event.ctrlKey || event.metaKey || event.altKey || takesTyping(event.target)) return;
+  event.preventDefault();
+  helpLoad ??= import("./help.js").then(({ fillHelp }) => fillHelp({ byId, text }));
+  helpLoad.then(() => byId("keysHelp").showModal());
 });
 
 // Showing tags redraws from memory; it does not ask Codeforces again. With
