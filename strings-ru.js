@@ -15,6 +15,7 @@ export default {
     tagsTD: "Теги",
     ratingTD: "Рейтинг",
     triesTD: "Попытки",
+    triesFilterLabel: "Попыток не меньше",
     verdictTD: "Последний вердикт",
     notJudgedText: "ещё не проверено",
     onTestText: "{verdict} на тесте {test}",

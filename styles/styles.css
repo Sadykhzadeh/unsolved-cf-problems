@@ -96,6 +96,7 @@ td {
 #searchTask,
 #minRating,
 #maxRating,
+#minTries,
 #tagFilter,
 #friend {
     background-color: var(--bg);
@@ -132,6 +133,10 @@ td {
 #minRating,
 #maxRating {
     width: 4.5em
+}
+
+#minTries {
+    width: 3.5em
 }
 
 #friend {

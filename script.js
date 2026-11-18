@@ -111,6 +111,7 @@ const onloadFunction = (lang) => {
   byId("searchTask").placeholder = text.searchPlaceholder;
   byId("searchTask").setAttribute("aria-label", text.searchPlaceholder);
   byId("ratingFilterLabel").textContent = text.ratingTD;
+  byId("triesFilterLabel").textContent = text.triesFilterLabel;
   byId("minRating").setAttribute("aria-label", text.minRating);
   byId("maxRating").setAttribute("aria-label", text.maxRating);
   byId("tagFilter").setAttribute("aria-label", text.tagsTD);
@@ -174,6 +175,7 @@ const applyParams = ({ fresh = false } = {}) => {
   byId("searchTask").value = params.query;
   byId("minRating").value = params.min;
   byId("maxRating").value = params.max;
+  byId("minTries").value = params.triesMin;
   chosenTags = params.tags;
   tagAny = params.tagAny;
   showTagChoice();
@@ -193,6 +195,7 @@ const currentParams = () => ({
   query: byId("searchTask").value,
   min: byId("minRating").value,
   max: byId("maxRating").value,
+  triesMin: byId("minTries").value,
   tags: chosenTags,
   tagAny,
   noGym: byId("noGym").checked,
@@ -436,6 +439,7 @@ const applyFilters = () => {
     query: byId("searchTask").value,
     min: byId("minRating").value,
     max: byId("maxRating").value,
+    triesMin: byId("minTries").value,
     tags: chosenTags,
     tagAny,
     noGym: byId("noGym").checked,
@@ -673,7 +677,7 @@ for (const button of document.querySelectorAll("button.sort")) {
 }
 
 // The filters exist once in the page, so their listeners are attached once.
-for (const id of ["searchTask", "minRating", "maxRating", "noGym", "noSpecial", "inRound", "showHidden"]) {
+for (const id of ["searchTask", "minRating", "maxRating", "minTries", "noGym", "noSpecial", "inRound", "showHidden"]) {
   byId(id).addEventListener("input", () => {
     applyFilters();
     syncUrl();

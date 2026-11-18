@@ -17,7 +17,8 @@ Every problem a Codeforces user has tried and not solved, in one table.
   it ("Solved by", shown once the problem list is read for the upsolve view): click a header,
   click again to reverse.
 - Filters by name or problem id (`1520F2`, `1520|F2` or a link to the
-  problem), by a rating range and by tags (all of several, or any of them), and can leave out the gym and the
+  problem), by a rating range, by how many times it was tried (at least a
+  number) and by tags (all of several, or any of them), and can leave out the gym and the
   problems tagged `*special` (April Fools, Kotlin Heroes, Q# rounds and
   such), and can keep just the problems tried during a round, live or
   virtual, rather than only in practice: the ones left to upsolve. Press
@@ -79,6 +80,7 @@ Every problem a Codeforces user has tried and not solved, in one table.
 | `sort` | `sort=-tries` | `problem`, `name`, `rating`, `tries`, `last` or `solved`; a leading `-` sorts descending |
 | `q` | `q=tree` | name contains this, or problem id starts with it |
 | `min`, `max` | `min=1600&max=2000` | rating range, inclusive |
+| `triesmin` | `triesmin=3` | tried at least this many times |
 | `tag` | `tag=dp` | has this tag; repeat it for several, `tag=dp&tag=graphs` |
 | `tagany` | `tagany=1` | with several tags, has any of them rather than all of them |
 | `nogym` | `nogym=1` | leave out the gym |

@@ -300,14 +300,16 @@ const uniqueTags = (tags) => [...new Set([...tags].map(String).filter(Boolean))]
 // `inRound` only the problems tried during a round, live or virtual, and
 // `hidden`, a Set of problem keys, leaves out the problems put out of sight.
 // `tags` keeps the problems that have all of them, or any of them with
-// `tagAny`, as the problemset on Codeforces does.
+// `tagAny`, as the problemset on Codeforces does. `triesMin` keeps the problems
+// tried at least that many times.
 export const makeFilter = ({
-  query = "", min = "", max = "", tags = [], tagAny = false, noGym = false, noSpecial = false, solvedBy = null,
+  query = "", min = "", max = "", triesMin = "", tags = [], tagAny = false, noGym = false, noSpecial = false, solvedBy = null,
   inRound = false, hidden = null,
 } = {}) => ({
   query: searchText(query),
   min: bound(min),
   max: bound(max),
+  triesMin: bound(triesMin),
   tags: uniqueTags(tags),
   tagAny: Boolean(tagAny),
   noGym: Boolean(noGym),
@@ -333,6 +335,7 @@ export const matchesFilter = (row, filter) => {
   if (filter.noSpecial && row.tags.includes("*special")) return false;
   if (filter.solvedBy && !filter.solvedBy(row, row.start)) return false;
   if (filter.inRound && !row.inRound) return false;
+  if (filter.triesMin !== null && row.tries < filter.triesMin) return false;
   if (filter.min !== null || filter.max !== null) {
     // An unrated problem cannot be said to sit inside a range.
     if (row.rating === undefined) return false;
@@ -383,6 +386,7 @@ export const readParams = (search) => {
     query: params.get("q") ?? "",
     min: params.get("min") ?? "",
     max: params.get("max") ?? "",
+    triesMin: params.get("triesmin") ?? "",
     tags: uniqueTags(params.getAll("tag")),
     tagAny: params.get("tagany") === "1",
     noGym: params.get("nogym") === "1",
@@ -396,7 +400,7 @@ export const readParams = (search) => {
 };
 
 export const writeParams = ({
-  lang, handle, sort, query = "", min = "", max = "", tags = [], tagAny = false, noGym = false, noSpecial = false,
+  lang, handle, sort, query = "", min = "", max = "", triesMin = "", tags = [], tagAny = false, noGym = false, noSpecial = false,
   friend = "", inRound = false, showTags = false, upsolve = false, friendMark = false,
 }) => {
   const params = new URLSearchParams();
@@ -408,6 +412,7 @@ export const writeParams = ({
   if (query.trim()) params.set("q", query.trim());
   if (bound(min) !== null) params.set("min", String(bound(min)));
   if (bound(max) !== null) params.set("max", String(bound(max)));
+  if (bound(triesMin) !== null) params.set("triesmin", String(bound(triesMin)));
   const chosen = uniqueTags(tags);
   for (const tag of chosen) params.append("tag", tag);
   if (tagAny && chosen.length > 1) params.set("tagany", "1");

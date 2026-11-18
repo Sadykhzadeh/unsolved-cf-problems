@@ -543,6 +543,7 @@ test("a link carries the handle, sort and filters, and nothing at their defaults
     query: " bear ",
     min: "1200",
     max: "",
+    triesMin: "3",
     tags: ["dp"],
     tagAny: false,
     noGym: true,
@@ -554,7 +555,7 @@ test("a link carries the handle, sort and filters, and nothing at their defaults
     friendMark: true,
   };
   const search = writeParams(state);
-  assert.equal(search, "handle=tourist&sort=-tries&q=bear&min=1200&tag=dp&nogym=1&nospecial=1&friend=jiangly&friendmode=mark&round=1&tags=1&upsolve=1");
+  assert.equal(search, "handle=tourist&sort=-tries&q=bear&min=1200&triesmin=3&tag=dp&nogym=1&nospecial=1&friend=jiangly&friendmode=mark&round=1&tags=1&upsolve=1");
   assert.deepEqual(readParams(`?${search}`), { ...state, query: "bear" });
 
   // Several tags are repeated tag= parameters, and the mode is only written when it matters.
@@ -568,6 +569,18 @@ test("a link carries the handle, sort and filters, and nothing at their defaults
 
   assert.equal(writeParams({ handle: "a b&c", sort: { key: "rating", descending: false } }), "handle=a+b%26c&sort=rating");
   assert.equal(writeParams({ lang: "ru", handle: "x", min: "abc" }), "lang=ru&handle=x&sort=rating");
+});
+
+test("the filter keeps the problems tried at least the given number of times, and a link names it", () => {
+  const rows = [0, 1, 3].map((tries) => ({ contestId: 1, index: "A", name: "a", tags: [], tries }));
+  const kept = (triesMin) => rows.filter((row) => matchesFilter(row, makeFilter({ triesMin }))).map((row) => row.tries);
+  assert.deepEqual(kept(""), [0, 1, 3], "no bound keeps all");
+  assert.deepEqual(kept("1"), [1, 3], "never tried is out once a bound is set");
+  assert.deepEqual(kept("3"), [3]);
+  assert.deepEqual(kept("abc"), [0, 1, 3], "an unreadable bound is no bound");
+  assert.equal(writeParams({ handle: "x", triesMin: "3" }), "handle=x&triesmin=3&sort=rating");
+  assert.equal(readParams("?triesmin=3").triesMin, "3");
+  assert.equal(writeParams({ triesMin: "abc" }), "", "an unreadable bound is left out of the link");
 });
 
 test("a link to the default view names it, so a visitor's remembered view does not replace it", () => {
@@ -614,6 +627,7 @@ test("unknown or broken parameters fall back to the defaults", () => {
     query: "",
     min: "",
     max: "",
+    triesMin: "",
     tags: [],
     tagAny: false,
     noGym: false,

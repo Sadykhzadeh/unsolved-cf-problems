@@ -15,6 +15,7 @@ export default {
     tagsTD: "Tags",
     ratingTD: "Rating",
     triesTD: "Tries",
+    triesFilterLabel: "Tries at least",
     verdictTD: "Last verdict",
     notJudgedText: "not judged yet",
     onTestText: "{verdict} on test {test}",
