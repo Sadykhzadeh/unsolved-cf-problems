@@ -1,13 +1,15 @@
 // The upsolve view: the problems of the contests a handle took part in that it has not
 // tried, the solved counts, and the notes on the problem ids. Read on first use (see
 // loadUpsolve() in script.js), so a visit that does not use the view does not read it.
-import { LookupFailure, describeFailure, fetchApi } from "./lib.js";
+import { LookupFailure, describeFailure, fetchApi, isFresh } from "./lib.js";
 import {
   attachSolvedCounts, contestNote, contestProgress, listedCheck, packProblemset, ratedContestIds,
   shareInFlight, tookPartIn, unpackProblemset, untriedRows,
 } from "./lib-upsolve.js";
 
-export const createUpsolve = ({ state, byId, text, fill, failureText, waitForTurn, lang, FRESH_FOR, refreshList: refreshHost }) => {
+export const createUpsolve = ({
+  state, byId, text, fill, failureText, waitForTurn, lang, FRESH_FOR, CLOCK_SLACK, refreshList: refreshHost,
+}) => {
   const refreshList = () => refreshHost();
 
 // Upsolve: the problems of the contests the handle was rated in that it never
@@ -57,7 +59,7 @@ export const createUpsolve = ({ state, byId, text, fill, failureText, waitForTur
     const key = `problemset.v1/${lang}`;
     const kept = await readKept(key);
     const usable = kept ? unpackProblemset(kept.value) : null;
-    if (usable && Date.now() - kept.savedAt < PROBLEMSET_FRESH) return usable;
+    if (usable && isFresh(kept.savedAt, Date.now(), PROBLEMSET_FRESH, CLOCK_SLACK)) return usable;
     let result;
     try {
       result = await problemsetOnce(`https://codeforces.com/api/problemset.problems?lang=${encodeURIComponent(lang)}`);
@@ -74,7 +76,7 @@ export const createUpsolve = ({ state, byId, text, fill, failureText, waitForTur
   const loadRatedContests = async (handle, wanted) => {
     const key = `rating.v1/${handle.toLowerCase()}`;
     const kept = await readKept(key);
-    if (kept && Date.now() - kept.savedAt < FRESH_FOR && Array.isArray(kept.value)) return new Set(kept.value);
+    if (kept && isFresh(kept.savedAt, Date.now(), FRESH_FOR, CLOCK_SLACK) && Array.isArray(kept.value)) return new Set(kept.value);
     let changes;
     try {
       changes = await callApi(`https://codeforces.com/api/user.rating?handle=${encodeURIComponent(handle)}`, wanted);

@@ -1012,7 +1012,7 @@ let upsolveLoad = null;
 const loadUpsolve = () => {
   upsolveLoad ??= import("./upsolve.js").then(({ createUpsolve }) => {
     upsolve = createUpsolve({
-      state, byId, text, fill, failureText, waitForTurn, lang, FRESH_FOR,
+      state, byId, text, fill, failureText, waitForTurn, lang, FRESH_FOR, CLOCK_SLACK,
       refreshList: () => refreshList(),
     });
     return upsolve;
