@@ -763,7 +763,7 @@ byId("doNotShowTags").addEventListener("change", () => {
 // while a fresh one loads. Only the last few handles are kept, because the
 // storage is shared with every other page on this origin.
 const SAVED_KEY = "unsolved-cf-problems:lookups";
-const SAVED_VERSION = 7;
+const SAVED_VERSION = 8;
 const FRESH_FOR = 10 * 60 * 1000;
 const CLOCK_SLACK = 60 * 1000;
 const KEEP_HANDLES = 3;
@@ -940,7 +940,7 @@ const waitForTurn = async (wanted) => {
 const HISTORY_CACHE = "unsolved-cf-problems-history";
 const KEEP_HISTORIES = 3;
 const historyKey = (handle) =>
-  new URL(`history.v2/${lang}/${encodeURIComponent(handle.toLowerCase())}`, window.location.href).href;
+  new URL(`history.v3/${lang}/${encodeURIComponent(handle.toLowerCase())}`, window.location.href).href;
 
 const openHistories = async () => {
   try {

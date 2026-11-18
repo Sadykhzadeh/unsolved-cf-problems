@@ -946,6 +946,26 @@ test("a problem accepted in both copies of a shared round counts once in the tag
   assert.deepEqual(parts.solvedTags, whole.solvedTags);
 });
 
+test("a problem in a chain of three copies counts its tags once, whatever order the copies are met in", () => {
+  const copy = (contestId, id, start) => ({
+    id,
+    creationTimeSeconds: 1_600_000_000 + id,
+    verdict: "OK",
+    author: { participantType: "CONTESTANT", startTimeSeconds: start },
+    problem: { contestId, index: "A", name: "Chain", tags: ["dp"], rating: 1500 },
+  });
+  // 1000 and 1010 are too far apart to be copies of each other; 1005 is a copy of both.
+  const [low, middle, high] = [copy(1000, 1, 100), copy(1005, 2, 200), copy(1010, 3, 300)];
+  const orders = [[low, middle, high], [low, high, middle], [middle, low, high], [middle, high, low], [high, low, middle], [high, middle, low]];
+  for (const order of orders) {
+    const whole = foldSubmissions(emptyState(), order);
+    assert.deepEqual(whole.solvedTags, { dp: 1 }, order.map((item) => item.problem.contestId).join(","));
+    const parts = foldSubmissions(foldSubmissions(emptyState(), order.slice(0, 1)), order.slice(1));
+    assert.deepEqual(parts.solvedTags, whole.solvedTags);
+  }
+  assert.deepEqual(foldSubmissions(emptyState(), [high, low]).solvedTags, { dp: 2 }, "two copies that are not parallel count twice");
+});
+
 test("a tag the problems do not have is not counted, whatever its name", () => {
   const solved = foldSubmissions(emptyState(), [
     { id: 1, creationTimeSeconds: 1, verdict: "OK", author: {}, problem: { contestId: 1, index: "A", name: "a", tags: ["constructor"] } },

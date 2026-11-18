@@ -614,8 +614,9 @@ const ROUND_PARTICIPATION = new Set(["CONTESTANT", "OUT_OF_COMPETITION", "VIRTUA
 
 // What the submissions seen so far add up to, so that newer ones can be added
 // without reading the older ones again: the key of every solved problem, the
-// name, rating and contest of each one outside the gym, the start time of every
-// contest seen, and the unsolved rows in the order they were first met.
+// name, rating, contest, tags and whether its tags are counted of each one outside
+// the gym, the start time of every contest seen, and the unsolved rows in the order
+// they were first met.
 export const emptyState = () => ({ keys: [], twins: [], starts: [], rows: [], solvedTags: {}, taken: [] });
 
 const rowOf = (item, start, inRound) => ({
@@ -635,6 +636,15 @@ const rowOf = (item, start, inRound) => ({
   inRound,
 });
 
+// Adds `delta` to the count of each tag, and drops a tag whose count falls to zero.
+const countTags = (counts, tags, delta) => {
+  for (const tag of tags) {
+    const next = (Object.hasOwn(counts, tag) ? counts[tag] : 0) + delta;
+    if (next > 0) counts[tag] = next;
+    else delete counts[tag];
+  }
+};
+
 // The state after `submissions`, newest first and all newer than what `state`
 // already holds, are added to it. One row per unsolved problem: the problem,
 // its newest attempt and how far that got through the tests, how many attempts
@@ -651,13 +661,7 @@ export const foldSubmissions = (state, submissions) => {
   }
 
   const keys = new Set(state.keys);
-  const twins = [...state.twins];
-  const twinsNamed = new Map();
-  const copiesOf = (name) => {
-    if (!twinsNamed.has(name)) twinsNamed.set(name, []);
-    return twinsNamed.get(name);
-  };
-  for (const twin of twins) copiesOf(twin[0]).push(twin);
+  const twins = state.twins.map((twin) => [...twin]);
   const solvedTags = { ...state.solvedTags };
   const taken = new Set(state.taken);
   for (const item of submissions) {
@@ -665,26 +669,35 @@ export const foldSubmissions = (state, submissions) => {
       taken.add(item.problem.contestId);
     }
   }
+  const changed = new Set();
   for (const item of submissions) {
     const key = problemKey(item.problem);
     if (item.verdict !== "OK" || keys.has(key)) continue;
     keys.add(key);
     const { problem } = item;
-    // The accepted copy of a problem from a shared round is the same problem, so the
-    // tags count it once, whichever copy comes first.
-    const copies = copiesOf(problem.name);
-    const copied = hasParallel(problem) && copies.some(([, rating, contestId]) => isParallel(
-      { contestId, rating, start: startOf.get(contestId) ?? null }, problem, startOf.get(problem.contestId) ?? null,
-    ));
-    if (!copied) {
-      for (const tag of item.problem.tags ?? []) {
-        solvedTags[tag] = Object.hasOwn(solvedTags, tag) ? solvedTags[tag] + 1 : 1;
-      }
+    if (hasParallel(problem)) {
+      twins.push([problem.name, problem.rating ?? null, problem.contestId, problem.tags ?? [], false]);
+      changed.add(problem.name);
+    } else {
+      countTags(solvedTags, problem.tags ?? [], 1);
     }
-    if (problem.contestId !== undefined && !isGym(problem.contestId)) {
-      const twin = [problem.name, problem.rating ?? null, problem.contestId];
-      twins.push(twin);
-      copies.push(twin);
+  }
+  // A problem solved in more than one copy counts its tags once, in the copy with the
+  // lowest contest number that has no lower copy of its own. That depends only on the
+  // copies solved, not on the order they were met in, so the counts are the same
+  // however the history is folded.
+  for (const name of changed) {
+    const copies = twins.filter(([copyName]) => copyName === name);
+    for (const twin of copies) {
+      const counted = !copies.some((other) => other !== twin && other[2] < twin[2] && isParallel(
+        { contestId: other[2], rating: other[1], start: startOf.get(other[2]) ?? null },
+        { contestId: twin[2], rating: twin[1] },
+        startOf.get(twin[2]) ?? null,
+      ));
+      if (counted !== twin[4]) {
+        countTags(solvedTags, twin[3], counted ? 1 : -1);
+        twin[4] = counted;
+      }
     }
   }
   const solved = solvedCheck({
