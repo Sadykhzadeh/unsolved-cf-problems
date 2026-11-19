@@ -98,6 +98,7 @@ td {
 #maxRating,
 #minTries,
 #tagFilter,
+#verdictFilter,
 #friend {
     background-color: var(--bg);
     color: var(--fg);

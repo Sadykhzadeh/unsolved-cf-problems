@@ -8,7 +8,7 @@ import { gzipSync } from "node:zlib";
 // English sentences, which load beside the page (see script.js). Lazily imported
 // modules are not part of it: they are read on first use, and that is the point.
 // Raised only on purpose, when a change is worth the bytes.
-const FIRST_VISIT_GZIP_BUDGET = 34800;
+const FIRST_VISIT_GZIP_BUDGET = 35200;
 
 const root = new URL("../", import.meta.url);
 const read = (file) => readFileSync(new URL(file, root));

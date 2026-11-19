@@ -38,6 +38,7 @@ import {
   submissionLink,
   tagCounts,
   unpackRows,
+  verdictCounts,
   verdictLabel,
   viewOf,
   writeParams,
@@ -116,6 +117,7 @@ const onloadFunction = (lang) => {
   byId("minRating").setAttribute("aria-label", text.minRating);
   byId("maxRating").setAttribute("aria-label", text.maxRating);
   byId("tagFilter").setAttribute("aria-label", text.tagsTD);
+  byId("verdictFilter").setAttribute("aria-label", text.verdictFilterLabel);
   byId("noGymLabel").textContent = text.noGymLabel;
   byId("noSpecialLabel").textContent = text.noSpecialLabel;
   byId("noSpecialLabel").parentElement.title = text.noSpecialTitle;
@@ -179,6 +181,7 @@ const applyParams = ({ fresh = false } = {}) => {
   byId("minTries").value = params.triesMin;
   chosenTags = params.tags;
   tagAny = params.tagAny;
+  chosenVerdict = params.verdict;
   showTagChoice();
   byId("noGym").checked = params.noGym;
   byId("noSpecial").checked = params.noSpecial;
@@ -199,6 +202,7 @@ const currentParams = () => ({
   triesMin: byId("minTries").value,
   tags: chosenTags,
   tagAny,
+  verdict: chosenVerdict,
   noGym: byId("noGym").checked,
   noSpecial: byId("noSpecial").checked,
   friend: friend.handle,
@@ -444,6 +448,7 @@ const applyFilters = () => {
     triesMin: byId("minTries").value,
     tags: chosenTags,
     tagAny,
+    verdict: chosenVerdict,
     noGym: byId("noGym").checked,
     noSpecial: byId("noSpecial").checked,
     solvedBy: friendFiltering() ? friend.solvedBy : null,
@@ -508,6 +513,15 @@ byId("downloadCsv").addEventListener("click", async () => {
 // the rows are in and show which of them occur.
 let chosenTags = [];
 let tagAny = false;
+// The verdict of the last attempt the list is narrowed to, by its short label ("" for any).
+let chosenVerdict = "";
+
+const showVerdictChoice = () => {
+  const select = byId("verdictFilter");
+  const options = verdictCounts(listRows()).map(([short, count]) => new Option(`${short} (${count})`, short));
+  select.replaceChildren(new Option(text.anyVerdict, ""), ...options);
+  select.value = chosenVerdict;
+};
 
 const showTagChoice = () => {
   const select = byId("tagFilter");
@@ -536,6 +550,9 @@ const fillTagFilter = () => {
   const present = new Set(listRows().flatMap((row) => row.tags));
   chosenTags = chosenTags.filter((tag) => present.has(tag));
   showTagChoice();
+  const verdicts = new Set(verdictCounts(listRows()).map(([short]) => short));
+  if (!verdicts.has(chosenVerdict)) chosenVerdict = "";
+  showVerdictChoice();
 };
 
 // Adds a tag to the filter: the same path whether it was picked from the list
@@ -551,6 +568,12 @@ byId("tagFilter").addEventListener("input", (event) => {
   const tag = event.target.value;
   if (!tag) return;
   addTag(tag);
+});
+
+byId("verdictFilter").addEventListener("input", (event) => {
+  chosenVerdict = event.target.value;
+  applyFilters();
+  syncUrl();
 });
 
 // The handle's weakest tags have their own code, read when the first results show.

@@ -43,6 +43,8 @@ export default {
     tagsAll: "Все сразу",
     tagsAny: "Любой из них",
     tagModeTitle: "Переключить: задачи со всеми выбранными тегами или с любым из них",
+    verdictFilterLabel: "Последний вердикт",
+    anyVerdict: "Любой вердикт",
     noGymLabel: "Без тренировок",
     noSpecialLabel: "Без особых раундов",
     noSpecialTitle: "1 апреля, Kotlin Heroes, Q# и остальные задачи с тегом *special",

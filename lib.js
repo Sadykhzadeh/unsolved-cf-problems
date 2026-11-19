@@ -304,10 +304,11 @@ const uniqueTags = (tags) => [...new Set([...tags].map(String).filter(Boolean))]
 // `hidden`, a Set of problem keys, leaves out the problems put out of sight.
 // `tags` keeps the problems that have all of them, or any of them with
 // `tagAny`, as the problemset on Codeforces does. `triesMin` keeps the problems
-// tried at least that many times.
+// tried at least that many times, and `verdict`, a short verdict label as the table
+// shows it, the ones whose last attempt ended that way.
 export const makeFilter = ({
-  query = "", min = "", max = "", triesMin = "", tags = [], tagAny = false, noGym = false, noSpecial = false, solvedBy = null,
-  inRound = false, hidden = null,
+  query = "", min = "", max = "", triesMin = "", tags = [], tagAny = false, verdict = "", noGym = false, noSpecial = false,
+  solvedBy = null, inRound = false, hidden = null,
 } = {}) => ({
   query: searchText(query),
   min: bound(min),
@@ -315,6 +316,7 @@ export const makeFilter = ({
   triesMin: bound(triesMin),
   tags: uniqueTags(tags),
   tagAny: Boolean(tagAny),
+  verdict: String(verdict).trim().toUpperCase(),
   noGym: Boolean(noGym),
   noSpecial: Boolean(noSpecial),
   solvedBy: typeof solvedBy === "function" ? solvedBy : null,
@@ -339,6 +341,7 @@ export const matchesFilter = (row, filter) => {
   if (filter.solvedBy && !filter.solvedBy(row, row.start)) return false;
   if (filter.inRound && !row.inRound) return false;
   if (filter.triesMin !== null && row.tries < filter.triesMin) return false;
+  if (filter.verdict && verdictLabel(row.verdict, "")[0] !== filter.verdict) return false;
   if (filter.min !== null || filter.max !== null) {
     // An unrated problem cannot be said to sit inside a range.
     if (row.rating === undefined) return false;
@@ -376,6 +379,18 @@ export const tagCounts = (rows) => {
   return [...counts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
 };
 
+// Every verdict among the rows that have one, by its short label, with how many rows
+// end on it, commonest first. A row never tried has no verdict and is left out.
+export const verdictCounts = (rows) => {
+  const counts = new Map();
+  for (const row of rows) {
+    if (!row.verdict) continue;
+    const [short] = verdictLabel(row.verdict, "?");
+    counts.set(short, (counts.get(short) ?? 0) + 1);
+  }
+  return [...counts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+};
+
 // The page state that belongs in a link: whose list, and how it is sorted
 // and filtered. Defaults are left out so links stay short.
 export const readParams = (search) => {
@@ -392,6 +407,7 @@ export const readParams = (search) => {
     triesMin: params.get("triesmin") ?? "",
     tags: uniqueTags(params.getAll("tag")),
     tagAny: params.get("tagany") === "1",
+    verdict: (params.get("verdict") ?? "").trim().toUpperCase(),
     noGym: params.get("nogym") === "1",
     noSpecial: params.get("nospecial") === "1",
     friend: (params.get("friend") ?? "").trim(),
@@ -403,8 +419,8 @@ export const readParams = (search) => {
 };
 
 export const writeParams = ({
-  lang, handle, sort, query = "", min = "", max = "", triesMin = "", tags = [], tagAny = false, noGym = false, noSpecial = false,
-  friend = "", inRound = false, showTags = false, upsolve = false, friendMark = false,
+  lang, handle, sort, query = "", min = "", max = "", triesMin = "", tags = [], tagAny = false, verdict = "", noGym = false,
+  noSpecial = false, friend = "", inRound = false, showTags = false, upsolve = false, friendMark = false,
 }) => {
   const params = new URLSearchParams();
   if (lang) params.set("lang", lang);
@@ -419,6 +435,7 @@ export const writeParams = ({
   const chosen = uniqueTags(tags);
   for (const tag of chosen) params.append("tag", tag);
   if (tagAny && chosen.length > 1) params.set("tagany", "1");
+  if (verdict.trim()) params.set("verdict", verdict.trim().toUpperCase());
   if (noGym) params.set("nogym", "1");
   if (noSpecial) params.set("nospecial", "1");
   if (friend) params.set("friend", friend);

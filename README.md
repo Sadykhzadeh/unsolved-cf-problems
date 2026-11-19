@@ -18,7 +18,8 @@ Every problem a Codeforces user has tried and not solved, in one table.
   click again to reverse.
 - Filters by name or problem id (`1520F2`, `1520|F2` or a link to the
   problem), by a rating range, by how many times it was tried (at least a
-  number) and by tags (all of several, or any of them), and can leave out the gym and the
+  number), by tags (all of several, or any of them) and by the verdict of the last
+  attempt, as the table labels it (`TLE`, `WA` and so on), and can leave out the gym and the
   problems tagged `*special` (April Fools, Kotlin Heroes, Q# rounds and
   such), and can keep just the problems tried during a round, live or
   virtual, rather than only in practice: the ones left to upsolve. Press
@@ -92,6 +93,7 @@ Every problem a Codeforces user has tried and not solved, in one table.
 | `triesmin` | `triesmin=3` | tried at least this many times |
 | `tag` | `tag=dp` | has this tag; repeat it for several, `tag=dp&tag=graphs` |
 | `tagany` | `tagany=1` | with several tags, has any of them rather than all of them |
+| `verdict` | `verdict=TLE` | the last attempt ended with this verdict, as the table labels it |
 | `nogym` | `nogym=1` | leave out the gym |
 | `nospecial` | `nospecial=1` | leave out problems tagged `*special` |
 | `friend` | `friend=jiangly` | only problems this handle has solved |

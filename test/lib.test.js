@@ -50,6 +50,7 @@ import {
   tagCounts,
   unpackRows,
   unsolvedRows,
+  verdictCounts,
   verdictLabel,
   viewOf,
   writeParams,
@@ -429,6 +430,30 @@ test("rows sort by any column either way, unrated staying last", () => {
   assert.equal(rows[0].name, "Beta", "the input is left alone");
 });
 
+test("the filter keeps the problems whose last attempt ended with one verdict", () => {
+  const attempt = (verdict) => ({ contestId: 1, index: "A", name: "a", tags: [], tries: 1, verdict });
+  const rows = [
+    attempt("TIME_LIMIT_EXCEEDED"),
+    attempt("WRONG_ANSWER"),
+    attempt("TIME_LIMIT_EXCEEDED"),
+    attempt("WRONG_ANSWER"),
+    attempt("WRONG_ANSWER"),
+    attempt("COMPILATION_ERROR"),
+    { contestId: 1, index: "A", name: "never", tags: [], tries: 0 },
+  ];
+  const kept = (verdict) => rows.filter((row) => matchesFilter(row, makeFilter({ verdict }))).length;
+  assert.equal(kept(""), 7, "no verdict chosen keeps everything, never tried included");
+  assert.equal(kept("TLE"), 2);
+  assert.equal(kept(" wa "), 3, "a link's verdict in any case");
+  assert.equal(kept("CE"), 1);
+  assert.equal(kept("RE"), 0, "no problem ended on a runtime error");
+  assert.deepEqual(verdictCounts(rows), [["WA", 3], ["TLE", 2], ["CE", 1]], "commonest first, never tried left out");
+  assert.deepEqual(verdictCounts([]), []);
+  assert.equal(readParams("?verdict=tle").verdict, "TLE", "a link in any case names the label the table shows");
+  assert.equal(writeParams({ verdict: " tle " }), "verdict=TLE&sort=rating");
+  assert.equal(writeParams({ verdict: "" }), "");
+});
+
 test("a blank bound in a link is no bound, rather than zero", () => {
   const row = { contestId: 1, index: "A", name: "x", tags: [], rating: 1500 };
   const filter = makeFilter({ min: " ", max: "\t" });
@@ -551,6 +576,7 @@ test("a link carries the handle, sort and filters, and nothing at their defaults
     triesMin: "3",
     tags: ["dp"],
     tagAny: false,
+    verdict: "TLE",
     noGym: true,
     noSpecial: true,
     friend: "jiangly",
@@ -560,7 +586,7 @@ test("a link carries the handle, sort and filters, and nothing at their defaults
     friendMark: true,
   };
   const search = writeParams(state);
-  assert.equal(search, "handle=tourist&sort=-tries&q=bear&min=1200&triesmin=3&tag=dp&nogym=1&nospecial=1&friend=jiangly&friendmode=mark&round=1&tags=1&upsolve=1");
+  assert.equal(search, "handle=tourist&sort=-tries&q=bear&min=1200&triesmin=3&tag=dp&verdict=TLE&nogym=1&nospecial=1&friend=jiangly&friendmode=mark&round=1&tags=1&upsolve=1");
   assert.deepEqual(readParams(`?${search}`), { ...state, query: "bear" });
 
   // Several tags are repeated tag= parameters, and the mode is only written when it matters.
@@ -635,6 +661,7 @@ test("unknown or broken parameters fall back to the defaults", () => {
     triesMin: "",
     tags: [],
     tagAny: false,
+    verdict: "",
     noGym: false,
     noSpecial: false,
     friend: "",

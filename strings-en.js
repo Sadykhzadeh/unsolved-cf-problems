@@ -43,6 +43,8 @@ export default {
     tagsAll: "Has all of them",
     tagsAny: "Has any of them",
     tagModeTitle: "Switch between problems that have all of the tags and those that have any of them",
+    verdictFilterLabel: "Last verdict",
+    anyVerdict: "Any verdict",
     noGymLabel: "Hide gym",
     noSpecialLabel: "Hide special rounds",
     noSpecialTitle: "April Fools, Kotlin Heroes, Q# and the rest tagged *special",
