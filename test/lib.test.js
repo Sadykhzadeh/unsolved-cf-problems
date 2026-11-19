@@ -26,6 +26,7 @@ import {
   isPickKey,
   isSearchKey,
   isUsableDigest,
+  isUsableSaved,
   reachesDigest,
   relativeAge,
   rowKeyAction,
@@ -1363,4 +1364,21 @@ test("a problem is solved since the saved copy when it is gone from the list and
   const solved = { keys: ["1500|A"], twins: [["Delta", 2000, 1601, null]], starts: [], taken: [] };
   assert.deepEqual(solvedSince(previous, current, solved).map(problemKey), ["1500|A", "1600|C"]);
   assert.deepEqual(solvedSince(previous, [], { keys: [], twins: [], starts: [], taken: [] }), []);
+});
+
+test("a saved lookup whose handle is not a string is not read back", () => {
+  const saved = {
+    handle: "tourist",
+    savedAt: 1,
+    rows: packRows([]),
+    submissions: 0,
+    solvedTags: {},
+    solved: { keys: [], twins: [], starts: [], taken: [] },
+  };
+  assert.equal(isUsableSaved(saved), true);
+  for (const handle of [42, null, undefined, ["tourist"], { toLowerCase: 1 }]) {
+    assert.equal(isUsableSaved({ ...saved, handle }), false, JSON.stringify(handle));
+  }
+  assert.equal(isUsableSaved(null), false);
+  assert.equal(isUsableSaved("tourist"), false);
 });

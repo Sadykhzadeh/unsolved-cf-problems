@@ -770,6 +770,14 @@ export const isTagCounts = (value) => Boolean(value) && typeof value === "object
   && Object.values(value).every((count) => Number.isInteger(count) && count >= 0);
 export const hasTagCounts = (digest) => isTagCounts(digest?.state?.solvedTags);
 
+// Whether a saved lookup has what the page reads from it. A copy saved before the tag
+// counts or the solved problems were kept is looked up again, and so is one whose
+// handle is not a string, which a hand-edited copy can have.
+export const isUsableSaved = (entry) => Boolean(entry) && typeof entry.handle === "string"
+  && Number.isFinite(entry.savedAt) && unpackRows(entry.rows) !== null && Number.isInteger(entry.submissions)
+  && isTagCounts(entry.solvedTags) && Array.isArray(entry.solved?.keys) && Array.isArray(entry.solved?.twins)
+  && Array.isArray(entry.solved?.starts) && Array.isArray(entry.solved?.taken);
+
 
 // The rows of a state, easiest first and unrated last; the rows keep their
 // order among equals.

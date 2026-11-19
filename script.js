@@ -14,7 +14,7 @@ import {
   LookupFailure,
   hasTagCounts,
   isFresh,
-  isTagCounts,
+  isUsableSaved,
   isClearTagsKey,
   isHelpKey,
   isPickKey,
@@ -793,19 +793,14 @@ const readStore = () => {
 
 const readSaved = (handle) => {
   const entry = readStore().entries[savedId(handle)];
-  const rows = entry && Number.isFinite(entry.savedAt) ? unpackRows(entry.rows) : null;
-  // A copy saved before the tag counts or the solved problems were kept is looked up again.
-  const solved = entry?.solved;
-  const solvedKept = Array.isArray(solved?.keys) && Array.isArray(solved?.twins) && Array.isArray(solved?.starts)
-    && Array.isArray(solved?.taken);
-  if (!rows || !Number.isInteger(entry.submissions) || !isTagCounts(entry.solvedTags) || !solvedKept) return null;
+  if (!isUsableSaved(entry)) return null;
   return {
-    handle: entry.handle ?? handle,
+    handle: entry.handle,
     savedAt: entry.savedAt,
-    rows,
+    rows: unpackRows(entry.rows),
     submissions: entry.submissions,
     solvedTags: entry.solvedTags,
-    solved,
+    solved: entry.solved,
   };
 };
 
