@@ -16,6 +16,7 @@ export default {
     ratingTD: "Рейтинг",
     triesTD: "Попытки",
     triesFilterLabel: "Попыток не меньше",
+    withinLabel: "Последняя попытка не старше (дней)",
     verdictTD: "Последний вердикт",
     notJudgedText: "ещё не проверено",
     onTestText: "{verdict} на тесте {test}",

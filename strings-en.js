@@ -16,6 +16,7 @@ export default {
     ratingTD: "Rating",
     triesTD: "Tries",
     triesFilterLabel: "Tries at least",
+    withinLabel: "Tried within (days)",
     verdictTD: "Last verdict",
     notJudgedText: "not judged yet",
     onTestText: "{verdict} on test {test}",

@@ -97,6 +97,7 @@ td {
 #minRating,
 #maxRating,
 #minTries,
+#withinDays,
 #tagFilter,
 #verdictFilter,
 #friend {
@@ -136,7 +137,8 @@ td {
     width: 4.5em
 }
 
-#minTries {
+#minTries,
+#withinDays {
     width: 3.5em
 }
 

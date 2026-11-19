@@ -454,6 +454,21 @@ test("the filter keeps the problems whose last attempt ended with one verdict", 
   assert.equal(writeParams({ verdict: "" }), "");
 });
 
+test("the filter keeps the problems tried within the given days, as of the given time", () => {
+  const now = 1_700_000_000;
+  const tried = (daysAgo) => ({ contestId: 1, index: "A", name: "a", tags: [], tries: 1, lastTime: now - daysAgo * 86400 });
+  const rows = [tried(0.5), tried(3), tried(10), { contestId: 1, index: "A", name: "never", tags: [], tries: 0 }];
+  const kept = (days) => rows.filter((row) => matchesFilter(row, makeFilter({ days, now }))).length;
+  assert.equal(kept(""), 4, "no days chosen keeps everything, never tried included");
+  assert.equal(kept("1"), 1);
+  assert.equal(kept("3"), 2, "the edge is inside");
+  assert.equal(kept("30"), 3, "never tried problems have no attempt to be recent");
+  assert.equal(kept("0"), 4, "zero days is no bound, rather than nothing");
+  assert.equal(kept("-5"), 4);
+  assert.equal(writeParams({ days: "7" }), "days=7&sort=rating");
+  assert.equal(readParams("?days=7").days, "7");
+});
+
 test("a blank bound in a link is no bound, rather than zero", () => {
   const row = { contestId: 1, index: "A", name: "x", tags: [], rating: 1500 };
   const filter = makeFilter({ min: " ", max: "\t" });
@@ -577,6 +592,7 @@ test("a link carries the handle, sort and filters, and nothing at their defaults
     tags: ["dp"],
     tagAny: false,
     verdict: "TLE",
+    days: "30",
     noGym: true,
     noSpecial: true,
     friend: "jiangly",
@@ -586,7 +602,7 @@ test("a link carries the handle, sort and filters, and nothing at their defaults
     friendMark: true,
   };
   const search = writeParams(state);
-  assert.equal(search, "handle=tourist&sort=-tries&q=bear&min=1200&triesmin=3&tag=dp&verdict=TLE&nogym=1&nospecial=1&friend=jiangly&friendmode=mark&round=1&tags=1&upsolve=1");
+  assert.equal(search, "handle=tourist&sort=-tries&q=bear&min=1200&triesmin=3&tag=dp&verdict=TLE&days=30&nogym=1&nospecial=1&friend=jiangly&friendmode=mark&round=1&tags=1&upsolve=1");
   assert.deepEqual(readParams(`?${search}`), { ...state, query: "bear" });
 
   // Several tags are repeated tag= parameters, and the mode is only written when it matters.
@@ -662,6 +678,7 @@ test("unknown or broken parameters fall back to the defaults", () => {
     tags: [],
     tagAny: false,
     verdict: "",
+    days: "",
     noGym: false,
     noSpecial: false,
     friend: "",

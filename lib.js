@@ -305,15 +305,17 @@ const uniqueTags = (tags) => [...new Set([...tags].map(String).filter(Boolean))]
 // `tags` keeps the problems that have all of them, or any of them with
 // `tagAny`, as the problemset on Codeforces does. `triesMin` keeps the problems
 // tried at least that many times, and `verdict`, a short verdict label as the table
-// shows it, the ones whose last attempt ended that way.
+// shows it, the ones whose last attempt ended that way. `days` keeps the problems
+// whose last attempt is that many days old or less, as of `now` (seconds).
 export const makeFilter = ({
-  query = "", min = "", max = "", triesMin = "", tags = [], tagAny = false, verdict = "", noGym = false, noSpecial = false,
-  solvedBy = null, inRound = false, hidden = null,
+  query = "", min = "", max = "", triesMin = "", tags = [], tagAny = false, verdict = "", days = "", noGym = false,
+  noSpecial = false, solvedBy = null, inRound = false, hidden = null, now = Date.now() / 1000,
 } = {}) => ({
   query: searchText(query),
   min: bound(min),
   max: bound(max),
   triesMin: bound(triesMin),
+  triedSince: bound(days) > 0 ? now - bound(days) * 86400 : null,
   tags: uniqueTags(tags),
   tagAny: Boolean(tagAny),
   verdict: String(verdict).trim().toUpperCase(),
@@ -342,6 +344,7 @@ export const matchesFilter = (row, filter) => {
   if (filter.inRound && !row.inRound) return false;
   if (filter.triesMin !== null && row.tries < filter.triesMin) return false;
   if (filter.verdict && verdictLabel(row.verdict, "")[0] !== filter.verdict) return false;
+  if (filter.triedSince !== null && (row.lastTime === undefined || row.lastTime < filter.triedSince)) return false;
   if (filter.min !== null || filter.max !== null) {
     // An unrated problem cannot be said to sit inside a range.
     if (row.rating === undefined) return false;
@@ -408,6 +411,7 @@ export const readParams = (search) => {
     tags: uniqueTags(params.getAll("tag")),
     tagAny: params.get("tagany") === "1",
     verdict: (params.get("verdict") ?? "").trim().toUpperCase(),
+    days: params.get("days") ?? "",
     noGym: params.get("nogym") === "1",
     noSpecial: params.get("nospecial") === "1",
     friend: (params.get("friend") ?? "").trim(),
@@ -419,8 +423,8 @@ export const readParams = (search) => {
 };
 
 export const writeParams = ({
-  lang, handle, sort, query = "", min = "", max = "", triesMin = "", tags = [], tagAny = false, verdict = "", noGym = false,
-  noSpecial = false, friend = "", inRound = false, showTags = false, upsolve = false, friendMark = false,
+  lang, handle, sort, query = "", min = "", max = "", triesMin = "", tags = [], tagAny = false, verdict = "", days = "",
+  noGym = false, noSpecial = false, friend = "", inRound = false, showTags = false, upsolve = false, friendMark = false,
 }) => {
   const params = new URLSearchParams();
   if (lang) params.set("lang", lang);
@@ -436,6 +440,7 @@ export const writeParams = ({
   for (const tag of chosen) params.append("tag", tag);
   if (tagAny && chosen.length > 1) params.set("tagany", "1");
   if (verdict.trim()) params.set("verdict", verdict.trim().toUpperCase());
+  if (bound(days) > 0) params.set("days", String(bound(days)));
   if (noGym) params.set("nogym", "1");
   if (noSpecial) params.set("nospecial", "1");
   if (friend) params.set("friend", friend);

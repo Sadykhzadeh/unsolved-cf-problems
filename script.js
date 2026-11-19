@@ -114,6 +114,7 @@ const onloadFunction = (lang) => {
   byId("searchTask").setAttribute("aria-label", text.searchPlaceholder);
   byId("ratingFilterLabel").textContent = text.ratingTD;
   byId("triesFilterLabel").textContent = text.triesFilterLabel;
+  byId("withinLabel").textContent = text.withinLabel;
   byId("minRating").setAttribute("aria-label", text.minRating);
   byId("maxRating").setAttribute("aria-label", text.maxRating);
   byId("tagFilter").setAttribute("aria-label", text.tagsTD);
@@ -179,6 +180,7 @@ const applyParams = ({ fresh = false } = {}) => {
   byId("minRating").value = params.min;
   byId("maxRating").value = params.max;
   byId("minTries").value = params.triesMin;
+  byId("withinDays").value = params.days;
   chosenTags = params.tags;
   tagAny = params.tagAny;
   chosenVerdict = params.verdict;
@@ -203,6 +205,7 @@ const currentParams = () => ({
   tags: chosenTags,
   tagAny,
   verdict: chosenVerdict,
+  days: byId("withinDays").value,
   noGym: byId("noGym").checked,
   noSpecial: byId("noSpecial").checked,
   friend: friend.handle,
@@ -449,6 +452,7 @@ const applyFilters = () => {
     tags: chosenTags,
     tagAny,
     verdict: chosenVerdict,
+    days: byId("withinDays").value,
     noGym: byId("noGym").checked,
     noSpecial: byId("noSpecial").checked,
     solvedBy: friendFiltering() ? friend.solvedBy : null,
@@ -719,7 +723,7 @@ for (const button of document.querySelectorAll("button.sort")) {
 }
 
 // The filters exist once in the page, so their listeners are attached once.
-for (const id of ["searchTask", "minRating", "maxRating", "minTries", "noGym", "noSpecial", "inRound", "showHidden"]) {
+for (const id of ["searchTask", "minRating", "maxRating", "minTries", "withinDays", "noGym", "noSpecial", "inRound", "showHidden"]) {
   byId(id).addEventListener("input", () => {
     applyFilters();
     syncUrl();
