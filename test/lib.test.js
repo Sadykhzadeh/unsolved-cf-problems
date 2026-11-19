@@ -64,6 +64,7 @@ import {
 } from "../lib-upsolve.js";
 import { csvTable, markdownTable } from "../lib-export.js";
 import { solvedSince } from "../lib-since.js";
+import { compareHandles } from "../lib-compare.js";
 import { createKeys } from "../keys.js";
 
 // Trimmed copies of the API answers, in the shape the API returns them.
@@ -1381,4 +1382,33 @@ test("a saved lookup whose handle is not a string is not read back", () => {
   }
   assert.equal(isUsableSaved(null), false);
   assert.equal(isUsableSaved("tourist"), false);
+});
+
+test("two handles compare on the problems both tried and neither solved, and on who solved what the other tried", () => {
+  const row = (contestId, index, name, rating, start = 1700000000) => ({ contestId, index, name, rating, start, tags: [] });
+  const A = row(1000, "A", "Alpha", 800);
+  const B = row(1001, "B", "Bravo", 1200);
+  const C = row(1002, "C", "Charlie", 1600);
+  const D = row(1003, "D", "Delta", 1900);
+  const E = row(1004, "E", "Echo", 2100);
+  const F = row(1005, "F", "Foxtrot", 2400);
+  const mine = [E, C, A, D];
+  const theirs = [F, B, C];
+  const theirSolved = solvedCheck({ keys: ["1000|A", "1003|D"], twins: [] });
+  const mySolved = solvedCheck({ keys: ["1001|B"], twins: [] });
+  const found = compareHandles({ mine, theirs, mySolved, theirSolved });
+  assert.deepEqual(found.both.map(problemKey), ["1002|C"]);
+  assert.deepEqual(found.solvedByTheirs.map(problemKey), ["1000|A", "1003|D"], "rating order");
+  assert.deepEqual(found.solvedByMine.map(problemKey), ["1001|B"]);
+});
+
+test("a comparison matches parallel rounds the way the solved lists do", () => {
+  const mine = [{ contestId: 1500, index: "C", name: "Gamma", rating: 1600, start: 1700000000 }];
+  const theirs = [{ contestId: 1503, index: "A", name: "Gamma", rating: 1600, start: 1700000000 }];
+  const none = solvedCheck({ keys: [], twins: [] });
+  assert.equal(compareHandles({ mine, theirs, mySolved: none, theirSolved: none }).both.length, 1, "tried in a parallel copy");
+  const theirSolved = solvedCheck({ keys: [], twins: [["Gamma", 1600, 1503, 1700000000]] });
+  const found = compareHandles({ mine, theirs: [], mySolved: none, theirSolved });
+  assert.equal(found.both.length, 0);
+  assert.equal(found.solvedByTheirs.length, 1, "solved in the parallel copy");
 });

@@ -405,8 +405,9 @@ const state = {
 const listRows = () => state.rows.concat(state.extra);
 
 // The friend whose solved problems narrow the list, and once their
-// submissions are in, the check for what they solved.
-const friend = { handle: "", savedAt: null, solvedBy: null };
+// submissions are in, the check for what they solved and the rows of the
+// problems they tried and did not solve.
+const friend = { handle: "", savedAt: null, solvedBy: null, rows: null };
 
 // Each drawn <tr> with the row it shows, so filtering only flips `hidden`
 // instead of rebuilding the table.
@@ -471,6 +472,7 @@ const applyFilters = () => {
   if (friendView) friendView.mark();
   if (friendView && byId("friendMark").checked && listRows().length) showCounter();
   markRatingBands();
+  showCompare();
 };
 
 // The rows on screen, in the order they show, for the export.
@@ -590,6 +592,22 @@ const showTagTable = () => {
 byId("byTag").addEventListener("toggle", () => {
   if (byId("byTag").open) loadTagTable().then((view) => view.show());
 });
+
+// The comparison with the friend has its own code, read the first time its panel is
+// opened. The panel is there once there is a lookup and a friend to compare with.
+let compareLoad = null;
+const showCompare = () => {
+  const compare = byId("compare");
+  compare.hidden = !state.solved || !friend.rows || aboutOpen();
+  if (compare.hidden) return;
+  byId("compareSummary").textContent = fill(text.compareLabel, { handle: friend.handle });
+  if (!compare.open) return;
+  compareLoad ??= import("./compare.js").then(({ createCompare }) =>
+    createCompare({ byId, text, fill, anchor, state, friend }));
+  compareLoad.then((view) => view.show());
+};
+
+byId("compare").addEventListener("toggle", showCompare);
 
 // The rating strip has its own code, read when the first results show: until then
 // there is no strip to draw, and nothing to mark.
@@ -868,6 +886,7 @@ const showResults = () => {
   byId("solvedSince").hidden = byId("solvedSince").dataset.handle !== state.handle || aboutOpen();
   showWeakTags();
   showTagTable();
+  showCompare();
   showRatingStrip();
   if (!listRows().length) {
     byId("table-main").hidden = true;
@@ -907,6 +926,7 @@ const clearResults = () => {
   delete byId("solvedSince").dataset.handle;
   byId("tableCaption").textContent = "";
   byId("byTag").hidden = true;
+  byId("compare").hidden = true;
   byId("table-list").replaceChildren();
   delete byId("table-list").dataset.showing;
 };

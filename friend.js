@@ -1,7 +1,8 @@
-// A friend's view: the friend's solved problems, read from the Cache API and the
-// history, and kept as the friend filter needs them. Read the first time a friend
-// is chosen (see loadFriend() in script.js).
-import { isFresh, solvedCheck, solvedSummary } from "./lib.js";
+// A friend's view: the friend's solved problems and the problems they tried and did not
+// solve, read from the Cache API and the history, and kept as the friend filter and the
+// comparison need them. Read the first time a friend is chosen (see loadFriend() in
+// script.js).
+import { isFresh, packRows, solvedCheck, solvedSummary, unpackRows } from "./lib.js";
 
 // How many of the rows the friend has solved, by the friend's check (see solvedCheck()).
 export const countSolvedBy = (rows, solvedBy) => rows.filter((row) => solvedBy(row, row.start)).length;
@@ -10,10 +11,11 @@ export const createFriend = ({
   friend, byId, text, fill, failureText, waitForTurn, lang, FRESH_FOR, CLOCK_SLACK,
   applyFilters, syncUrl, loadHistory, noteHandle, forgetHistory, drawn, listRows,
 }) => {
-  // A friend's submissions are boiled down to what they solved and kept in the
-  // Cache API, which has room for them where localStorage does not: jiangly's
-  // 6.3 MB come to 329 KB. Only the latest friend is kept. Problem names come in
-  // the page's language and are matched by name, so the copy is per language.
+  // A friend's submissions are boiled down to what they solved, and the problems
+  // they tried and did not solve, and kept in the Cache API, which has room for them
+  // where localStorage does not: jiangly's 6.3 MB come to 329 KB. Only the latest
+  // friend is kept. Problem names come in the page's language and are matched by
+  // name, so the copy is per language.
   const CACHE_NAME = "unsolved-cf-problems";
   const friendCacheKey = (handle) =>
     new URL(`friend.v1/${lang}/${encodeURIComponent(handle.toLowerCase())}`, window.location.href).href;
@@ -31,9 +33,10 @@ export const createFriend = ({
     try {
       const response = await (await openCache())?.match(friendCacheKey(handle));
       const entry = await response?.json();
+      const rows = unpackRows(entry?.rows);
       const valid = Number.isFinite(entry?.savedAt)
-        && Array.isArray(entry.summary?.keys) && Array.isArray(entry.summary.twins);
-      return valid ? entry : null;
+        && Array.isArray(entry.summary?.keys) && Array.isArray(entry.summary.twins) && rows !== null;
+      return valid ? { ...entry, rows } : null;
     } catch {
       return null;
     }
@@ -60,9 +63,10 @@ export const createFriend = ({
     }
   };
 
-  const useFriend = ({ savedAt, summary }) => {
+  const useFriend = ({ savedAt, summary, rows }) => {
     friend.savedAt = savedAt;
     friend.solvedBy = solvedCheck(summary);
+    friend.rows = rows;
     applyFilters();
   };
 
@@ -80,7 +84,7 @@ export const createFriend = ({
     const status = byId("friendStatus");
     try {
       if (friend.handle.toLowerCase() !== key) {
-        Object.assign(friend, { handle, savedAt: null, solvedBy: null });
+        Object.assign(friend, { handle, savedAt: null, solvedBy: null, rows: null });
         status.textContent = "";
         applyFilters();
         syncUrl();
@@ -93,18 +97,18 @@ export const createFriend = ({
       if (!await waitForTurn(() => number === friendNumber)) return;
       const history = await loadHistory(handle, () => number === friendNumber);
       if (number !== friendNumber || !history) return;
-      const entry = { savedAt: Date.now(), summary: solvedSummary(history.state) };
+      const entry = { savedAt: Date.now(), summary: solvedSummary(history.state), rows: history.state.rows };
       noteHandle(handle);
       useFriend(entry);
       status.textContent = "";
-      saveFriend(handle, entry);
+      saveFriend(handle, { ...entry, rows: packRows(entry.rows) });
     } catch (error) {
       if (number !== friendNumber) return;
       console.error(error);
       // A friend who no longer exists narrows nothing, and their copy is not
       // kept: the same as a handle that is not found.
       if (error.failure?.kind === "notFound" || error.failure?.kind === "badHandle") {
-        Object.assign(friend, { savedAt: null, solvedBy: null });
+        Object.assign(friend, { savedAt: null, solvedBy: null, rows: null });
         applyFilters();
         forgetFriend(handle);
         forgetHistory(handle);

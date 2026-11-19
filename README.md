@@ -37,6 +37,11 @@ Every problem a Codeforces user has tried and not solved, in one table.
   rounds included: the ones worth asking them about. Ticking "Mark instead of
   filtering" keeps the whole list instead, marks those problems with "✓ friend",
   and says how many there are in the counter line.
+- Compares the list with the friend's, in a panel under the weakest tags (opened
+  by its summary, "Compare with ..."): the problems both tried and neither
+  solved, the ones the friend solved that you tried, and the ones you solved
+  that the friend tried. Each list is in rating order, and a parallel round
+  counts as the same problem, as it does for the friend filter.
 - Shows the five tags the handle is weakest on above the list: how many of
   its unsolved problems carry each tag, and solved out of attempted for it.
   A click on one narrows the list to that tag.
@@ -111,8 +116,8 @@ younger than ten minutes is
 shown without asking Codeforces again; an older one is shown at once while a
 fresh copy loads, and "Refresh" (or searching for the same handle) always
 asks again. A friend's submissions are boiled down to the problems they
-solved and kept the same way, the latest friend only, in Cache Storage,
-which has room for them. What the submissions older than a day add up to is
+solved and the ones they tried and did not solve, kept the same way, the
+latest friend only, in Cache Storage, which has room for them. What the submissions older than a day add up to is
 kept there too, for the latest three handles, so asking again takes the 300
 newest submissions only (about 15 KB instead of 240 to 500 KB) and adds them;
 the whole history is read again when nothing is kept, when the newest 300 do

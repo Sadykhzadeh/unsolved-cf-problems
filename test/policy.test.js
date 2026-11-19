@@ -28,7 +28,7 @@ test("the markup has no inline style, script or event handler that the policy wo
 
 test("the scripts never turn text into code or markup", () => {
   for (const file of ["script.js", "lib.js", "friend.js", "upsolve.js", "lib-upsolve.js", "lib-export.js",
-    "hide.js", "keys.js", "tags.js", "tagtable.js", "rating-strip.js", "about.js"]) {
+    "hide.js", "keys.js", "tags.js", "tagtable.js", "rating-strip.js", "about.js", "compare.js", "lib-compare.js"]) {
     assert.doesNotMatch(read(file), /\beval\(|new Function\(|\.innerHTML\s*=|insertAdjacentHTML\(/, file);
   }
 });

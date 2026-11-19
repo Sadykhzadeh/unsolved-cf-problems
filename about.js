@@ -7,6 +7,7 @@ export const createAbout = ({ byId, text, lang, anchor, aboutOpen, showResults }
     byId("filters").hidden = true;
     byId("weakTags").hidden = true;
     byId("byTag").hidden = true;
+    byId("compare").hidden = true;
     byId("ratingStrip").hidden = true;
     byId("freshness").hidden = true;
     byId("solvedSince").hidden = true;

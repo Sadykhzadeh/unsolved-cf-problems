@@ -467,10 +467,17 @@ th[aria-sort="descending"] .sort::after {
     background: var(--fg)
 }
 
-/* The "By tag" table under the weakest tags, centred like them. */
-#byTag {
+/* The "By tag" table and the comparison with a friend under the weakest tags, centred
+   like them. */
+#byTag,
+#compare {
     margin: 0.5em auto;
     max-width: 40em
+}
+
+#compareBody ul {
+    list-style: none;
+    padding: 0
 }
 
 /* The tags chosen to narrow the list, each one a button that takes it away.
