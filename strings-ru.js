@@ -84,6 +84,7 @@ export default {
     downloadCsvButton: "Скачать CSV",
     copiedText: "Скопировано задач: {count}, таблица в формате Markdown.",
     copyFailedText: "Не удалось скопировать. Скачайте CSV.",
+    downloadFailedText: "Не удалось скачать CSV.",
     upsolveLabel: "Добавить нерешённые задачи из контестов, в которых участвовал(а)",
     upsolveLoadingText: "Загружаю список задач и контестов пользователя {handle}...",
     neverTriedText: "не пробовал(а)",

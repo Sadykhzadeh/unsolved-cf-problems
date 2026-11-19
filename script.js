@@ -501,14 +501,19 @@ byId("copyMarkdown").addEventListener("click", async () => {
 
 // The CSV starts with a byte order mark, so a spreadsheet reads the names as UTF-8.
 byId("downloadCsv").addEventListener("click", async () => {
-  const { csvTable } = await import("./lib-export.js");
-  const blob = new Blob(["﻿", csvTable(visibleRows())], { type: "text/csv;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `unsolved-${state.handle.replace(/[^\w-]/g, "_") || "problems"}.csv`;
-  link.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  try {
+    const { csvTable } = await import("./lib-export.js");
+    const blob = new Blob(["﻿", csvTable(visibleRows())], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `unsolved-${state.handle.replace(/[^\w-]/g, "_") || "problems"}.csv`;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  } catch {
+    // The export module is read on first use; if that read fails, the page says so.
+    byId("exportStatus").textContent = text.downloadFailedText;
+  }
 });
 
 // The tags the list is narrowed to, and whether a problem needs all of them

@@ -84,6 +84,7 @@ export default {
     downloadCsvButton: "Download CSV",
     copiedText: "Copied {count} problems as a Markdown table.",
     copyFailedText: "Could not copy here. Download the CSV instead.",
+    downloadFailedText: "Could not download the CSV here.",
     upsolveLabel: "Include problems I never tried from contests I took part in",
     upsolveLoadingText: "Loading the problem list and the contests of {handle}...",
     neverTriedText: "never tried",
