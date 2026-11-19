@@ -177,7 +177,8 @@ td {
     color: var(--fg);
     background-color: var(--bg);
     border: solid 1px var(--fg);
-    border-radius: 5px
+    border-radius: 5px;
+    transition: 0.5s
 }
 
 #start {
@@ -192,24 +193,13 @@ td {
 #start:hover,
 #about:hover {
     background-color: var(--fg);
-    color: var(--bg);
-    transition: 0.5s
+    color: var(--bg)
 }
 
-#start:not(:hover),
-#about:not(:hover) {
-    transition: 0.5s
-}
-
-/* The only motion on the page is these fades. The hover rules are more
-   specific than the buttons themselves, so they are named here too. */
+/* The only motion on the page is these fades. */
 @media (prefers-reduced-motion: reduce) {
     #start,
-    #about,
-    #start:hover,
-    #about:hover,
-    #start:not(:hover),
-    #about:not(:hover) {
+    #about {
         transition: none
     }
 }
@@ -347,17 +337,6 @@ td {
     border: 0;
 }
 
-/* #about is a <button> that looks like a link. */
-#about {
-    background: none;
-    border: 0;
-    padding: 0;
-    font: inherit;
-    color: inherit;
-    text-decoration: underline;
-    cursor: pointer;
-}
-
 /* Header labels are buttons so they can be sorted by from the keyboard, but
    they should still read as header text. */
 .sort {
@@ -400,10 +379,13 @@ th[aria-sort="descending"] .sort::after {
     font-size: 0.9em
 }
 
+/* Buttons that look like links: #about, the refresh, pick and export buttons and the tag mode. */
 #refresh,
 #pick,
 #copyMarkdown,
-#downloadCsv {
+#downloadCsv,
+#tagMode,
+#about {
     background: none;
     border: 0;
     padding: 0;
@@ -496,16 +478,6 @@ th[aria-sort="descending"] .sort::after {
     padding: 2px 6px;
     font: inherit;
     color: inherit;
-    cursor: pointer
-}
-
-#tagMode {
-    background: none;
-    border: 0;
-    padding: 0;
-    font: inherit;
-    color: inherit;
-    text-decoration: underline;
     cursor: pointer
 }
 
