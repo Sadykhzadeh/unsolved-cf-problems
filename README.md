@@ -138,8 +138,12 @@ which browsers refuse to do from `file://`:
 npx http-server -p 4340
 ```
 
-The logic that does not touch the page lives in `lib.js` and is tested with
-Node's built-in runner, no dependencies needed:
+Then open http://localhost:4340/ in the browser. The lookups need the internet,
+since they read the Codeforces API.
+
+The logic that does not touch the page lives in `lib.js` and the `lib-*.js`
+modules, and is tested with Node's built-in runner (CI uses Node 24), with no
+dependencies to install:
 
 ```sh
 npm test
