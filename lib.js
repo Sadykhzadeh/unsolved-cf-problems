@@ -172,7 +172,7 @@ export const rememberHandle = (handles, handle, limit = 8) => {
 // for the handle in it.
 export const parseHandle = (input) => {
   const value = String(input).trim();
-  const link = /^(?:https?:\/\/)?(?:[\w-]+\.)*(?:codeforces\.[a-z]+|codeforc\.es)\/(?:profile|submissions)\/([^/?#\s]+)/i.exec(value);
+  const link = /^(?:https?:\/\/)?(?:[\w-]+\.)*(?:codeforces\.[a-z]+|codeforc\.es)\/(?:profile|submissions)(?=[/?#]|$)\/?([^/?#\s]*)/i.exec(value);
   if (link) return link[1];
   // A bare handle with a slash, query or fragment after it: the handle is what comes first.
   const bare = /^([\w-]+)[/?#]/.exec(value);

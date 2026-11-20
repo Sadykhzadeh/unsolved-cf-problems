@@ -714,6 +714,11 @@ test("a pasted profile or submissions link stands for its handle", () => {
   assert.equal(parseHandle("https://codeforces.com/profile/tourist"), "tourist");
   assert.equal(parseHandle("https://codeforces.com/profile/tourist/?locale=en#top"), "tourist");
   assert.equal(parseHandle("codeforces.com/profile/Um_nik/"), "Um_nik");
+  // a link with no handle in it stands for none, not for the URL
+  assert.equal(parseHandle("https://codeforces.com/profile/"), "");
+  assert.equal(parseHandle("https://codeforces.com/profile"), "");
+  assert.equal(parseHandle("codeforces.com/submissions/?x=1"), "");
+  assert.equal(parseHandle("https://codeforces.com/profilers"), "https://codeforces.com/profilers");
   // a handle typed with a stray slash, query or fragment after it
   assert.equal(parseHandle("tourist/"), "tourist");
   assert.equal(parseHandle("tourist/ "), "tourist");
