@@ -114,8 +114,10 @@ a contest that started at the same moment or is numbered up to seven away), and
 lists what is left - sorted by rating,
 with unrated problems last. Everything runs
 in the browser; there is no backend and nothing is stored outside it:
-`localStorage` keeps the last handle, the chosen language, the problems
-hidden for each handle and the results of the last three lookups. A lookup
+`localStorage` keeps the last handle, the eight handles offered again in the
+fields, the chosen language, the view the last visit left (sort, tags column,
+gym and special switches, upsolve box and friend marks), the problems hidden
+for each handle and the results of the last three lookups. A lookup
 younger than ten minutes is
 shown without asking Codeforces again; an older one is shown at once while a
 fresh copy loads, and "Refresh" (or searching for the same handle) always
@@ -125,7 +127,9 @@ latest friend only, in Cache Storage, which has room for them. What the submissi
 kept there too, for the latest three handles, so asking again takes the 300
 newest submissions only (about 15 KB instead of 240 to 500 KB) and adds them;
 the whole history is read again when nothing is kept, when the newest 300 do
-not reach back to the part that was, and every three days. Calls to the API
+not reach back to the part that was, and every three days. The problem list
+of the upsolve view is kept there as well, one per language for six hours, and
+so are the contests each handle was rated in, for ten minutes. Calls to the API
 are spaced two seconds apart, as Codeforces asks. A call refused for the rate limit,
 or by a busy gateway, is made once more after the next two seconds.
 
