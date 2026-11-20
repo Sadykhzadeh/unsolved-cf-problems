@@ -11,9 +11,9 @@ const modules = readdirSync(root).filter((file) => file.endsWith(".js"));
 
 // The local imports a module makes, static or on first use: { names, path }.
 const importsOf = (source) => [
-  ...source.matchAll(/import\s*\{([^}]*)\}\s*from\s*"\.\/([^"]+)"/g).map(([, names, path]) => ({ names, path })),
-  ...source.matchAll(/import\(\s*"\.\/([^"]+)"\s*\)\.then\(\(\{\s*([^}]*)\}\)/g).map(([, path, names]) => ({ names, path })),
-  ...source.matchAll(/const\s*\{([^}]*)\}\s*=\s*await\s+import\(\s*"\.\/([^"]+)"\s*\)/g).map(([, names, path]) => ({ names, path })),
+  ...[...source.matchAll(/import\s*\{([^}]*)\}\s*from\s*"\.\/([^"]+)"/g)].map(([, names, path]) => ({ names, path })),
+  ...[...source.matchAll(/import\(\s*"\.\/([^"]+)"\s*\)\.then\(\(\{\s*([^}]*)\}\)/g)].map(([, path, names]) => ({ names, path })),
+  ...[...source.matchAll(/const\s*\{([^}]*)\}\s*=\s*await\s+import\(\s*"\.\/([^"]+)"\s*\)/g)].map(([, names, path]) => ({ names, path })),
 ];
 
 test("every module of the page loads", async () => {
