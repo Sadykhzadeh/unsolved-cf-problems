@@ -129,9 +129,10 @@ newest submissions only (about 15 KB instead of 240 to 500 KB) and adds them;
 the whole history is read again when nothing is kept, when the newest 300 do
 not reach back to the part that was, and every three days. The problem list
 of the upsolve view is kept there as well, one per language for six hours, and
-so are the contests each handle was rated in, for ten minutes. Calls to the API
-are spaced two seconds apart, as Codeforces asks. A call refused for the rate limit,
-or by a busy gateway, is made once more after the next two seconds.
+so are the contests each of the latest three handles was rated in, for ten
+minutes. Calls to the API are spaced two seconds apart, as Codeforces asks. A call
+refused for the rate limit, or by a busy gateway, is made once more after the next
+two seconds.
 
 ## Running it locally
 

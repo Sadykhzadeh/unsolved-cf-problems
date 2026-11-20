@@ -61,7 +61,7 @@ import { isBucket, ratingBandName, ratingBuckets } from "../rating-strip.js";
 import { weakTagName, weakTags } from "../tags.js";
 import {
   attachSolvedCounts, contestNote, contestProgress, listedCheck, packProblemset, ratedContestIds, ratedKey,
-  shareInFlight, tookPartIn, unpackProblemset, untriedRows,
+  shareInFlight, staleRatings, tookPartIn, unpackProblemset, untriedRows,
 } from "../lib-upsolve.js";
 import { csvTable, markdownTable } from "../lib-export.js";
 import { solvedSince } from "../lib-since.js";
@@ -1393,6 +1393,18 @@ test("the j and k highlight stays on its problem when the rows are built again",
   assert.equal(highlight, problemKey(problems[1]));
   assert.equal(drawn[1][0].classList.has("highlight"), true);
   assert.equal(drawn[0][0].classList.has("highlight"), false);
+});
+
+test("the rated contests kept are those of the latest three handles, and only the older ones are dropped", () => {
+  const kept = [
+    { key: "rating.v1/a", savedAt: 400 },
+    { key: "rating.v1/b", savedAt: 100 },
+    { key: "rating.v1/c", savedAt: 300 },
+    { key: "rating.v1/d", savedAt: 200 },
+  ];
+  assert.deepEqual(staleRatings(kept), ["rating.v1/b"]);
+  assert.deepEqual(staleRatings(kept.slice(0, 3)), []);
+  assert.deepEqual(staleRatings([]), []);
 });
 
 test("the rated contests of a handle are kept under one encoded key per handle", () => {

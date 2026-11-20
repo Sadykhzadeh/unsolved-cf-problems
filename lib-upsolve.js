@@ -6,6 +6,16 @@ import { fillText, hasParallel, problemKey, solvedCheck } from "./lib.js";
 // friend keys are, so that a handle cannot change the path it is kept at.
 export const ratedKey = (handle) => `rating.v1/${encodeURIComponent(handle.toLowerCase())}`;
 
+// The rated contests are kept for as many handles as the saved lookups are.
+const KEEP_RATINGS = 3;
+
+// The keys of the kept rated contests to drop, so that the newest few remain. Each entry
+// is { key, savedAt }, as it was stamped when it was written.
+export const staleRatings = (entries) => [...entries]
+  .sort((a, b) => b.savedAt - a.savedAt)
+  .slice(KEEP_RATINGS)
+  .map((entry) => entry.key);
+
 // The ids of the contests a handle was rated in, from user.rating. Only rated
 // contests are listed there: a virtual run or an unrated round is not.
 export const ratedContestIds = (ratingChanges) => new Set(ratingChanges.map((change) => change.contestId));

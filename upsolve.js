@@ -4,7 +4,7 @@
 import { LookupFailure, describeFailure, fetchApi, isFresh } from "./lib.js";
 import {
   attachSolvedCounts, contestNote, contestProgress, listedCheck, packProblemset, ratedContestIds, ratedKey,
-  shareInFlight, tookPartIn, unpackProblemset, untriedRows,
+  shareInFlight, staleRatings, tookPartIn, unpackProblemset, untriedRows,
 } from "./lib-upsolve.js";
 
 export const createUpsolve = ({
@@ -15,7 +15,7 @@ export const createUpsolve = ({
 // Upsolve: the problems of the contests the handle was rated in that it never
 // tried. The problem list is the same for everyone and comes in one language per
 // name, so it is kept per language for six hours; the rated contests are kept per
-// handle for as long as a lookup is. Both are read in the Cache API, the same
+// handle, for the latest few handles. Both are read in the Cache API, the same
 // way as the friend, with the same call spacing and retries.
   const PROBLEMSET_CACHE = "unsolved-cf-problemset";
   const PROBLEMSET_FRESH = 6 * 60 * 60 * 1000;
@@ -72,6 +72,23 @@ export const createUpsolve = ({
     return unpackProblemset(packed);
   };
 
+  // Drops the rated contests of all but the latest few handles, which are read again when looked up.
+  const keepRated = async () => {
+    try {
+      const cache = await caches.open(PROBLEMSET_CACHE);
+      const prefix = new URL("rating.v1/", window.location.href).href;
+      const entries = [];
+      for (const request of await cache.keys()) {
+        if (!request.url.startsWith(prefix)) continue;
+        const entry = await (await cache.match(request))?.json().catch(() => null);
+        entries.push({ key: request.url, savedAt: entry?.savedAt ?? 0 });
+      }
+      for (const key of staleRatings(entries)) await cache.delete(key);
+    } catch {
+      // Not pruned; the next lookup prunes again.
+    }
+  };
+
   // The ids of the contests the handle was rated in.
   const loadRatedContests = async (handle, wanted) => {
     const key = ratedKey(handle);
@@ -87,6 +104,7 @@ export const createUpsolve = ({
     if (!changes) return null;
     const ids = [...ratedContestIds(changes)];
     await writeKept(key, ids);
+    await keepRated();
     return new Set(ids);
   };
 
