@@ -87,6 +87,7 @@ export default {
     downloadFailedText: "Could not download the CSV here.",
     upsolveLabel: "Include problems I never tried from contests I took part in",
     upsolveLoadingText: "Loading the problem list and the contests of {handle}...",
+    upsolveNoContestText: "{handle} has not taken part in a contest yet, so there is nothing to add.",
     neverTriedText: "never tried",
     keysHint: "Keys: / to search, P for a random pick, j and k to move the highlight, Enter or o to open it, Escape to clear the tags, ? to list them all.",
     keysHelpTitle: "Keyboard shortcuts",

@@ -155,6 +155,11 @@ export const createUpsolve = ({
 
   const note = (contestId, template) => contestNote(progressFor(), contestId, template);
 
+  // The line for a handle that took part in no contest, so the view has nothing to add.
+  const nothingToAdd = () => (state.solved && upsolveData.contests
+    && tookPartIn(upsolveData.contests, state.solved.taken).size === 0
+    ? fill(text.upsolveNoContestText, { handle: state.handle }) : "");
+
   // Reads what the upsolve view needs for the handle on screen, once, and then
   // shows the list with it. A newer call, or the box being unticked, drops this one.
   const ensure = async () => {
@@ -163,6 +168,7 @@ export const createUpsolve = ({
     const wanted = () => number === upsolveNumber;
     if (!(byId("upsolve").checked || state.sort.key === "solved") || !state.solved || !handle) return;
     if (upsolveData.problems && upsolveData.contests && upsolveData.handle === handle.toLowerCase()) {
+      byId("upsolveStatus").textContent = nothingToAdd();
       refreshList();
       return;
     }
@@ -181,7 +187,7 @@ export const createUpsolve = ({
       return;
     }
     if (!wanted()) return;
-    byId("upsolveStatus").textContent = "";
+    byId("upsolveStatus").textContent = nothingToAdd();
     refreshList();
   };
 
