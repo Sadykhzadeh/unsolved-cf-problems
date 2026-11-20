@@ -22,11 +22,11 @@ export const createHide = ({ state, byId, text, fill, problemKey, remember, draw
   const readHiddenStore = () => {
     try {
       const store = JSON.parse(localStorage.getItem(HIDDEN_KEY));
-      if (store && typeof store === "object" && !Array.isArray(store)) return store;
+      if (store && typeof store === "object" && !Array.isArray(store)) return Object.assign(Object.create(null), store);
     } catch {
       // Unreadable or blocked storage hides nothing.
     }
-    return {};
+    return Object.create(null);
   };
 
   const hiddenFor = (handle) => {
