@@ -52,10 +52,17 @@ test("the rated contests kept are those of the latest handles, not every handle 
   const upsolve = await load();
   const state = { handle: "", solved: null, rows: [], sort: { key: "rating" } };
   const view = viewFor(upsolve, state, {});
-  for (const handle of ["a", "b", "c", "d", "e"]) {
-    state.handle = handle;
-    state.solved = { keys: [], twins: [], starts: [], taken: [], rows: [] };
-    await view.ensure();
+  const realNow = Date.now;
+  let stamp = 1700000000000;
+  Date.now = () => (stamp += 1000);
+  try {
+    for (const handle of ["a", "b", "c", "d", "e"]) {
+      state.handle = handle;
+      state.solved = { keys: [], twins: [], starts: [], taken: [], rows: [] };
+      await view.ensure();
+    }
+  } finally {
+    Date.now = realNow;
   }
   assert.deepEqual([...store.keys()].filter((key) => key.includes("/rating.v1/")).sort(), [
     "https://example.test/app/rating.v1/c",
