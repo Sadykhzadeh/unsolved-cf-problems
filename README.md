@@ -68,9 +68,10 @@ Every problem a Codeforces user has tried and not solved, in one table.
   cells that start like a formula left as text.
 - Keeps the view in the address bar, so a link opens the same list, sorted
   and filtered the same way, and Back returns to the handle looked up before.
-- Remembers the sort, the tags column and the gym and special-round switches
-  for the next visit, for a link that says nothing about them; a link that does
-  is that view, with the rest at their defaults. The links the page writes
+- Remembers the sort, the tags column, the gym and special-round switches, the
+  upsolve box and the friend marks for the next visit, for a link that says
+  nothing about them; a link that does is that view, with the rest at their
+  defaults. The links the page writes
   always name the sort (`sort=rating` for the default), so they open the same
   list whatever view the visitor remembers.
 - Shows the last lookup instantly on the next visit (see below).
