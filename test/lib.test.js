@@ -863,6 +863,13 @@ test("an error answer keeps its status and comment, and an HTML page parses as n
   assert.equal((await fetchJson("x", { fetchFn: html })).payload, null);
 });
 
+test("a response larger than the cap is refused, and a smaller one is kept", async () => {
+  const { response } = await fetchJson("x", { cap: 10, fetchFn: trickle(["abc"], 1) });
+  assert.equal(response.status, 200);
+  const big = Array.from({ length: 12 }, () => "a");
+  await assert.rejects(fetchJson("x", { cap: 10, fetchFn: trickle(big, 5) }), isTimeout);
+});
+
 test("a call that never answers is cut off and recognised as a timeout", async () => {
   // A stand-in for fetch that honours the signal and otherwise hangs.
   const hang = (url, { signal }) => new Promise((resolve, reject) => {

@@ -83,15 +83,14 @@ export const isTimeout = (error) => Boolean(error) && error.name === "TimeoutErr
 // longer than the limit to arrive in full, while a connection that stops
 // delivering must still give up. Resolves with the response and the parsed
 // body, which is null when the body is not JSON, as an HTML error page is.
-// A stall throws a TimeoutError, wherever in the call it happens.
-export const fetchJson = async (url, { idleMs = REQUEST_TIMEOUT_MS, fetchFn = fetch } = {}) => {
+// A stall, or an answer past 64MB, throws a TimeoutError.
+export const fetchJson = async (url, { idleMs = REQUEST_TIMEOUT_MS, cap = 64e6, fetchFn = fetch } = {}) => {
   const controller = new AbortController();
+  const abort = () => controller.abort(new DOMException("No data for too long.", "TimeoutError"));
   let timer = 0;
   const arm = () => {
     clearTimeout(timer);
-    timer = setTimeout(() => {
-      controller.abort(new DOMException("No data for too long.", "TimeoutError"));
-    }, idleMs);
+    timer = setTimeout(abort, idleMs);
   };
   arm();
   try {
@@ -101,8 +100,10 @@ export const fetchJson = async (url, { idleMs = REQUEST_TIMEOUT_MS, fetchFn = fe
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       const parts = [];
+      let n = 0;
       for (let chunk = await reader.read(); !chunk.done; chunk = await reader.read()) {
         arm();
+        if ((n += chunk.value.length) > cap) abort();
         parts.push(decoder.decode(chunk.value, { stream: true }));
       }
       text = parts.join("") + decoder.decode();
