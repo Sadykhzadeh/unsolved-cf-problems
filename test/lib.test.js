@@ -1473,3 +1473,12 @@ test("a comparison matches parallel rounds the way the solved lists do", () => {
   assert.equal(found.both.length, 0);
   assert.equal(found.solvedByTheirs.length, 1, "solved in the parallel copy");
 });
+
+test("a parallel copy counts when its contest is seven numbers away, and not eight", () => {
+  const copy = solvedCheck({ keys: [], twins: [["Gamma", 1600, 1527, 1700000000]] });
+  const problem = (contestId) => ({ contestId, index: "C", name: "Gamma", rating: 1600 });
+  assert.equal(copy(problem(1520), 1700086400), true, "seven apart, on another day");
+  assert.equal(copy(problem(1519), 1700086400), false, "eight apart, on another day");
+  assert.equal(copy(problem(1519), 1700000000), true, "a contest that started at the same moment counts at any distance");
+  assert.equal(copy({ ...problem(1520), rating: 1700 }, 1700086400), false, "a different rating is a different problem");
+});
