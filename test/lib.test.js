@@ -1502,3 +1502,10 @@ test("a first click sorts each column the way it reads best, and a second one re
   assert.deepEqual(sortRows(rows, "tries", !defaultDescending("tries")).map((r) => r.name), ["Beta", "alpha"], "second click");
   assert.deepEqual(sortRows(rows, "rating", defaultDescending("rating")).map((r) => r.name), ["alpha", "Beta"], "easiest first");
 });
+
+test("an acmsguru problem is found by its id, and a Codeforces profile link is searched as text", () => {
+  const acmsguru = { problemsetName: "acmsguru", index: "123", name: "Sum", tags: [] };
+  const pick = (query) => matchesFilter(acmsguru, makeFilter({ query }));
+  assert.equal(pick("acmsguru|123"), true);
+  assert.equal(pick("https://codeforces.com/profile/tourist"), false);
+});
