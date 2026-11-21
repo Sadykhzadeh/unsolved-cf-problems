@@ -833,25 +833,30 @@ const trickle = (parts, gap) => (url, { signal }) => {
   return Promise.resolve(new Response(body, { status: 200 }));
 };
 
-test("a slow download of a large history is kept, a stalled one is cut off", async () => {
+test("a slow download of a large history is kept, a stalled one is cut off", async (t) => {
+  // The timers are the test's own, so each chunk lands exactly when the test ticks to it.
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const settle = () => new Promise((resolve) => setImmediate(resolve));
   const parts = Array.from({ length: 12 }, (_, i) => {
     if (i === 0) return '{"status":"OK","result":[';
     if (i === 10) return "1";
     return i === 11 ? "]}" : "1,";
   });
-  // Twelve chunks 30 ms apart take longer than the 200 ms limit, yet nothing goes quiet for anything
-  // like that long; the wide margin keeps a busy machine's late timers from tripping it.
-  const { response, payload } = await fetchJson("x", { idleMs: 200, fetchFn: trickle(parts, 30) });
+  // Twelve chunks 30 ms apart take 360 ms in all, longer than the 200 ms limit, with no gap reaching it.
+  const download = fetchJson("x", { idleMs: 200, fetchFn: trickle(parts, 30) });
+  for (let i = 0; i < parts.length; i++) {
+    await settle();
+    t.mock.timers.tick(30);
+  }
+  const { response, payload } = await download;
   assert.equal(response.status, 200);
   assert.equal(payload.status, "OK");
   assert.equal(payload.result.length, 10);
 
-  const keepAlive = setTimeout(() => {}, 1000);
-  await assert.rejects(
-    fetchJson("x", { idleMs: 40, fetchFn: trickle(['{"status":"OK"', "}"], 400) }),
-    isTimeout,
-  );
-  clearTimeout(keepAlive);
+  const stalled = fetchJson("x", { idleMs: 40, fetchFn: trickle(['{"status":"OK"', "}"], 400) });
+  await settle();
+  t.mock.timers.tick(40);
+  await assert.rejects(stalled, isTimeout);
 });
 
 test("an error answer keeps its status and comment, and an HTML page parses as nothing", async () => {
