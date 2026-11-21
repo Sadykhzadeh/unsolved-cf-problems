@@ -1482,3 +1482,9 @@ test("a parallel copy counts when its contest is seven numbers away, and not eig
   assert.equal(copy(problem(1519), 1700000000), true, "a contest that started at the same moment counts at any distance");
   assert.equal(copy({ ...problem(1520), rating: 1700 }, 1700086400), false, "a different rating is a different problem");
 });
+
+test("the handle field offers the eight handles looked up last, the oldest dropped", () => {
+  const eight = ["a", "b", "c", "d", "e", "f", "g", "h"];
+  assert.deepEqual(rememberHandle(eight, "i"), ["i", "a", "b", "c", "d", "e", "f", "g"]);
+  assert.deepEqual(rememberHandle(eight, "h"), ["h", "a", "b", "c", "d", "e", "f", "g"], "a repeat moves up, and frees a place");
+});
