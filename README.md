@@ -14,8 +14,8 @@ Every problem a Codeforces user has tried and not solved, in one table.
   (`https://codeforces.com/profile/tourist`). The handles looked up lately are
   offered again in the handle and friend fields.
 - Sorts by problem, name, rating, tries, last attempt or how many people solved
-  it ("Solved by", shown once the problem list is read for the upsolve view): click a header,
-  click again to reverse.
+  it ("Solved by", shown once the problem list is read, with the upsolve box
+  ticked or when sorted by it): click a header, click again to reverse.
 - Filters by name or problem id (`1520F2`, `1520|F2` or a link to the
   problem), by a rating range, by how many times it was tried (at least a
   number), by tags (all of several, or any of them), by the verdict of the last
