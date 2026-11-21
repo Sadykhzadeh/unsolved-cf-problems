@@ -86,3 +86,49 @@ test("a handle that took part in no contest gets a line saying so, also when the
   await view.ensure();
   assert.equal(elements.upsolveStatus.textContent, "");
 });
+
+test("sorting by the solved counts reads the problem list, not the rated contests", async () => {
+  const urls = [];
+  const store = new Map();
+  const cache = {
+    async match(request) {
+      const body = store.get(request.url ?? request);
+      return body === undefined ? undefined : new Response(body);
+    },
+    async put(request, response) {
+      store.set(request.url ?? request, await response.text());
+    },
+    async keys() {
+      return [...store.keys()].map((url) => ({ url }));
+    },
+    async delete(url) {
+      return store.delete(url);
+    },
+  };
+  globalThis.window = { location: { href: "https://example.test/app/" } };
+  globalThis.caches = { open: async () => cache };
+  globalThis.fetch = async (url) => {
+    urls.push(url);
+    const result = url.includes("problemset") ? { problems: [], problemStatistics: [] } : [{ contestId: 1 }];
+    return new Response(JSON.stringify({ status: "OK", result }), { status: 200 });
+  };
+  const upsolve = await load();
+  const elements = { upsolve: { checked: false, textContent: "" } };
+  let refreshed = 0;
+  const view = upsolve.createUpsolve({
+    state: { handle: "tourist", solved: { keys: [], twins: [], starts: [], taken: [], rows: [] }, rows: [], sort: { key: "solved" } },
+    byId: (id) => (elements[id] ??= { checked: true, textContent: "" }),
+    text: { upsolveLoadingText: "Loading {handle}", upsolveNoContestText: "{handle} has not taken part in a contest yet, so there is nothing to add." },
+    fill: fillText,
+    failureText: String,
+    waitForTurn: async () => true,
+    lang: "en",
+    FRESH_FOR: 600000,
+    CLOCK_SLACK: 60000,
+    refreshList: () => { refreshed += 1; },
+  });
+  await view.ensure();
+  assert.equal(urls.some((url) => url.includes("user.rating")), false, "the solved counts need no rated contests");
+  assert.equal(urls.filter((url) => url.includes("problemset")).length, 1, "the problem list is read once");
+  assert.equal(refreshed, 1, "the list is drawn again so the solved counts show");
+});

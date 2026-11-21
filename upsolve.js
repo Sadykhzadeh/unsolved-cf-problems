@@ -156,7 +156,8 @@ export const createUpsolve = ({
   const note = (contestId, template) => contestNote(progressFor(), contestId, template);
 
   // The line for a handle that took part in no contest, so the view has nothing to add.
-  const nothingToAdd = () => (state.solved && upsolveData.contests
+  // Only in the upsolve view: sorting by the solved counts alone reads no contests.
+  const nothingToAdd = () => (byId("upsolve").checked && state.solved && upsolveData.contests
     && tookPartIn(upsolveData.contests, state.solved.taken).size === 0
     ? fill(text.upsolveNoContestText, { handle: state.handle }) : "");
 
@@ -167,7 +168,8 @@ export const createUpsolve = ({
     const handle = state.handle;
     const wanted = () => number === upsolveNumber;
     if (!(byId("upsolve").checked || state.sort.key === "solved") || !state.solved || !handle) return;
-    if (upsolveData.problems && upsolveData.contests && upsolveData.handle === handle.toLowerCase()) {
+    if (upsolveData.problems && (!byId("upsolve").checked
+      || (upsolveData.contests && upsolveData.handle === handle.toLowerCase()))) {
       byId("upsolveStatus").textContent = nothingToAdd();
       refreshList();
       return;
@@ -176,10 +178,14 @@ export const createUpsolve = ({
     try {
       const problems = upsolveData.problems ?? await loadProblemset();
       upsolveData.problems = problems;
-      const contests = await loadRatedContests(handle, wanted);
-      if (!contests) return;
-      upsolveData.contests = contests;
-      upsolveData.handle = handle.toLowerCase();
+      // The solved counts come from the problem list alone; the rated contests are
+      // only needed for the never-tried problems, so they wait for the box.
+      if (byId("upsolve").checked) {
+        const contests = await loadRatedContests(handle, wanted);
+        if (!contests) return;
+        upsolveData.contests = contests;
+        upsolveData.handle = handle.toLowerCase();
+      }
     } catch (error) {
       if (!wanted()) return;
       console.error(error);
