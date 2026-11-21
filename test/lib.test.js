@@ -5,6 +5,7 @@ import { readFileSync } from "node:fs";
 import {
   ageParts,
   countText,
+  defaultDescending,
   describeFailure,
   NEWEST_COUNT,
   SETTLE_SECONDS,
@@ -44,6 +45,7 @@ import {
   readParams,
   solvedCheck,
   solvedSummary,
+  SORT_KEYS,
   sortRows,
   submissionLink,
   summarizeSolved,
@@ -1487,4 +1489,16 @@ test("the handle field offers the eight handles looked up last, the oldest dropp
   const eight = ["a", "b", "c", "d", "e", "f", "g", "h"];
   assert.deepEqual(rememberHandle(eight, "i"), ["i", "a", "b", "c", "d", "e", "f", "g"]);
   assert.deepEqual(rememberHandle(eight, "h"), ["h", "a", "b", "c", "d", "e", "f", "g"], "a repeat moves up, and frees a place");
+});
+
+test("a first click sorts each column the way it reads best, and a second one reverses it", () => {
+  const first = Object.fromEntries(SORT_KEYS.map((key) => [key, defaultDescending(key)]));
+  assert.deepEqual(first, { problem: true, name: false, rating: false, tries: true, last: true, solved: true });
+  const rows = [
+    { contestId: 10, index: "B", name: "Beta", rating: 1500, tries: 1, lastTime: 300, solvedCount: 40 },
+    { contestId: 10, index: "A", name: "alpha", rating: 900, tries: 4, lastTime: 100, solvedCount: 900 },
+  ];
+  assert.deepEqual(sortRows(rows, "tries", defaultDescending("tries")).map((r) => r.name), ["alpha", "Beta"], "most tries first");
+  assert.deepEqual(sortRows(rows, "tries", !defaultDescending("tries")).map((r) => r.name), ["Beta", "alpha"], "second click");
+  assert.deepEqual(sortRows(rows, "rating", defaultDescending("rating")).map((r) => r.name), ["alpha", "Beta"], "easiest first");
 });
