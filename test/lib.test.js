@@ -1365,6 +1365,7 @@ test("the By-tag table counts each tag's unsolved and attempted problems, and ta
   assert.deepEqual(summary.find((entry) => entry.tag === "greedy"), { tag: "greedy", unsolved: 2, attempted: 3, median: 1550 });
   assert.equal(summary.some((entry) => entry.tag === "*special"), false, "the special tag is not a topic");
   assert.equal(tagSummary([{ tags: ["trees"] }], {}).find((entry) => entry.tag === "trees").median, null, "no rated problem, no median");
+  assert.deepEqual(tagSummary([], { trees: 4 }), [{ tag: "trees", unsolved: 0, attempted: 4, median: null }], "a tag only solved still counts");
 });
 
 test("the By-tag table sorts by any column, both ways, with a missing median last", () => {

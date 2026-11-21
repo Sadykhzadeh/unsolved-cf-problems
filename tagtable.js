@@ -13,14 +13,21 @@ const medianOf = (values) => {
 // problems it was solved on plus the unsolved ones.
 export const tagSummary = (rows, solvedTags) => {
   const byTag = new Map();
+  const entryOf = (tag) => {
+    if (!byTag.has(tag)) byTag.set(tag, { tag, unsolved: 0, ratings: [] });
+    return byTag.get(tag);
+  };
   for (const row of rows) {
     for (const tag of row.tags) {
       if (tag === "*special") continue;
-      if (!byTag.has(tag)) byTag.set(tag, { tag, unsolved: 0, ratings: [] });
-      const entry = byTag.get(tag);
+      const entry = entryOf(tag);
       entry.unsolved += 1;
       if (typeof row.rating === "number") entry.ratings.push(row.rating);
     }
+  }
+  // A tag whose attempted problems are all solved has no unsolved row, but still counts.
+  for (const tag of Object.keys(solvedTags)) {
+    if (tag !== "*special") entryOf(tag);
   }
   return [...byTag.values()].map(({ tag, unsolved, ratings }) => {
     const solved = Object.hasOwn(solvedTags, tag) ? solvedTags[tag] : 0;
