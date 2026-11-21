@@ -1,19 +1,16 @@
 // The upsolve view's rules: which problems count, what a contest's progress is, and the
 // saved copies of the problem list. Loaded with the view (see upsolve.js), not on a plain lookup.
-import { fillText, hasParallel, problemKey, solvedCheck } from "./lib.js";
+import { KEEP_HANDLES, fillText, hasParallel, problemKey, solvedCheck } from "./lib.js";
 
 // The key the rated contests of a handle are kept under, encoded as the history and
 // friend keys are, so that a handle cannot change the path it is kept at.
 export const ratedKey = (handle) => `rating.v1/${encodeURIComponent(handle.toLowerCase())}`;
 
-// The rated contests are kept for as many handles as the saved lookups are.
-const KEEP_RATINGS = 3;
-
 // The keys of the kept rated contests to drop, so that the newest few remain. Each entry
 // is { key, savedAt }, as it was stamped when it was written.
 export const staleRatings = (entries) => [...entries]
   .sort((a, b) => b.savedAt - a.savedAt)
-  .slice(KEEP_RATINGS)
+  .slice(KEEP_HANDLES)
   .map((entry) => entry.key);
 
 // The ids of the contests a handle was rated in, from user.rating. Only rated

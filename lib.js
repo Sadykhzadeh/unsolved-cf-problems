@@ -819,6 +819,7 @@ export const REBUILD_AFTER_SECONDS = 3 * 24 * 60 * 60;
 
 // How many of the newest submissions a refresh asks for.
 export const NEWEST_COUNT = 300;
+export const KEEP_HANDLES = 3;
 
 // A history saved so far: the state of every submission up to `cutoff` (a time
 // in seconds), how many of them there were, and when it was last read from

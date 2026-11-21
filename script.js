@@ -1,4 +1,5 @@
 import {
+  KEEP_HANDLES,
   NEWEST_COUNT,
   advance,
   countText,
@@ -827,7 +828,6 @@ const SAVED_KEY = "unsolved-cf-problems:lookups";
 const SAVED_VERSION = 8;
 const FRESH_FOR = 10 * 60 * 1000;
 const CLOCK_SLACK = 60 * 1000;
-const KEEP_HANDLES = 3;
 
 const savedId = (handle) => `${lang}:${handle.toLowerCase()}`;
 
@@ -999,7 +999,6 @@ const waitForTurn = async (wanted) => {
 // newest ones do not reach back far enough, and every few days. Only the
 // latest few handles are kept, per language since the names come in it.
 const HISTORY_CACHE = "unsolved-cf-problems-history";
-const KEEP_HISTORIES = 3;
 const historyKey = (handle) =>
   new URL(`history.v3/${lang}/${encodeURIComponent(handle.toLowerCase())}`, window.location.href).href;
 
@@ -1037,7 +1036,7 @@ const saveHistory = async (handle, digest) => {
       kept.push({ request, at: Number((await cache.match(request))?.headers.get("X-Saved-At")) || 0 });
     }
     kept.sort((a, b) => b.at - a.at);
-    for (const { request } of kept.slice(KEEP_HISTORIES)) await cache.delete(request);
+    for (const { request } of kept.slice(KEEP_HANDLES)) await cache.delete(request);
   } catch {
     // Not kept; the next refresh reads everything again.
   }
