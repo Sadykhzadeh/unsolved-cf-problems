@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { SORT_KEYS } from "../lib.js";
 
 // The README states the limits the code sets: how long a saved copy is trusted, how
 // far apart the API calls are, how many submissions a refresh asks for. Each one is
@@ -30,4 +31,12 @@ test("the README states the limits the code sets", () => {
     assert.ok(readme.includes(phrase), `the README does not say "${phrase}"`);
     assert.equal(declared(file, name), value, `${name} in ${file} is not what the README says`);
   }
+});
+
+test("the sort keys the README and the column headers name are the ones the code sorts by", () => {
+  const row = /^\| `sort` \|.*$/m.exec(read("README.md"))[0];
+  const documented = [...row.split("|")[3].matchAll(/`([a-z]+)`/g)].map(([, key]) => key);
+  const headers = [...read("index.html").matchAll(/data-sort="(\w+)"/g)].map(([, key]) => key);
+  assert.deepEqual(documented.sort(), [...SORT_KEYS].sort());
+  assert.deepEqual(headers.sort(), [...SORT_KEYS].sort());
 });
