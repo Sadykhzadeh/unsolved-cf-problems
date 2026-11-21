@@ -80,7 +80,7 @@ Every problem a Codeforces user has tried and not solved, in one table.
   solved since that copy, with links to them. A visit to a copy younger than ten
   minutes does not look the handle up again, so there is nothing to compare.
 - Says why a lookup failed: no such user, an invalid handle, the API rate
-  limit, Codeforces being down, or no connection.
+  limit, Codeforces being down or silent for 30 seconds, or no connection.
 - English and Russian; follows the system's light or dark theme; fits a
   phone.
 
