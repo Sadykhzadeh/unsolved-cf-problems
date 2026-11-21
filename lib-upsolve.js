@@ -4,7 +4,8 @@ import { KEEP_HANDLES, fillText, hasParallel, problemKey, solvedCheck } from "./
 
 // The key the rated contests of a handle are kept under, encoded as the history and
 // friend keys are, so that a handle cannot change the path it is kept at.
-export const ratedKey = (handle) => `rating.v1/${encodeURIComponent(handle.toLowerCase())}`;
+export const RATED_PREFIX = "rating.v1/";
+export const ratedKey = (handle) => `${RATED_PREFIX}${encodeURIComponent(handle.toLowerCase())}`;
 
 // The keys of the kept rated contests to drop, so that the newest few remain. Each entry
 // is { key, savedAt }, as it was stamped when it was written.

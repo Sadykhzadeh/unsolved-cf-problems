@@ -3,7 +3,7 @@
 // loadUpsolve() in script.js), so a visit that does not use the view does not read it.
 import { LookupFailure, describeFailure, fetchApi, isFresh } from "./lib.js";
 import {
-  attachSolvedCounts, contestNote, contestProgress, listedCheck, packProblemset, ratedContestIds, ratedKey,
+  RATED_PREFIX, attachSolvedCounts, contestNote, contestProgress, listedCheck, packProblemset, ratedContestIds, ratedKey,
   shareInFlight, staleRatings, tookPartIn, unpackProblemset, untriedRows,
 } from "./lib-upsolve.js";
 
@@ -76,7 +76,7 @@ export const createUpsolve = ({
   const keepRated = async () => {
     try {
       const cache = await caches.open(PROBLEMSET_CACHE);
-      const prefix = new URL("rating.v1/", window.location.href).href;
+      const prefix = new URL(RATED_PREFIX, window.location.href).href;
       const entries = [];
       for (const request of await cache.keys()) {
         if (!request.url.startsWith(prefix)) continue;
