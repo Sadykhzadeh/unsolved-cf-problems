@@ -11,6 +11,7 @@ import {
   emptyDigest,
   emptyKind,
   failedTest,
+  fillText as fill,
   fetchApi,
   LookupFailure,
   hasTagCounts,
@@ -385,9 +386,6 @@ const loadSubmissions = async (handle, wanted, newest) => {
   }
   throw new LookupFailure(describeFailure(response.status, payload));
 };
-
-const fill = (template, values) =>
-  template.replace(/\{(\w+)\}/g, (match, name) => values[name] ?? match);
 
 const failureText = (error, handle) => {
   // fetch rejects with a TypeError when the request never got an answer.
