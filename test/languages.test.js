@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
 import en from "../strings-en.js";
 import ru from "../strings-ru.js";
+import { REQUEST_TIMEOUT_MS } from "../lib.js";
 
 // Every language is a strings file the page imports by its code, and a flag on the
 // page. A label missing from one language, or a value that names a different {value}
@@ -29,4 +30,10 @@ test("the language flags, the language list and the strings files name the same 
   const files = readdirSync(root).map((file) => /^strings-(\w+)\.js$/.exec(file)?.[1]).filter(Boolean).sort();
   assert.deepEqual(flags, listed);
   assert.deepEqual(files, listed);
+});
+
+test("the timeout line names the wait a request is given", () => {
+  const seconds = REQUEST_TIMEOUT_MS / 1000;
+  assert.ok(en.timeoutText.includes(`${seconds} seconds`), "the English line");
+  assert.ok(ru.timeoutText.includes(`${seconds} секунд`), "the Russian line");
 });
