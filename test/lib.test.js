@@ -1180,6 +1180,7 @@ test("CSV quotes and doubles quotes, keeps line breaks and Cyrillic, and blocks 
   assert.equal(line("=1+1"), `103104|J,'=1+1${rest}`);
   assert.equal(line("@cmd"), `103104|J,'@cmd${rest}`);
   assert.equal(line("-x"), `103104|J,'-x${rest}`);
+  assert.equal(line("+x"), `103104|J,'+x${rest}`);
   assert.equal(line("line\nbreak"), `103104|J,"line\nbreak"${rest}`);
   assert.equal(csvTable([]), "Problem,Name,Rating,Solved by,Tags,Tries,Last verdict,Last attempt,Problem link,Last submission\r\n");
 });
