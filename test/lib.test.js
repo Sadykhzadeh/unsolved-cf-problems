@@ -1949,3 +1949,44 @@ test("the tag counts and the By-tag table match a direct count of seeded histori
     assert.deepEqual(got, want, `seed ${seed}: By-tag table`);
   }
 });
+
+// Splits a Markdown table row into cells the way a renderer does: a pipe ends a cell
+// unless a backslash escapes it, and a backslash before a punctuation mark is dropped.
+const markdownCells = (line) => {
+  const cells = [];
+  let cell = "";
+  const body = line.slice(1, -1);
+  for (let i = 0; i < body.length; i++) {
+    if (body[i] === "\\" && /[!-/:-@[-`{-~]/.test(body[i + 1] ?? "")) {
+      cell += body[i + 1];
+      i++;
+    } else if (body[i] === "|") {
+      cells.push(cell.trim());
+      cell = "";
+    } else {
+      cell += body[i];
+    }
+  }
+  cells.push(cell.trim());
+  return cells;
+};
+
+test("a seeded list reads back from a Markdown table cell for cell, whatever the names hold", () => {
+  const alphabet = ["a", "Z", " ", "|", "\\", "*", "_", "[", "]", "`", "<", ">", "~", "&", "&amp;", "&#1;", ";", "#", "!", "=", "-", "\"", "(", ")", "$", "é", "Ж", "😀", "\n", "\r\n", "\r"];
+  for (let seed = 1; seed <= 200; seed++) {
+    const rng = seeded(seed);
+    const rows = Array.from({ length: 1 + Math.floor(rng.next() * 4) }, (_, i) => {
+      const length = Math.floor(rng.next() * 8);
+      const name = Array.from({ length }, () => rng.pick(alphabet)).join("").trim();
+      return { contestId: 1000 + i, index: "A", name, rating: 1500, tags: ["dp"], tries: 1, verdict: "WRONG_ANSWER", passedTestCount: 0, testset: "TESTS", lastTime: 1_700_000_000 + i, submissionId: i };
+    });
+    const lines = markdownTable(rows).split("\n");
+    assert.equal(lines.length, rows.length + 2, `seed ${seed}: one line a row`);
+    rows.forEach((row, i) => {
+      const cells = markdownCells(lines[i + 2]);
+      assert.equal(cells.length, 8, `seed ${seed}: eight cells`);
+      assert.equal(cells[1], row.name.replace(/\r\n|\r|\n/g, " "), `seed ${seed}: the name`);
+      assert.equal(cells[0], `[${problemKey(row)}](${problemLink(row)})`, `seed ${seed}: the problem link`);
+    });
+  }
+});
