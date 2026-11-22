@@ -1798,3 +1798,99 @@ test("an acmsguru problem is found by its id, and a Codeforces profile link is s
   assert.equal(pick("acmsguru|123"), true);
   assert.equal(pick("https://codeforces.com/profile/tourist"), false);
 });
+
+// Seeded histories for the property tests: a problem is one name, and a name is shared
+// by at most two contests, the copies of a shared round, with one rating and tag set.
+const seeded = (seed) => {
+  let state = seed >>> 0;
+  const next = () => {
+    state = (state + 0x6d2b79f5) | 0;
+    let t = Math.imul(state ^ (state >>> 15), 1 | state);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  return { next, pick: (items) => items[Math.floor(next() * items.length)] };
+};
+
+const problemSet = (rng) => {
+  const problems = [];
+  [[1000, 1002], [1005, 1010]].forEach(([first, second], pair) => {
+    for (const index of ["A", "B", "C"]) {
+      const shared = { name: `Pair ${pair} ${index}`, rating: rng.pick([800, 1500, undefined]), tags: rng.pick([["dp"], ["dp", "graphs"], ["*special"], []]) };
+      problems.push({ contestId: first, index, ...shared }, { contestId: second, index, ...shared });
+    }
+  });
+  problems.push({ contestId: 1030, index: "A", name: "Solo", rating: 1200, tags: ["math"] });
+  problems.push({ contestId: 100001, index: "A", name: "Gym", tags: ["dp"] });
+  return problems;
+};
+
+// Newest first, as user.status returns them.
+const seededHistory = (rng, problems) => {
+  const count = 1 + Math.floor(rng.next() * 30);
+  let time = 1_700_000_000 + 10_000_000;
+  return Array.from({ length: count }, (_, i) => {
+    time -= 1 + Math.floor(rng.next() * 500_000);
+    return {
+      id: 100 + i,
+      creationTimeSeconds: time,
+      verdict: rng.pick(["OK", "OK", "WRONG_ANSWER", "TIME_LIMIT_EXCEEDED", "SKIPPED"]),
+      passedTestCount: Math.floor(rng.next() * 5),
+      testset: "TESTS",
+      author: { participantType: rng.pick(["CONTESTANT", "PRACTICE", "VIRTUAL", "OUT_OF_COMPETITION"]) },
+      problem: { ...rng.pick(problems) },
+    };
+  });
+};
+
+const ROUND_TYPES = ["CONTESTANT", "OUT_OF_COMPETITION", "VIRTUAL"];
+const asRow = (row) => ({
+  name: row.name,
+  key: problemKey(row),
+  tries: row.tries,
+  verdict: row.verdict,
+  passedTestCount: row.passedTestCount,
+  testset: row.testset,
+  lastTime: row.lastTime,
+  submissionId: row.submissionId,
+  inRound: Boolean(row.inRound),
+});
+const byName = (a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0);
+
+// The unsolved problems by a direct count: a name with an accepted submission is solved,
+// and every other name is one row, with its newest attempt and the attempts counted.
+const countedUnsolved = (history) => {
+  const solved = new Set(history.filter((item) => item.verdict === "OK").map((item) => item.problem.name));
+  const rows = new Map();
+  for (const item of history) {
+    if (solved.has(item.problem.name)) continue;
+    const inRound = ROUND_TYPES.includes(item.author.participantType);
+    const row = rows.get(item.problem.name);
+    if (row) {
+      row.tries += 1;
+      row.inRound ||= inRound;
+      continue;
+    }
+    rows.set(item.problem.name, {
+      name: item.problem.name,
+      key: problemKey(item.problem),
+      tries: 1,
+      verdict: item.verdict,
+      passedTestCount: item.passedTestCount,
+      testset: item.testset,
+      lastTime: item.creationTimeSeconds,
+      submissionId: item.id,
+      inRound,
+    });
+  }
+  return [...rows.values()].sort(byName);
+};
+
+test("the unsolved list matches a direct count of seeded histories", () => {
+  for (let seed = 1; seed <= 300; seed++) {
+    const rng = seeded(seed);
+    const history = seededHistory(rng, problemSet(rng));
+    const listed = findUnsolved(history).map(asRow).sort(byName);
+    assert.deepEqual(listed, countedUnsolved(history), `seed ${seed}`);
+  }
+});
