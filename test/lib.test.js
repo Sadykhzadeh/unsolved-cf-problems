@@ -1228,6 +1228,10 @@ const exported = [
   },
 ];
 
+test("verdicts with the same count are listed by name", () => {
+  assert.deepEqual(verdictCounts([{ verdict: "WRONG_ANSWER" }, { verdict: "TIME_LIMIT_EXCEEDED" }]), [["TLE", 1], ["WA", 1]]);
+});
+
 test("a weakest tag with no solved problems shows zero solved", () => {
   assert.deepEqual(weakTags([{ tags: ["dp"] }], {}), [{ tag: "dp", solved: 0, attempted: 1, unsolved: 1 }]);
 });
@@ -1571,6 +1575,8 @@ test("the By-tag table sorts by any column, both ways, with a missing median las
   assert.deepEqual(tags(sortTags(entries, "attempted", true)), ["math", "dp", "greedy"]);
   assert.deepEqual(tags(sortTags(entries, "tag", false)), ["dp", "greedy", "math"]);
   assert.deepEqual(tags(sortTags(entries, "tag", true)), ["math", "greedy", "dp"], "the tag column reverses too");
+  const reversed = [entries[2], entries[1], entries[0]];
+  assert.deepEqual(tags(sortTags(reversed, "unsolved", true)), ["dp", "greedy", "math"], "ties go by name whatever order they came in");
   assert.deepEqual(tags(sortTags(entries, "median", true)), ["dp", "math", "greedy"], "no median is last");
   assert.deepEqual(tags(sortTags(entries, "median", false)), ["math", "dp", "greedy"], "still last the other way");
 });
