@@ -1990,3 +1990,84 @@ test("a seeded list reads back from a Markdown table cell for cell, whatever the
     });
   }
 });
+
+test("the filter keeps the same rows as a direct check of each rule, over seeded rows and filters", () => {
+  const CONTESTS = [1520, 3, 100001, 1000, undefined];
+  const NAMES = ["Tree", "Tree Cutting", "x|y", "DP on trees", "Ёж", "Cycle"];
+  const QUERIES = ["", "tree", "1520", "1520F", "1520|F", "3c", "3", "1520f2", "1520|f2", "x|y", " ", "100",
+    "https://codeforces.com/contest/1520/problem/F2", "https://codeforces.com/problemset/problem/3/C",
+    "https://codeforces.com/problemsets/acmsguru/problem/99999/123"];
+  const BOUNDS = ["", "0", "800", "1200", "1600", "abc", " 1500 ", "-5", "1e3"];
+  const TAGS = ["dp", "graphs", "*special", "trees", "math"];
+  const NOW = 1_700_000_000;
+  for (let seed = 1; seed <= 200; seed++) {
+    const rng = seeded(seed);
+    const rows = Array.from({ length: 20 }, () => {
+      const contestId = rng.pick(CONTESTS);
+      const row = {
+        contestId,
+        problemsetName: contestId === undefined ? "acmsguru" : undefined,
+        index: rng.pick(["F2", "C", "A", "123"]),
+        name: rng.pick(NAMES),
+        tags: TAGS.filter(() => rng.next() < 0.3),
+        tries: 0,
+      };
+      if (rng.next() < 0.8) row.rating = rng.pick([800, 1200, 1600, 2000]);
+      if (rng.next() < 0.6) {
+        Object.assign(row, {
+          tries: 1 + Math.floor(rng.next() * 10),
+          verdict: rng.pick(["WRONG_ANSWER", "TIME_LIMIT_EXCEEDED", "COMPILATION_ERROR", "OK"]),
+          lastTime: NOW - Math.floor(rng.next() * 30 * 86400),
+          inRound: rng.next() < 0.3,
+        });
+      }
+      return row;
+    });
+    for (let check = 0; check < 40; check++) {
+      const spec = {
+        query: rng.pick(QUERIES),
+        min: rng.pick(BOUNDS),
+        max: rng.pick(BOUNDS),
+        triesMin: rng.pick(BOUNDS),
+        tags: TAGS.filter(() => rng.next() < 0.2),
+        tagAny: rng.next() < 0.5,
+        verdict: rng.pick(["", "WA", "TLE", "ok"]),
+        days: rng.pick(["", "0", "5", "30", "x"]),
+        noGym: rng.next() < 0.3,
+        noSpecial: rng.next() < 0.3,
+        inRound: rng.next() < 0.3,
+      };
+      const filter = makeFilter({ ...spec, now: NOW });
+      const bound = (text) => (text.trim() === "" || !Number.isFinite(Number(text)) ? null : Number(text));
+      const byLink = /^https?:\/\/|codeforces/i.test(spec.query.trim()) && [
+        /\/(?:contest|gym)\/(\d+)\/problem\/(\w+)/i,
+        /\/problemset\/(?:problem|gymProblem)\/(\d+)\/(\w+)/i,
+        /\/problemsets\/(acmsguru)\/problem\/\d+\/(\w+)/i,
+      ].map((pattern) => pattern.exec(spec.query.trim())).find(Boolean);
+      const wanted = byLink ? `${byLink[1]}|${byLink[2]}`.toLowerCase() : spec.query.trim().toLowerCase();
+      const days = bound(spec.days);
+      const triesMin = bound(spec.triesMin);
+      const min = bound(spec.min);
+      const max = bound(spec.max);
+      const expected = (row) => {
+        const id = problemKey(row).toLowerCase();
+        if (wanted && !id.startsWith(wanted) && !id.replace("|", "").startsWith(wanted) && !row.name.toLowerCase().includes(wanted)) return false;
+        if (spec.tags.length && !(spec.tagAny ? spec.tags.some((tag) => row.tags.includes(tag)) : spec.tags.every((tag) => row.tags.includes(tag)))) return false;
+        if (spec.noGym && row.contestId >= 100000) return false;
+        if (spec.noSpecial && row.tags.includes("*special")) return false;
+        if (spec.inRound && !row.inRound) return false;
+        if (triesMin !== null && row.tries < triesMin) return false;
+        if (spec.verdict && verdictLabel(row.verdict, "")[0] !== spec.verdict.toUpperCase()) return false;
+        if (days > 0 && (row.lastTime === undefined || row.lastTime < NOW - days * 86400)) return false;
+        if (min !== null || max !== null) {
+          if (row.rating === undefined) return false;
+          if (min !== null && row.rating < min) return false;
+          if (max !== null && row.rating > max) return false;
+        }
+        return true;
+      };
+      const kept = rows.filter((row) => matchesFilter(row, filter));
+      assert.deepEqual(kept, rows.filter(expected), `seed ${seed}, filter ${JSON.stringify(spec)}`);
+    }
+  }
+});
