@@ -142,6 +142,17 @@ test("a problem tried during a round, live or virtual, can be kept apart from pr
   assert.deepEqual(stored.map((r) => r.inRound), [true, false, true, true, false]);
 });
 
+test("a problem tried in a round stays a round problem after a later practice attempt", () => {
+  const attempt = (participantType) => {
+    const item = submission(1, "A", "WRONG_ANSWER", 1500);
+    item.author = { participantType, startTimeSeconds: 1_600_000_000 };
+    return item;
+  };
+  const state = foldSubmissions(emptyState(), [attempt("CONTESTANT")]);
+  const rows = foldSubmissions(state, [attempt("PRACTICE")]).rows;
+  assert.deepEqual(rows.map((r) => [r.inRound, r.tries]), [[true, 2]]);
+});
+
 test("the same index in two contests is two problems", () => {
   const rows = findUnsolved([
     submission(3, "A", "OK", 800),
@@ -329,6 +340,22 @@ test("the newest submissions reach a saved history when they go back past its cu
   assert.equal(isUsableDigest(digest, NOW + 2 * DAY), true);
   assert.equal(isUsableDigest(digest, NOW + 4 * DAY), false);
   assert.equal(isUsableDigest(null, NOW), false);
+});
+
+test("a problem of the same name and rating in the same contest is not a parallel copy", () => {
+  const solved = solvedCheck({ keys: [], twins: [["Gamma", 1600, 1527, 1700000000]] });
+  assert.equal(solved({ contestId: 1527, index: "D", name: "Gamma", rating: 1600 }, 1700000000), false);
+});
+
+test("two solved copies that share a name each match their own rating and contest", () => {
+  const solved = solvedCheck({ keys: [], twins: [["Gamma", 1600, 1000, 1700000000], ["Gamma", 1900, 2000, 1800000000]] });
+  assert.equal(solved({ contestId: 1003, index: "C", name: "Gamma", rating: 1600 }, 1700000000), true);
+  assert.equal(solved({ contestId: 2003, index: "C", name: "Gamma", rating: 1900 }, 1800000000), true);
+});
+
+test("a gym problem is never the parallel copy of a problem from another contest", () => {
+  const solved = solvedCheck({ keys: [], twins: [["Gamma", 1600, 1527, 1700000000]] });
+  assert.equal(solved({ contestId: 100001, index: "A", name: "Gamma", rating: 1600 }, 1700000000), false);
 });
 
 test("a copy is fresh while younger than its age, and stale when stamped well ahead of the clock", () => {
@@ -1096,6 +1123,21 @@ test("a problem in a chain of three copies counts its tags once, whatever order 
   assert.deepEqual(foldSubmissions(emptyState(), [high, low]).solvedTags, { dp: 2 }, "two copies that are not parallel count twice");
 });
 
+test("a shared-round problem counts the tags of its lowest-numbered copy, and gives up the others", () => {
+  const copy = (contestId, id, tags) => ({
+    id,
+    creationTimeSeconds: 1_600_000_000 + id,
+    verdict: "OK",
+    author: { participantType: "CONTESTANT" },
+    problem: { contestId, index: "A", name: "Shared", tags, rating: 1500 },
+  });
+  const high = copy(1005, 1, ["math"]);
+  const low = copy(1000, 2, ["dp"]);
+  assert.deepEqual(foldSubmissions(emptyState(), [high, low]).solvedTags, { dp: 1 });
+  const parts = foldSubmissions(foldSubmissions(emptyState(), [high]), [low]);
+  assert.deepEqual(parts.solvedTags, { dp: 1 }, "the math count goes when the lower copy arrives");
+});
+
 test("a tag the problems do not have is not counted, whatever its name", () => {
   const solved = foldSubmissions(emptyState(), [
     { id: 1, creationTimeSeconds: 1, verdict: "OK", author: {}, problem: { contestId: 1, index: "A", name: "a", tags: ["constructor"] } },
@@ -1546,6 +1588,8 @@ test("two handles compare on the problems both tried and neither solved, and on 
   assert.deepEqual(found.both.map(problemKey), ["1002|C"]);
   assert.deepEqual(found.solvedByTheirs.map(problemKey), ["1000|A", "1003|D"], "rating order");
   assert.deepEqual(found.solvedByMine.map(problemKey), ["1001|B"]);
+  const solvedAll = solvedCheck({ keys: ["1005|F", "1001|B"], twins: [] });
+  assert.deepEqual(compareHandles({ mine, theirs, mySolved: solvedAll, theirSolved }).solvedByMine.map(problemKey), ["1001|B", "1005|F"], "rating order");
 });
 
 test("a comparison matches parallel rounds the way the solved lists do", () => {
@@ -1557,6 +1601,13 @@ test("a comparison matches parallel rounds the way the solved lists do", () => {
   const found = compareHandles({ mine, theirs: [], mySolved: none, theirSolved });
   assert.equal(found.both.length, 0);
   assert.equal(found.solvedByTheirs.length, 1, "solved in the parallel copy");
+});
+
+test("a comparison matches a parallel copy by its start, however far apart the numbers are", () => {
+  const mine = [{ contestId: 1500, index: "C", name: "Gamma", rating: 1600, start: 1700000000 }];
+  const theirs = [{ contestId: 1510, index: "A", name: "Gamma", rating: 1600, start: 1700000000 }];
+  const none = solvedCheck({ keys: [], twins: [] });
+  assert.equal(compareHandles({ mine, theirs, mySolved: none, theirSolved: none }).both.length, 1);
 });
 
 test("a parallel copy counts when its contest is seven numbers away, and not eight", () => {
