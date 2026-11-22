@@ -1336,6 +1336,19 @@ test("upsolve: without the accepted twin the Div. 1 copy is listed, so the twin 
   assert.deepEqual(untried.map(problemKey), ["2279|D", "2279|E", "2279|F", "421|D"]);
 });
 
+test("upsolve: an untried copy of a problem already listed is not listed again", () => {
+  const listed = [{ contestId: 1000, index: "A", name: "Gamma", rating: 1600, tags: [], tries: 1, verdict: "WRONG_ANSWER" }];
+  const problems = [{ contestId: 1003, index: "C", name: "Gamma", rating: 1600, tags: [] }];
+  assert.deepEqual(untriedRows(problems, new Set([1003]), listedCheck({ keys: [], twins: [], starts: [] }, listed)), []);
+});
+
+test("upsolve: an untried row is not kept by the round filter", () => {
+  const problems = [{ contestId: 1003, index: "D", name: "Other", rating: 1200, tags: [] }];
+  const [row] = untriedRows(problems, new Set([1003]), listedCheck({ keys: [], twins: [], starts: [] }, []));
+  assert.equal(matchesFilter(row, makeFilter({ inRound: true })), false, "never tried, so not tried in a round");
+  assert.equal(matchesFilter(row, makeFilter({ inRound: false })), true);
+});
+
 test("upsolve: the rated contests come from user.rating and the problemset is kept with its solved counts", () => {
   assert.deepEqual([...ratedContestIds(fixture("user-rating.json").result)].sort((a, b) => a - b), [421, 2279]);
   const { result } = fixture("problemset.json");
