@@ -45,9 +45,21 @@ export const listedCheck = (solved, rows) => {
 
 export const untriedRows = (problems, contestIds, check) => {
   const { startOf } = check;
+  // Of two untried copies of one problem, in parallel rounds the handle took part in, the
+  // first is the only row.
+  const copies = new Map();
+  const firstCopy = (problem) => {
+    if (!hasParallel(problem)) return true;
+    const twins = copies.get(problem.name) ?? [];
+    const start = startOf.get(problem.contestId) ?? null;
+    if (solvedCheck({ keys: [], twins })(problem, start)) return false;
+    copies.set(problem.name, [...twins, [problem.name, problem.rating ?? null, problem.contestId, start]]);
+    return true;
+  };
   return problems
     .filter((problem) => contestIds.has(problem.contestId))
     .filter((problem) => !check.isKnown(problem))
+    .filter(firstCopy)
     .map((problem) => ({
       contestId: problem.contestId,
       index: problem.index,

@@ -1392,6 +1392,17 @@ test("upsolve: an untried copy of a problem already listed is not listed again",
   assert.deepEqual(untriedRows(problems, new Set([1003]), listedCheck({ keys: [], twins: [], starts: [] }, listed)), []);
 });
 
+test("upsolve: two untried copies of one problem, in rounds the handle took part in, are one row", () => {
+  const problems = [
+    { contestId: 1520, index: "C", name: "Delta", rating: 1500, tags: [] },
+    { contestId: 1519, index: "A", name: "Delta", rating: 1500, tags: [] },
+    { contestId: 1520, index: "A", name: "Epsilon", rating: 800, tags: [] },
+    { contestId: 1519, index: "B", name: "Epsilon", rating: 900, tags: [] },
+  ];
+  const untried = untriedRows(problems, new Set([1519, 1520]), listedCheck({ keys: [], twins: [], starts: [] }, []));
+  assert.deepEqual(untried.map(problemKey), ["1520|C", "1520|A", "1519|B"], "Epsilon differs in rating, so it is two problems");
+});
+
 test("upsolve: an untried row is not kept by the round filter", () => {
   const problems = [{ contestId: 1003, index: "D", name: "Other", rating: 1200, tags: [] }];
   const [row] = untriedRows(problems, new Set([1003]), listedCheck({ keys: [], twins: [], starts: [] }, []));
