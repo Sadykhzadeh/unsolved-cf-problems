@@ -1917,3 +1917,35 @@ test("a history read in refreshes lists what a whole read lists, at every refres
     }
   }
 });
+
+test("the tag counts and the By-tag table match a direct count of seeded histories", () => {
+  for (let seed = 1; seed <= 300; seed++) {
+    const rng = seeded(seed);
+    const history = seededHistory(rng, problemSet(rng));
+    const rows = findUnsolved(history);
+    const { solvedTags } = foldSubmissions(emptyState(), history);
+    const solvedByName = new Map(history.filter((item) => item.verdict === "OK").map((item) => [item.problem.name, item.problem.tags]));
+    const counted = {};
+    for (const tags of solvedByName.values()) for (const tag of tags) counted[tag] = (counted[tag] ?? 0) + 1;
+    assert.deepEqual(solvedTags, counted, `seed ${seed}: solved tags`);
+
+    const tags = new Set([...rows, ...Object.keys(counted).map((tag) => ({ tags: [tag] }))].flatMap((row) => row.tags));
+    const median = (values) => {
+      if (!values.length) return null;
+      const sorted = [...values].sort((a, b) => a - b);
+      const mid = Math.floor(sorted.length / 2);
+      return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+    };
+    const want = [...tags].filter((tag) => tag !== "*special").sort().map((tag) => {
+      const unsolved = rows.filter((row) => row.tags.includes(tag));
+      return {
+        tag,
+        unsolved: unsolved.length,
+        attempted: (counted[tag] ?? 0) + unsolved.length,
+        median: median(unsolved.map((row) => row.rating).filter((rating) => typeof rating === "number")),
+      };
+    });
+    const got = tagSummary(rows, solvedTags).map(({ tag, unsolved, attempted, median }) => ({ tag, unsolved, attempted, median })).sort((a, b) => (a.tag < b.tag ? -1 : 1));
+    assert.deepEqual(got, want, `seed ${seed}: By-tag table`);
+  }
+});
