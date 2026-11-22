@@ -552,9 +552,18 @@ test("a rating is shown in the colour of its Codeforces rank, an unrated one in 
   assert.equal(rankClass(undefined), "");
 });
 
+test("the candidate master colour covers the whole hundred from 2000 to 2099", () => {
+  assert.deepEqual([1999, 2000, 2050, 2099, 2100].map(rankClass), ["rank-cm", "rank-cm", "rank-cm", "rank-cm", "rank-master"]);
+});
+
 test("tags are counted, commonest first", () => {
   const rows = [{ tags: ["dp", "math"] }, { tags: ["math"] }, { tags: ["graphs", "dp", "math"] }];
   assert.deepEqual(tagCounts(rows), [["math", 3], ["dp", 2], ["graphs", 1]]);
+});
+
+test("tags with the same count are listed by name, in the counts and the weakest tags", () => {
+  assert.deepEqual(tagCounts([{ tags: ["math", "dp"] }, { tags: ["graphs"] }]), [["dp", 1], ["graphs", 1], ["math", 1]]);
+  assert.deepEqual(weakTags([{ tags: ["math"] }, { tags: ["dp"] }], {}).map((entry) => entry.tag), ["dp", "math"]);
 });
 
 test("rows survive packing for storage, and foreign data is refused", () => {
@@ -1130,6 +1139,10 @@ const exported = [
   },
 ];
 
+test("a weakest tag with no solved problems shows zero solved", () => {
+  assert.deepEqual(weakTags([{ tags: ["dp"] }], {}), [{ tag: "dp", solved: 0, attempted: 1, unsolved: 1 }]);
+});
+
 test("the list copies as a Markdown table, with its links, verdicts and pipes escaped", () => {
   assert.equal(markdownTable(exported), [
     "| Problem | Name | Rating | Solved by | Tags | Tries | Last verdict | Last attempt |",
@@ -1264,6 +1277,13 @@ test("the solved count sorts both ways, and a problem the problemset does not co
   assert.equal(order(sortRows(rows, "solved", true)), "CADB", "most solved first, ties in list order");
   assert.equal(order(sortRows(rows, "solved", false)), "BADC", "fewest first, uncounted before them");
   assert.deepEqual(readParams("?sort=-solved").sort, { key: "solved", descending: true });
+});
+
+test("a problem nobody has solved sorts above one the problemset does not count", () => {
+  const row = (index, solvedCount) => ({ contestId: 1, index, name: index, tags: [], solvedCount });
+  const rows = [row("X", undefined), row("Y", 0)];
+  assert.deepEqual(sortRows(rows, "solved", false).map((r) => r.index), ["X", "Y"]);
+  assert.deepEqual(sortRows(rows, "solved", true).map((r) => r.index), ["Y", "X"]);
 });
 
 test("the problemset's solved counts reach the rows it lists, and a row it does not know keeps none", () => {
@@ -1427,6 +1447,7 @@ test("the By-tag table sorts by any column, both ways, with a missing median las
   assert.deepEqual(tags(sortTags(entries, "unsolved", false)), ["math", "dp", "greedy"]);
   assert.deepEqual(tags(sortTags(entries, "attempted", true)), ["math", "dp", "greedy"]);
   assert.deepEqual(tags(sortTags(entries, "tag", false)), ["dp", "greedy", "math"]);
+  assert.deepEqual(tags(sortTags(entries, "tag", true)), ["math", "greedy", "dp"], "the tag column reverses too");
   assert.deepEqual(tags(sortTags(entries, "median", true)), ["dp", "math", "greedy"], "no median is last");
   assert.deepEqual(tags(sortTags(entries, "median", false)), ["math", "dp", "greedy"], "still last the other way");
 });
