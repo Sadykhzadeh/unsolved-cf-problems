@@ -2071,3 +2071,76 @@ test("the filter keeps the same rows as a direct check of each rule, over seeded
     }
   }
 });
+
+test("a link written from a view reads back as the same view, over seeded views", () => {
+  const HANDLES = ["tourist", "a b", "x&y=z", "a+b", "q?#", "ё"];
+  for (let seed = 1; seed <= 200; seed++) {
+    const rng = seeded(seed);
+    const tags = rng.pick([[], ["dp"], ["dp", "graphs"], ["dp", "dp"], ["a b", "c&d"]]);
+    const view = {
+      lang: rng.pick(["", "ru"]),
+      handle: rng.pick(["", ...HANDLES]),
+      sort: rng.pick([null, { key: rng.pick(SORT_KEYS), descending: rng.next() < 0.5 }]),
+      query: rng.pick(["", " tree ", "1520|F2", "a&b", "x=1"]),
+      min: rng.pick(["", "1200", "1e3", "0"]),
+      max: rng.pick(["", "2000"]),
+      triesMin: rng.pick(["", "3", "0"]),
+      tags,
+      tagAny: rng.next() < 0.5,
+      verdict: rng.pick(["", "tle", "WA"]),
+      days: rng.pick(["", "30", "0", "2.5"]),
+      noGym: rng.next() < 0.5,
+      noSpecial: rng.next() < 0.5,
+      friend: rng.pick(["", "jiangly", "a b"]),
+      friendMark: rng.next() < 0.5,
+      inRound: rng.next() < 0.5,
+      showTags: rng.next() < 0.5,
+      upsolve: rng.next() < 0.5,
+    };
+    const link = writeParams(view);
+    const back = readParams(`?${link}`);
+    const distinct = [...new Set(tags)];
+    const number = (text) => (text.trim() === "" || !Number.isFinite(Number(text)) ? null : Number(text));
+    assert.deepEqual({
+      handle: back.handle,
+      query: back.query,
+      min: back.min,
+      max: back.max,
+      triesMin: back.triesMin,
+      tags: back.tags,
+      tagAny: back.tagAny,
+      verdict: back.verdict,
+      days: back.days,
+      noGym: back.noGym,
+      noSpecial: back.noSpecial,
+      friend: back.friend,
+      friendMark: back.friendMark,
+      inRound: back.inRound,
+      showTags: back.showTags,
+      upsolve: back.upsolve,
+    }, {
+      handle: view.handle.trim(),
+      query: view.query.trim(),
+      min: number(view.min) === null ? "" : String(number(view.min)),
+      max: number(view.max) === null ? "" : String(number(view.max)),
+      triesMin: number(view.triesMin) === null ? "" : String(number(view.triesMin)),
+      tags: distinct,
+      tagAny: view.tagAny && distinct.length > 1,
+      verdict: view.verdict.trim().toUpperCase(),
+      days: number(view.days) > 0 ? String(number(view.days)) : "",
+      noGym: view.noGym,
+      noSpecial: view.noSpecial,
+      friend: view.friend,
+      friendMark: Boolean(view.friend && view.friendMark),
+      inRound: view.inRound,
+      showTags: view.showTags,
+      upsolve: view.upsolve,
+    }, `seed ${seed}`);
+    // The sort is written when it is not the default, or when the link names some of the
+    // view without naming any of it, and read back as the view's sort, or none.
+    const sortWritten = view.sort && !(view.sort.key === "rating" && !view.sort.descending);
+    const namesOnlyTheRest = link.replace(/(^|&)lang=[^&]*/, "") !== "" && !/(^|&)(tags|nogym|nospecial|upsolve|friendmode)=/.test(link);
+    const wantSort = sortWritten ? view.sort : namesOnlyTheRest ? { key: "rating", descending: false } : null;
+    assert.deepEqual(back.sort, wantSort, `seed ${seed}: the sort`);
+  }
+});
