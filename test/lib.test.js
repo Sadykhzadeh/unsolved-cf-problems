@@ -1252,6 +1252,12 @@ test("a name that Markdown would read as markup, or as a line break, stays text"
   assert.match(line, /\| a\\_b \\\[c\\\]\(d\) next \\<x\\> \|/);
 });
 
+test("a tilde, an entity and a bare carriage return in a name stay text in a Markdown table", () => {
+  const row = { ...exported[1], name: "x ~y~ &amp; &copy; a&b\rnext" };
+  const line = markdownTable([row]).split("\n")[2];
+  assert.match(line, /\| x \\~y\\~ \\&amp; \\&copy; a&b next \|/);
+});
+
 test("the list downloads as CSV, one line a problem, quoted where a cell needs it", () => {
   assert.equal(csvTable(exported), [
     "Problem,Name,Rating,Solved by,Tags,Tries,Last verdict,Last attempt,Problem link,Last submission",

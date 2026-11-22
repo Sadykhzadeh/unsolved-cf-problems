@@ -30,9 +30,12 @@ const exportCells = (row) => [
   tried(row) ? attemptTime(row) : "",
 ];
 
-// Markdown reads these as markup, and a pipe as the end of a cell.
-const MARKDOWN_SPECIAL = /[\\`*_[\]|<>]/g;
-const markdownCell = (text) => text.replace(MARKDOWN_SPECIAL, "\\$&").replace(/\r?\n/g, " ");
+// Markdown reads these as markup, and a pipe as the end of a cell. An ampersand
+// starts an entity only when a name and a semicolon follow it.
+const MARKDOWN_SPECIAL = /[\\`*_[\]|<>~]/g;
+const markdownCell = (text) => text.replace(MARKDOWN_SPECIAL, "\\$&")
+  .replace(/&(?=#?\w+;)/g, "\\&")
+  .replace(/\r\n|\r|\n/g, " ");
 
 export const markdownTable = (rows) => {
   const header = `| ${EXPORT_HEADER.join(" | ")} |`;
