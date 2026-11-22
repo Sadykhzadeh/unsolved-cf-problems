@@ -331,6 +331,37 @@ test("a submission still inside the settling window is read again on the next re
   assert.equal(third.digest.cutoff, NOW + 2 * hour);
 });
 
+test("a submission exactly at the settling cutoff is counted once, however often the digest advances", () => {
+  const item = {
+    id: 1,
+    creationTimeSeconds: NOW - SETTLE_SECONDS,
+    verdict: "WRONG_ANSWER",
+    author: { participantType: "PRACTICE" },
+    problem: { contestId: 10, index: "A", name: "A", tags: [], rating: 800 },
+  };
+  const first = advance(emptyDigest(NOW - 10), [item], NOW);
+  assert.equal(first.submissions, 1);
+  const second = advance(first.digest, [item], NOW);
+  assert.equal(second.digest.count, 1);
+  assert.equal(second.submissions, 1);
+});
+
+test("advancing a digest keeps the time it was built, so the rebuild comes on schedule", () => {
+  assert.equal(advance(emptyDigest(NOW), [], NOW + DAY).digest.builtAt, NOW);
+});
+
+test("the rows an advance returns are easiest first", () => {
+  const attempt = (id, contestId, rating) => ({
+    id,
+    creationTimeSeconds: NOW - 2 * DAY - id,
+    verdict: "WRONG_ANSWER",
+    author: { participantType: "PRACTICE" },
+    problem: { contestId, index: "A", name: `P${contestId}`, tags: [], rating },
+  });
+  const rows = advance(emptyDigest(NOW), [attempt(1, 10, 1600), attempt(2, 11, 800)], NOW).rows;
+  assert.deepEqual(rows.map((row) => row.rating), [800, 1600]);
+});
+
 test("the newest submissions reach a saved history when they go back past its cutoff or are all there is", () => {
   const digest = { ...emptyDigest(NOW), cutoff: NOW - 10 * DAY };
   const at = (ageDays) => ({ creationTimeSeconds: NOW - ageDays * DAY });
@@ -356,6 +387,11 @@ test("two solved copies that share a name each match their own rating and contes
 test("a gym problem is never the parallel copy of a problem from another contest", () => {
   const solved = solvedCheck({ keys: [], twins: [["Gamma", 1600, 1527, 1700000000]] });
   assert.equal(solved({ contestId: 100001, index: "A", name: "Gamma", rating: 1600 }, 1700000000), false);
+});
+
+test("a copy exactly as old as its limit is stale, and one stamped exactly the slack ahead is fresh", () => {
+  assert.equal(isFresh(NOW - 600, NOW, 600, 60), false, "exactly the age limit");
+  assert.equal(isFresh(NOW + 60, NOW, 600, 60), true, "exactly the slack ahead");
 });
 
 test("a copy is fresh while younger than its age, and stale when stamped well ahead of the clock", () => {
@@ -609,6 +645,17 @@ test("rows survive packing for storage, and foreign data is refused", () => {
   assert.equal(unpackRows([["1520", "F2"]]), null);
   assert.equal(unpackRows([[null, "A", "x", null, [], null, 1, 1, 1]]), null);
   assert.deepEqual(unpackRows([]), []);
+});
+
+test("a stored row of the wrong shape refuses the whole copy, and tags that are not a list read as none", () => {
+  const packed = packRows([{ contestId: 1520, index: "F2", name: "Tree", tags: ["dp"] }])[0];
+  const replaced = (changes) => packed.map((value, i) => (i in changes ? changes[i] : value));
+  assert.equal(unpackRows([replaced({})])[0].name, "Tree");
+  assert.equal(unpackRows([packed.slice(0, -1)]), null, "one field short");
+  assert.equal(unpackRows([[...packed, null]]), null, "one field over");
+  assert.equal(unpackRows([replaced({ 1: 7 })]), null, "an index that is not text");
+  assert.equal(unpackRows([replaced({ 2: 7 })]), null, "a name that is not text");
+  assert.deepEqual(unpackRows([replaced({ 4: "dp" })])[0].tags, []);
 });
 
 test("ages round down to the largest whole unit", () => {
@@ -1304,6 +1351,19 @@ test("upsolve: the rated contests come from user.rating and the problemset is ke
   }
 });
 
+test("upsolve: a problem the problemset does not count keeps no solved count once saved", () => {
+  const packed = packProblemset({ problems: [{ contestId: 5, index: "A", name: "X", tags: [] }], problemStatistics: [] });
+  assert.equal(unpackProblemset(JSON.parse(JSON.stringify(packed)))[0].solvedCount, undefined);
+});
+
+test("upsolve: a saved problem with a bad contest, index, name or tags refuses the whole copy", () => {
+  assert.equal(unpackProblemset([[1520.5, "F2", "Tree", 2000, ["dp"], 5]]), null, "a contest that is not a whole number");
+  assert.equal(unpackProblemset([[1520, 7, "Tree", 2000, ["dp"], 5]]), null, "an index that is not text");
+  assert.equal(unpackProblemset([[1520, "F2", 7, 2000, ["dp"], 5]]), null, "a name that is not text");
+  assert.equal(unpackProblemset([[1520, "F2", "Tree", 2000, "dp", 5]]), null, "tags that are not a list");
+  assert.equal(unpackProblemset([[1520, "F2", "Tree", 2000, ["dp"], 5]])[0].name, "Tree");
+});
+
 test("upsolve: an untried row sorts last by last attempt, and exports with no verdict, date or submission", () => {
   const tried = { contestId: 1, index: "A", name: "a", tags: [], tries: 1, verdict: "OK", lastTime: 1000, submissionId: 9, rating: 800 };
   const untried = { contestId: 2, index: "B", name: "b", tags: [], tries: 0, rating: 900 };
@@ -1345,6 +1405,12 @@ test("the age of an attempt is given in its largest whole unit, and never a nega
   assert.deepEqual(relativeAge(45 * 86400_000), [-1, "month"]);
   assert.deepEqual(relativeAge(3 * 365 * 86400_000 + 1000), [-3, "year"]);
   assert.deepEqual(relativeAge(-5000), [0, "second"], "a time a little ahead of the clock is now");
+});
+
+test("an age of exactly one unit is that unit", () => {
+  assert.deepEqual(relativeAge(60_000), [-1, "minute"]);
+  assert.deepEqual(relativeAge(3600_000), [-1, "hour"]);
+  assert.deepEqual(relativeAge(86400_000), [-1, "day"]);
 });
 
 test("the name of a weak-tag chip says the tag, how many attempted problems are unsolved, and what a click does", () => {
@@ -1417,6 +1483,7 @@ test("upsolve: a contest counts as taken in when a submission there is a contest
   const state = foldSubmissions(emptyState(), fixture("user-status.json").result);
   assert.deepEqual([...state.taken].sort((a, b) => a - b), [1632, 2155, 2279]);
   assert.deepEqual([...tookPartIn(new Set([421]), state.taken)].sort((a, b) => a - b), [421, 1632, 2155, 2279]);
+  assert.deepEqual(solvedFor(state).taken, state.taken, "the contests reach the check the untried rows are taken from");
 });
 
 test("upsolve: untried problems of an unrated or virtual contest are listed; a practice-only contest adds none", () => {
@@ -1570,6 +1637,29 @@ test("a saved lookup whose handle is not a string is not read back", () => {
   }
   assert.equal(isUsableSaved(null), false);
   assert.equal(isUsableSaved("tourist"), false);
+});
+
+test("a saved lookup with a missing or damaged part is not read back", () => {
+  const saved = {
+    handle: "tourist",
+    savedAt: 1,
+    rows: packRows([]),
+    submissions: 3,
+    solvedTags: { dp: 2 },
+    solved: { keys: [], twins: [], starts: [], taken: [] },
+  };
+  assert.equal(isUsableSaved(saved), true);
+  const broken = (change) => isUsableSaved({ ...saved, ...change });
+  assert.equal(broken({ savedAt: "1" }), false);
+  assert.equal(broken({ rows: "rows" }), false);
+  assert.equal(broken({ submissions: "3" }), false);
+  assert.equal(broken({ solvedTags: undefined }), false);
+  assert.equal(broken({ solvedTags: { dp: 1.5 } }), false, "a count that is not whole");
+  assert.equal(broken({ solvedTags: { dp: -1 } }), false, "a count that is negative");
+  assert.equal(broken({ solved: { ...saved.solved, keys: undefined } }), false);
+  assert.equal(broken({ solved: { ...saved.solved, twins: undefined } }), false);
+  assert.equal(broken({ solved: { ...saved.solved, starts: undefined } }), false);
+  assert.equal(broken({ solved: { ...saved.solved, taken: undefined } }), false);
 });
 
 test("two handles compare on the problems both tried and neither solved, and on who solved what the other tried", () => {
