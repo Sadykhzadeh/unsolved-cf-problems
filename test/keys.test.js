@@ -75,3 +75,11 @@ test("Enter on a button or a link is left to the browser, which already acts on 
   assert.equal(view.press("open", { key: "Enter", target: {} }), true, "elsewhere Enter opens the highlighted problem");
   assert.deepEqual(view.clicked, ["A"]);
 });
+
+test("Enter on a panel summary is left to the browser, which opens or closes the panel", () => {
+  const view = page([["A", false]]);
+  view.press("next");
+  const prevented = view.press("open", { key: "Enter", target: { localName: "summary" } });
+  assert.deepEqual(view.clicked, [], "no open of the highlighted problem");
+  assert.equal(prevented, false, "the browser keeps its own action");
+});

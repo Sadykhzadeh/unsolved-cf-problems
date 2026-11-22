@@ -21,10 +21,11 @@ export const createKeys = ({ drawn, highlight, setHighlight }) => {
     if (entry) entry[0].querySelector(".problemName").click();
   };
 
-  // Enter is left to a button or a link that has the focus, since it already acts on it.
+  // Enter is left to a button, a link or a panel summary that has the focus, since it already acts on it.
   // Holding o opens one problem, not a run of tabs.
   const press = (action, event) => {
-    const native = event.target instanceof HTMLButtonElement || event.target instanceof HTMLAnchorElement;
+    const native = event.target instanceof HTMLButtonElement || event.target instanceof HTMLAnchorElement
+      || event.target.localName === "summary";
     if (action === "open" && (event.repeat || (event.key === "Enter" && native))) return;
     event.preventDefault();
     if (action === "open") openHighlighted();
