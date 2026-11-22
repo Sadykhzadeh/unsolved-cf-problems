@@ -1278,6 +1278,46 @@ test("CSV quotes and doubles quotes, keeps line breaks and Cyrillic, and blocks 
   assert.equal(csvTable([]), "Problem,Name,Rating,Solved by,Tags,Tries,Last verdict,Last attempt,Problem link,Last submission\r\n");
 });
 
+// Reads CSV the way a spreadsheet does: quoted cells may hold commas, quotes and line breaks.
+const readCsv = (text) => {
+  const lines = [];
+  let line = [];
+  let cell = "";
+  let quoted = false;
+  for (let i = 0; i < text.length; i += 1) {
+    const char = text[i];
+    if (quoted) {
+      if (char !== "\"") cell += char;
+      else if (text[i + 1] === "\"") {
+        cell += "\"";
+        i += 1;
+      } else quoted = false;
+    } else if (char === "\"") quoted = true;
+    else if (char === ",") {
+      line.push(cell);
+      cell = "";
+    } else if (char === "\r" && text[i + 1] === "\n") {
+      line.push(cell);
+      lines.push(line);
+      line = [];
+      cell = "";
+      i += 1;
+    } else cell += char;
+  }
+  return lines;
+};
+
+test("the CSV reads back cell for cell, one cell per column, whatever the names hold", () => {
+  const names = ['He said "hi", twice', "l1\r\nl2", "lone\rcr", " spaced ", "=x", "Треугольники", ""];
+  const expected = ['He said "hi", twice', "l1\r\nl2", "lone\rcr", " spaced ", "'=x", "Треугольники", ""];
+  const rows = names.map((name, i) => ({ ...exported[1], contestId: 1000 + i, name, tags: ["dp", "x,y"] }));
+  const [header, ...lines] = readCsv(csvTable(rows));
+  assert.equal(header.length, 10);
+  assert.deepEqual(lines.map((line) => line.length), names.map(() => header.length));
+  assert.deepEqual(lines.map((line) => line[1]), expected);
+  assert.ok(lines.every((line) => line[4] === "dp, x,y"));
+});
+
 test("the rating bands run from the lowest rated row to the highest, empty ones included, unrated left out", () => {
   const rows = [800, 850, 1599, 1600, 3500, undefined].map((rating) => ({ rating }));
   const buckets = ratingBuckets(rows);
