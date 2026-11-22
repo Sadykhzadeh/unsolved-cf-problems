@@ -709,6 +709,7 @@ test("a verdict that stops on a test names it, counted from 1", () => {
   assert.equal(run("PARTIAL", 16, "TESTS"), null);
   assert.equal(run("SKIPPED", 0, "TESTS"), null);
   assert.equal(run("WRONG_ANSWER", undefined, undefined), null, "a row saved without it");
+  assert.equal(run("WRONG_ANSWER", undefined, "TESTS"), null, "a row saved without the count names no test");
 });
 
 test("a pasted profile or submissions link stands for its handle", () => {
@@ -777,10 +778,13 @@ test("failures say whether the handle, the limit or Codeforces is to blame", () 
     describeFailure(400, failed("handle: Field should contain between 3 and 24 characters, inclusive")),
     { kind: "badHandle", detail: "Field should contain between 3 and 24 characters, inclusive" },
   );
+  assert.deepEqual(describeFailure(400, failed("Unexpected handle: x")), { kind: "otherError", detail: "Unexpected handle: x" });
   assert.equal(describeFailure(503, failed("Call limit exceeded")).kind, "rateLimited");
   assert.equal(describeFailure(429, null).kind, "rateLimited");
   // An HTML error page parses as nothing.
   assert.deepEqual(describeFailure(502, null), { kind: "unavailable", detail: "HTTP 502" });
+  assert.deepEqual(describeFailure(500, failed("")), { kind: "unavailable", detail: "HTTP 500" });
+  assert.deepEqual(describeFailure(404, null), { kind: "unavailable", detail: "HTTP 404" });
   assert.deepEqual(describeFailure(200, failed("Internal error")), {
     kind: "otherError",
     detail: "Internal error",
@@ -796,6 +800,13 @@ test("gym problems link to the gym", () => {
     problemLink({ contestId: 103104, index: "J" }),
     "https://codeforces.com/problemset/gymProblem/103104/J",
   );
+});
+
+test("contest 100000 is the first gym number, and 99999 is an ordinary contest", () => {
+  assert.equal(problemLink({ contestId: 99999, index: "A" }), "https://codeforces.com/contest/99999/problem/A");
+  assert.equal(problemLink({ contestId: 100000, index: "A" }), "https://codeforces.com/problemset/gymProblem/100000/A");
+  assert.equal(submissionLink({ contestId: 99999, submissionId: 7 }), "https://codeforces.com/contest/99999/submission/7");
+  assert.equal(submissionLink({ contestId: 100000, submissionId: 7 }), "https://codeforces.com/gym/100000/submission/7");
 });
 
 test("submission links point at the submission", () => {
@@ -859,6 +870,19 @@ test("a slow download of a large history is kept, a stalled one is cut off", asy
   await assert.rejects(stalled, isTimeout);
 });
 
+test("a call that has answered is not cut off by its idle limit afterwards", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  let signal;
+  const fetchFn = async (url, options) => {
+    signal = options.signal;
+    return new Response('{"status":"OK"}', { status: 200 });
+  };
+  const { payload } = await fetchJson("x", { idleMs: 200, fetchFn });
+  assert.equal(payload.status, "OK");
+  t.mock.timers.tick(1000);
+  assert.equal(signal.aborted, false);
+});
+
 test("an error answer keeps its status and comment, and an HTML page parses as nothing", async () => {
   const json = async () => new Response('{"status":"FAILED","comment":"Call limit exceeded"}', { status: 503 });
   const { response, payload } = await fetchJson("x", { fetchFn: json });
@@ -873,6 +897,30 @@ test("a response larger than the cap is refused, and a smaller one is kept", asy
   assert.equal(response.status, 200);
   const big = Array.from({ length: 12 }, () => "a");
   await assert.rejects(fetchJson("x", { cap: 10, fetchFn: trickle(big, 5) }), isTimeout);
+});
+
+test("a call refused with HTTP 429 is made once more even without a comment", async () => {
+  let calls = 0;
+  const fetchFn = async () => {
+    calls += 1;
+    return calls === 1 ? new Response("Too Many Requests", { status: 429 }) : new Response('{"status":"OK","result":[]}', { status: 200 });
+  };
+  const result = await fetchApi("x", { fetchFn, again: async () => true });
+  assert.equal(result.payload.status, "OK");
+  assert.equal(calls, 2);
+});
+
+test("a call answered with the call limit in its comment is made once more, whatever the status", async () => {
+  let calls = 0;
+  const fetchFn = async () => {
+    calls += 1;
+    return calls === 1
+      ? new Response('{"status":"FAILED","comment":"Call limit exceeded"}', { status: 400 })
+      : new Response('{"status":"OK","result":[]}', { status: 200 });
+  };
+  const result = await fetchApi("x", { fetchFn, again: async () => true });
+  assert.equal(result.payload.status, "OK");
+  assert.equal(calls, 2);
 });
 
 test("a call that never answers is cut off and recognised as a timeout", async () => {
