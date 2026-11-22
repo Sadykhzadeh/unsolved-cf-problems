@@ -1894,3 +1894,26 @@ test("the unsolved list matches a direct count of seeded histories", () => {
     assert.deepEqual(listed, countedUnsolved(history), `seed ${seed}`);
   }
 });
+
+test("a history read in refreshes lists what a whole read lists, at every refresh", () => {
+  for (let seed = 1; seed <= 150; seed++) {
+    const rng = seeded(seed);
+    const history = seededHistory(rng, problemSet(rng));
+    const oldest = history[history.length - 1].creationTimeSeconds;
+    const newest = history[0].creationTimeSeconds;
+    let digest = emptyDigest(oldest);
+    let now = oldest;
+    while (now < newest + SETTLE_SECONDS) {
+      now += 1 + Math.floor(rng.next() * 2 * SETTLE_SECONDS);
+      const visible = history.filter((item) => item.creationTimeSeconds <= now);
+      const asked = 1 + Math.floor(rng.next() * 8);
+      const latest = visible.slice(0, asked);
+      const refresh = latest.length && reachesDigest(digest, latest, asked)
+        ? advance(digest, latest, now)
+        : advance(emptyDigest(now), visible, now);
+      digest = refresh.digest;
+      assert.deepEqual(refresh.rows.map(asRow).sort(byName), countedUnsolved(visible), `seed ${seed} at ${now}`);
+      assert.equal(refresh.submissions, visible.length, `seed ${seed} at ${now}`);
+    }
+  }
+});
