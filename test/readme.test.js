@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { SORT_KEYS } from "../lib.js";
+import { SORT_KEYS, readParams, writeParams } from "../lib.js";
 
 // The README states the limits the code sets: how long a saved copy is trusted, how
 // far apart the API calls are, how many submissions a refresh asks for. Each one is
@@ -39,4 +39,20 @@ test("the sort keys the README and the column headers name are the ones the code
   const headers = [...read("index.html").matchAll(/data-sort="(\w+)"/g)].map(([, key]) => key);
   assert.deepEqual(documented.sort(), [...SORT_KEYS].sort());
   assert.deepEqual(headers.sort(), [...SORT_KEYS].sort());
+});
+
+// The link parameters table gives each parameter an example. The page reads them
+// all with readParams(), except lang, which the page reads on its own; a link built
+// from the examples opens the view they name, and writes back to the same view.
+// tagany is left out of the round trip: a link keeps it only with several tags.
+test("every link parameter the README names is read, and a link built from them opens the same view", () => {
+  const table = read("README.md").split("## Link parameters")[1].split("\n## ")[0];
+  const examples = [...table.matchAll(/^\| `\w+` \| `([^`]+)` \|/gm)].map(([, example]) => example);
+  assert.ok(examples.length >= 16, "the table names the parameters");
+  const defaults = readParams("");
+  for (const example of examples.filter((example) => example !== "lang=ru")) {
+    assert.notDeepEqual(readParams(`?${example}`), defaults, `${example} is not read`);
+  }
+  const view = readParams(`?${examples.filter((example) => example !== "tagany=1").join("&")}`);
+  assert.deepEqual(readParams(`?${writeParams(view)}`), view);
 });
