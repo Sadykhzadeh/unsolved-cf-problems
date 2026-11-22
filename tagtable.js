@@ -41,7 +41,7 @@ export const sortTags = (entries, key, descending) => {
   const sign = descending ? -1 : 1;
   return [...entries].sort((a, b) => {
     if (key === "median" && (a.median === null || b.median === null)) {
-      return (a.median === null) - (b.median === null);
+      return (a.median === null) - (b.median === null) || a.tag.localeCompare(b.tag);
     }
     if (key === "tag") return sign * a.tag.localeCompare(b.tag);
     return sign * (a[key] - b[key]) || a.tag.localeCompare(b.tag);

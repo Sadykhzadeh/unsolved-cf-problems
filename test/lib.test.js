@@ -1627,6 +1627,19 @@ test("the By-tag table sorts by any column, both ways, with a missing median las
   assert.deepEqual(tags(sortTags(entries, "median", false)), ["math", "dp", "greedy"], "still last the other way");
 });
 
+test("the By-tag table puts the tags with no median in name order, whatever the way or the input order", () => {
+  const entries = [
+    { tag: "trees", unsolved: 0, attempted: 4, median: null },
+    { tag: "dp", unsolved: 1, attempted: 2, median: 1300 },
+    { tag: "graphs", unsolved: 0, attempted: 1, median: null },
+  ];
+  const tags = (sorted) => sorted.map((entry) => entry.tag);
+  for (const descending of [false, true]) {
+    assert.deepEqual(tags(sortTags(entries, "median", descending)), ["dp", "graphs", "trees"]);
+    assert.deepEqual(tags(sortTags([...entries].reverse(), "median", descending)), ["dp", "graphs", "trees"]);
+  }
+});
+
 test("the j and k highlight stays on its problem when the rows are built again", () => {
   // keys.js tests the element it is given, so the browser classes are stood in for.
   globalThis.HTMLButtonElement ??= class {};
