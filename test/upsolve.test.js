@@ -132,3 +132,33 @@ test("sorting by the solved counts reads the problem list, not the rated contest
   assert.equal(urls.filter((url) => url.includes("problemset")).length, 1, "the problem list is read once");
   assert.equal(refreshed, 1, "the list is drawn again so the solved counts show");
 });
+
+test("a page left open for days reads the rated contests again after ten minutes and the problem list after six hours", async () => {
+  const urls = [];
+  installPage((url) => {
+    urls.push(url);
+    return url.includes("problemset") ? problemset : [{ contestId: 1 }];
+  });
+  const upsolve = await load();
+  const state = { handle: "tourist", solved: { keys: [], twins: [], starts: [], taken: [], rows: [] }, rows: [], sort: { key: "rating" } };
+  const view = viewFor(upsolve, state, {});
+  const count = (part) => urls.filter((url) => url.includes(part)).length;
+  const realNow = Date.now;
+  let stamp = 1700000000000;
+  Date.now = () => stamp;
+  try {
+    await view.ensure();
+    assert.deepEqual([count("problemset"), count("user.rating")], [1, 1]);
+    stamp += 5 * 60000;
+    await view.ensure();
+    assert.deepEqual([count("problemset"), count("user.rating")], [1, 1], "a copy in view is used as it is");
+    stamp += 6 * 60000;
+    await view.ensure();
+    assert.deepEqual([count("problemset"), count("user.rating")], [1, 2], "the rated contests are read again after ten minutes");
+    stamp += 6 * 3600000;
+    await view.ensure();
+    assert.deepEqual([count("problemset"), count("user.rating")], [2, 3], "the problem list is read again after six hours");
+  } finally {
+    Date.now = realNow;
+  }
+});

@@ -59,17 +59,19 @@ export const createUpsolve = ({
     const key = `problemset.v1/${lang}`;
     const kept = await readKept(key);
     const usable = kept ? unpackProblemset(kept.value) : null;
-    if (usable && isFresh(kept.savedAt, Date.now(), PROBLEMSET_FRESH, CLOCK_SLACK)) return usable;
+    if (usable && isFresh(kept.savedAt, Date.now(), PROBLEMSET_FRESH, CLOCK_SLACK)) {
+      return { problems: usable, savedAt: kept.savedAt };
+    }
     let result;
     try {
       result = await problemsetOnce(`https://codeforces.com/api/problemset.problems?lang=${encodeURIComponent(lang)}`);
     } catch (error) {
-      if (usable) return usable;
+      if (usable) return { problems: usable, savedAt: kept.savedAt };
       throw error;
     }
     const packed = packProblemset(result);
     await writeKept(key, packed);
-    return unpackProblemset(packed);
+    return { problems: unpackProblemset(packed), savedAt: Date.now() };
   };
 
   // Drops the rated contests of all but the latest few handles, which are read again when looked up.
@@ -93,25 +95,29 @@ export const createUpsolve = ({
   const loadRatedContests = async (handle, wanted) => {
     const key = ratedKey(handle);
     const kept = await readKept(key);
-    if (kept && isFresh(kept.savedAt, Date.now(), FRESH_FOR, CLOCK_SLACK) && Array.isArray(kept.value)) return new Set(kept.value);
+    if (kept && isFresh(kept.savedAt, Date.now(), FRESH_FOR, CLOCK_SLACK) && Array.isArray(kept.value)) {
+      return { ids: new Set(kept.value), savedAt: kept.savedAt };
+    }
     let changes;
     try {
       changes = await callApi(`https://codeforces.com/api/user.rating?handle=${encodeURIComponent(handle)}`, wanted);
     } catch (error) {
-      if (kept && Array.isArray(kept.value)) return new Set(kept.value);
+      if (kept && Array.isArray(kept.value)) return { ids: new Set(kept.value), savedAt: kept.savedAt };
       throw error;
     }
     if (!changes) return null;
     const ids = [...ratedContestIds(changes)];
     await writeKept(key, ids);
     await keepRated();
-    return new Set(ids);
+    return { ids: new Set(ids), savedAt: Date.now() };
   };
 
-  // The problem list read this visit, and the contests of the handle it was read for.
+  // The problem list read this visit, and the contests of the handle it was read for,
+  // each with the time its copy was saved. Used only while that copy is still fresh, so
+  // a page left open for days reads them again.
 
   let upsolveNumber = 0;
-  const upsolveData = { problems: null, handle: "", contests: null };
+  const upsolveData = { problems: null, problemsAt: 0, handle: "", contests: null, contestsAt: 0 };
   let check = null;
   let checkFor = null;
   let notesFor = null;
@@ -168,22 +174,29 @@ export const createUpsolve = ({
     const handle = state.handle;
     const wanted = () => number === upsolveNumber;
     if (!(byId("upsolve").checked || state.sort.key === "solved") || !state.solved || !handle) return;
-    if (upsolveData.problems && (!byId("upsolve").checked
-      || (upsolveData.contests && upsolveData.handle === handle.toLowerCase()))) {
+    const now = Date.now();
+    const problemsReady = Boolean(upsolveData.problems) && isFresh(upsolveData.problemsAt, now, PROBLEMSET_FRESH, CLOCK_SLACK);
+    const contestsReady = Boolean(upsolveData.contests) && upsolveData.handle === handle.toLowerCase()
+      && isFresh(upsolveData.contestsAt, now, FRESH_FOR, CLOCK_SLACK);
+    if (problemsReady && (!byId("upsolve").checked || contestsReady)) {
       byId("upsolveStatus").textContent = nothingToAdd();
       refreshList();
       return;
     }
     byId("upsolveStatus").textContent = fill(text.upsolveLoadingText, { handle });
     try {
-      const problems = upsolveData.problems ?? await loadProblemset();
-      upsolveData.problems = problems;
+      if (!problemsReady) {
+        const { problems, savedAt } = await loadProblemset();
+        upsolveData.problems = problems;
+        upsolveData.problemsAt = savedAt;
+      }
       // The solved counts come from the problem list alone; the rated contests are
       // only needed for the never-tried problems, so they wait for the box.
       if (byId("upsolve").checked) {
-        const contests = await loadRatedContests(handle, wanted);
-        if (!contests) return;
-        upsolveData.contests = contests;
+        const rated = await loadRatedContests(handle, wanted);
+        if (!rated) return;
+        upsolveData.contests = rated.ids;
+        upsolveData.contestsAt = rated.savedAt;
         upsolveData.handle = handle.toLowerCase();
       }
     } catch (error) {
