@@ -255,7 +255,7 @@ td {
         width: auto
     }
 
-    .when {
+    td.when {
         white-space: normal
     }
 
