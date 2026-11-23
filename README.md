@@ -82,7 +82,7 @@ Every problem a Codeforces user has tried and not solved, in one table.
 - Says why a lookup failed: no such user, an invalid handle, the API rate
   limit, Codeforces being down or silent for 30 seconds, or no connection.
 - English and Russian; follows the system's light or dark theme; fits a
-  phone.
+  phone, where the buttons, links, fields and boxes get at least a 36px row to tap.
 
 ## Link parameters
 

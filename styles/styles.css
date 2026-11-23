@@ -286,6 +286,60 @@ td {
     }
 }
 
+/* A finger needs more than the text's own height: the small buttons, links,
+   fields and labels get a 36px row, the boxes a bigger square, and the button
+   that hides a row a wider one. The bars of the rating strip stay as they are,
+   a hundred ratings to a bar; the same bands can be picked with the keyboard. */
+@media (pointer: coarse) {
+    #refresh,
+    #about,
+    #pick,
+    #copyMarkdown,
+    #downloadCsv,
+    #tagMode,
+    .tag-chip,
+    summary {
+        display: inline-flex;
+        align-items: center;
+        min-height: 36px
+    }
+
+    .check {
+        display: inline-flex;
+        align-items: center;
+        min-height: 36px
+    }
+
+    #filters input,
+    #filters select,
+    #handle,
+    #friend,
+    #start {
+        min-height: 36px
+    }
+
+    input[type="checkbox"] {
+        width: 1.1em;
+        height: 1.1em
+    }
+
+    .hide {
+        min-width: 28px;
+        min-height: 36px
+    }
+
+    td a {
+        display: inline-block;
+        padding: 10px 0
+    }
+
+    .sort {
+        display: inline-flex;
+        align-items: center;
+        min-height: 36px
+    }
+}
+
 #nameTD,
 #tagsTD {
     width: 40%

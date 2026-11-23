@@ -7,8 +7,9 @@ import { gzipSync } from "node:zlib";
 // stylesheet, and every script the page reaches through static imports, plus the
 // English sentences, which load beside the page (see script.js). Lazily imported
 // modules are not part of it: they are read on first use, and that is the point.
-// Raised only on purpose, when a change is worth the bytes.
-const FIRST_VISIT_GZIP_BUDGET = 35400;
+// Raised only on purpose, when a change is worth the bytes. The touch-screen block
+// of the stylesheet (a 36px row for the small controls) added 290.
+const FIRST_VISIT_GZIP_BUDGET = 35700;
 
 const root = new URL("../", import.meta.url);
 const read = (file) => readFileSync(new URL(file, root));
